@@ -113,6 +113,12 @@ def is_dating(user) -> bool:
     return bool(user["seek"]) or "love" not in goals_of(user)
 
 
+def community_size() -> int:
+    """Сколько людей с готовой анкетой видно в лентах."""
+    with connect() as c:
+        return c.execute("SELECT COUNT(*) FROM users WHERE active=1").fetchone()[0]
+
+
 def upsert_user(tg_id: int, **fields) -> None:
     with connect() as c:
         cols = ", ".join(fields)

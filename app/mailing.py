@@ -218,7 +218,8 @@ def subscribers() -> list:
         return c.execute("SELECT * FROM users WHERE daily_opt=1").fetchall()
 
 
-def message_for(birth: date, today: date | None = None, dating: bool = False, lang: str = "ru") -> str:
+def message_for(birth: date, today: date | None = None, dating: bool = False, lang: str = "ru",
+                people: int = 0) -> str:
     d = day_parts(birth, today, lang)
     gift = (T("🎁 Сегодняшняя дата несёт <b>{gifts}</b> — этой энергии нет в вашей дате рождения. "
               "Хороший день, чтобы её потренировать.", lang, gifts=", ".join(d["gifts"])) + "\n\n"
@@ -226,6 +227,10 @@ def message_for(birth: date, today: date | None = None, dating: bool = False, la
     # Обещаем «новых людей» только тем, у кого есть лента, — без пустых обещаний
     cta = T("Сегодня в ленте — новые созвучные люди 👇" if dating
             else "С кем вы сегодня в резонансе? Проверьте совместимость 👇", lang)
+    if not dating and people and (today or date.today()).weekday() in (0, 3):
+        # пн и чт — мягкое напоминание про анкету: без неё лента «Люди» пустая
+        cta = T("В JoyDao уже {n} человек с анкетой ищут созвучных 💞 Заполните свою за пару минут — "
+                "и увидите тех, кто подходит вам больше всего 👇", lang, n=people)
     return (
         T("🔮 <b>Ваша энергия дня — {n}</b>", lang, n=d["n"]) + f"\n<b>{d['title']}</b>\n\n"
         f"{d['advice']}\n\n{d['love']}\n\n{gift}<i>{cta}</i>"
@@ -242,6 +247,8 @@ def _kb(user, lang: str = "ru"):
     else:
         rows.append([InlineKeyboardButton(text=T("💞 Проверить совместимость", lang),
                                           url=_share_url(user["tg_id"], T(PAIR_INVITE_TEXT, lang)))])
+    if not db.is_dating(user):  # без анкеты лента «Люди» пустая — даём короткий путь к ней
+        rows.append([InlineKeyboardButton(text=T("💌 Заполнить анкету", lang), callback_data="dating")])
     rows.append([InlineKeyboardButton(text=T("🔕 Отключить энергию дня", lang), callback_data="daily:off")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -249,10 +256,12 @@ def _kb(user, lang: str = "ru"):
 async def daily_broadcast(bot) -> None:
     """Утренняя рассылка всем подписанным. ~25 сообщений в секунду (лимит Telegram — 30)."""
     sent = failed = 0
+    people = db.community_size()
     for u in subscribers():
         try:
             birth, lang = date.fromisoformat(u["birth_date"]), user_lang(u)
-            await bot.send_message(u["tg_id"], message_for(birth, dating=db.is_dating(u), lang=lang),
+            await bot.send_message(u["tg_id"], message_for(birth, dating=db.is_dating(u), lang=lang,
+                                                           people=people),
                                    parse_mode="HTML", reply_markup=_kb(u, lang))
             sent += 1
         except Exception:

@@ -176,3 +176,5 @@
 595	"Text to calculate"
 596	"👥 JoyDao — a community of people curious about what a birth date reveals.\n\n🎂 Your number and energy balance: your strengths and what to level up\n☀️ Every morning — energy of the day (never the same twice!)\n💞 Compatibility in love, 🤝 friendship and 💼 business\n👨‍👩‍👧 Who works well with whom in a team or family\n🔍 Decode the date of a friend, colleague or ex 👀\n✨ People on your wavelength: partner, friends, business partners\n\nTap /start, enter your date — magic in 5 seconds 🪄\nFree forever."
 597	"A birth-date community: energy of the day and compatibility in love, friendship and business 👥✨ Free"
+598	"{n} people with a profile are already looking for kindred spirits on JoyDao 💞 Fill in yours in a couple of minutes — and see who suits you best 👇"
+599	"💌 Fill in my profile"

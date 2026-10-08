@@ -176,3 +176,5 @@
 595	"Texto para calcular"
 596	"👥 JoyDao — una comunidad de personas a las que les intriga lo que esconde la fecha de nacimiento.\n\n🎂 Tu número y balance de energías: tus fortalezas y qué mejorar\n☀️ Cada mañana — la energía del día (¡nunca igual!)\n💞 Compatibilidad en el amor, 🤝 la amistad y 💼 los negocios\n👨‍👩‍👧 Quién trabaja bien con quién en un equipo o familia\n🔍 Descifra la fecha de un amigo, colega o ex 👀\n✨ Personas en tu misma onda: pareja, amigos, socios\n\nPulsa /start, escribe tu fecha — magia en 5 segundos 🪄\nGratis y para siempre."
 597	"Comunidad del código de nacimiento: energía del día y compatibilidad en amor, amistad y negocios 👥✨ Gratis"
+598	"En JoyDao ya hay {n} personas con perfil buscando almas afines 💞 Completa el tuyo en un par de minutos y descubre quién encaja mejor contigo 👇"
+599	"💌 Completar mi perfil"

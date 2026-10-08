@@ -261,3 +261,14 @@ def test_photo_upload_from_app(monkeypatch):
     assert cl.post("/api/photo", content=buf.getvalue()).json()["ok"]
     assert db.get_user(1)["photo_id"] == "NEW" and sent[0] == 1
     assert cl.post("/api/photo", content=b"not an image").status_code == 400
+
+
+def test_light_users_get_profile_nudge():
+    from app import mailing
+    mon, tue = date(2026, 10, 5), date(2026, 10, 6)
+    assert "уже 4 человек" in mailing.message_for(date(1990, 1, 1), mon, dating=False, people=4)
+    assert "уже 4 человек" not in mailing.message_for(date(1990, 1, 1), tue, dating=False, people=4)
+    assert "уже 4 человек" not in mailing.message_for(date(1990, 1, 1), mon, dating=True, people=4)
+    _light(1, "1992-03-21", "Оля")
+    kb = mailing._kb(db.get_user(1))
+    assert any(b.callback_data == "dating" for row in kb.inline_keyboard for b in row)
