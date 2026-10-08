@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JoyDao</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ===== Токены: игривая светлая тема + тёмная для тёмного Telegram ===== */
+  :root{
+    --bg:#FFF6EA; --bg2:#FFEAF2; --card:#FFFFFF; --ink:#2A1846; --muted:#7C6B98; --line:#F2E4F0;
+    --coral:#FF5E8A; --orange:#FF9A3D; --sun:#FFC42E; --lilac:#9B7BFF; --mint:#2FCBA8; --sky:#5DBBF5;
+    --grad:linear-gradient(135deg,#FF5E8A 0%,#FF9A3D 100%);
+    --soft:#FFF1D6; --why:#E9FBF5; --whyink:#17644F;
+    --shadow:0 10px 26px rgba(110,50,140,.13); --r:26px;
+    --c1:#FFB81C; --c2:#4FB6F2; --c3:#5DC35A; --c4:#9B7BFF; --c5:#2FCBA8;
+    --c6:#FF6FAE; --c7:#6C7BFF; --c8:#F2893A; --c9:#FF5252;
+  }
+  :root[data-theme="dark"]{
+    --bg:#1A1030; --bg2:#26173F; --card:#2A1C4A; --ink:#FFF4E8; --muted:#BCA9DD; --line:#3B2A62;
+    --soft:#3A2A2A; --why:#163B36; --whyink:#9DF0D8; --shadow:0 10px 26px rgba(0,0,0,.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{font-size:16px}
+  body{font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);
+       background:
+         radial-gradient(circle at 12% 8%, rgba(255,94,138,.14) 0 60px, transparent 61px),
+         radial-gradient(circle at 92% 18%, rgba(255,196,46,.18) 0 46px, transparent 47px),
+         radial-gradient(circle at 80% 70%, rgba(155,123,255,.12) 0 80px, transparent 81px),
+         linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%) fixed;
+       min-height:100vh;padding-bottom:110px;font-weight:600;line-height:1.5}
+  b,strong{font-weight:800}
+
+  /* ===== Шапка ===== */
+  header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 6px}
+  .logo{font-size:1.75rem;font-weight:900;letter-spacing:-.5px;display:flex;align-items:center;gap:6px}
+  .logo i{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .logo .star{display:inline-block;animation:wiggle 3s ease-in-out infinite;font-size:1.3rem}
+  .fontctl{display:flex;gap:6px}
+  .fontctl button{height:34px;min-width:40px;border-radius:12px;border:2px solid var(--line);background:var(--card);
+       color:var(--ink);font:800 .85rem 'Nunito',sans-serif;cursor:pointer}
+  .fontctl button:active{transform:scale(.9)}
+
+  /* ===== Нижняя навигация: плавающая «таблетка» ===== */
+  .tabs{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));display:flex;
+        background:var(--card);border-radius:28px;box-shadow:0 12px 30px rgba(110,50,140,.22);padding:6px;z-index:10}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0;border-radius:22px;
+       color:var(--muted);font-size:.72rem;font-weight:800;cursor:pointer;transition:background .2s,color .2s}
+  .tab .ico{font-size:1.35rem;line-height:1.2;display:block}
+  .tab.active{background:var(--soft);color:var(--ink)}
+  .tab.active .ico{animation:bounce .45s cubic-bezier(.3,1.6,.5,1)}
+
+  .page{display:none;padding:8px 16px;animation:rise .35s cubic-bezier(.2,1.2,.4,1)}
+  .page.active{display:block}
+
+  /* ===== Карточки и кнопки ===== */
+  .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;
+        animation:rise .4s cubic-bezier(.2,1.2,.4,1) both}
+  .card:nth-child(2){animation-delay:.05s}.card:nth-child(3){animation-delay:.1s}.card:nth-child(4){animation-delay:.15s}
+  .body{padding:18px}
+  .h2{font-size:1.25rem;font-weight:900;line-height:1.25}
+  .label{font-size:.72rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+  .txt{font-size:1rem;margin-top:8px}
+  .muted{color:var(--muted)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 18px;border:none;border-radius:20px;
+       font:900 1.02rem 'Nunito',sans-serif;cursor:pointer;color:#fff;background:var(--grad);
+       box-shadow:0 8px 18px rgba(255,94,138,.35);transition:transform .15s cubic-bezier(.3,1.6,.5,1)}
+  .btn:active{transform:scale(.94)}
+  .btn.ghost{background:var(--card);color:var(--ink);box-shadow:none;border:2px solid var(--line)}
+  .btn.sun{background:var(--sun);color:#3A2400;box-shadow:0 8px 18px rgba(255,196,46,.35)}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;font-size:.85rem;font-weight:800;
+        background:color-mix(in srgb,var(--c,var(--lilac)) 16%,transparent);color:var(--ink)}
+  .chip .dot{width:10px;height:10px;border-radius:50%;background:var(--c,var(--lilac))}
+
+  /* Цвет числа 1..9 — один и тот же во всём приложении, в канале и на карточках */
+  .n1{--c:var(--c1)}.n2{--c:var(--c2)}.n3{--c:var(--c3)}.n4{--c:var(--c4)}.n5{--c:var(--c5)}
+  .n6{--c:var(--c6)}.n7{--c:var(--c7)}.n8{--c:var(--c8)}.n9{--c:var(--c9)}
+
+  /* ===== «Сегодня» ===== */
+  .hero{position:relative;padding:22px 20px 20px;color:#fff;
+        background:radial-gradient(circle at 85% 15%,rgba(255,255,255,.35) 0 40px,transparent 41px),
+                   linear-gradient(140deg,var(--c) 0%,color-mix(in srgb,var(--c) 55%,#FF5E8A) 100%)}
+  .hero .label{color:rgba(255,255,255,.85)}
+  .hero .h2{font-size:1.55rem;margin-top:4px;max-width:70%}
+  .hero .date{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.25);font-size:.82rem;font-weight:800}
+  .bubble{position:absolute;inset-inline-end:18px;top:18px;width:92px;height:92px;border-radius:50%;background:#fff;color:var(--c);
+          display:flex;align-items:center;justify-content:center;font-size:3.4rem;font-weight:900;
+          box-shadow:0 10px 24px rgba(0,0,0,.15);animation:pop .6s cubic-bezier(.3,1.7,.5,1) both .1s}
+  .say{display:flex;gap:12px;align-items:flex-start}
+  .say .em{font-size:1.6rem;line-height:1.2}
+  .gift{background:var(--soft)}
+
+  /* Квадрат энергий 3×3 */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .tile{border-radius:16px;padding:10px 4px;text-align:center;background:color-mix(in srgb,var(--c) 18%,var(--card));
+        border:2px solid color-mix(in srgb,var(--c) 45%,transparent);transition:transform .15s}
+  .tile b{display:block;font-size:1.3rem;font-weight:900;color:var(--c)}
+  .tile span{font-size:.68rem;font-weight:800;color:var(--muted)}
+  .tile.off{background:transparent;border:2px dashed var(--line)}
+  .tile.off b{color:var(--line)}
+  .tile.strong{background:var(--c)}.tile.strong b,.tile.strong span{color:#fff}
+  .tile:active{transform:scale(.95)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+
+  /* ===== Портрет ===== */
+  .nums{display:flex;gap:8px;margin-top:14px}
+  .num{flex:1;border-radius:20px;padding:12px 4px;text-align:center;color:#fff;background:var(--c);
+       box-shadow:0 6px 14px color-mix(in srgb,var(--c) 40%,transparent)}
+  .num b{display:block;font-size:2rem;font-weight:900;line-height:1.1}
+  .num span{font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.5px;opacity:.9}
+  .bal{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+  .bal div{font-size:.95rem}
+  details{background:var(--card);border-radius:20px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+  summary{font-weight:900;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+  summary::after{content:"＋";color:var(--coral);transition:transform .2s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details pre{white-space:pre-wrap;font:600 .95rem/1.65 'Nunito',sans-serif;margin-top:10px;max-height:360px;overflow:auto}
+
+  /* ===== Пары ===== */
+  .seg{display:flex;background:var(--card);border-radius:18px;padding:4px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .seg div{flex:1;text-align:center;padding:9px;border-radius:14px;font-weight:900;font-size:.92rem;color:var(--muted);cursor:pointer}
+  .seg .on{background:var(--grad);color:#fff}
+  .ava{position:relative;display:block;width:128px;height:128px;margin:14px auto 4px;border-radius:50%;cursor:pointer;
+    background:linear-gradient(135deg,#FFD3E2,#FFE7C2);box-shadow:0 8px 24px rgba(255,107,129,.25)}
+  .ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+  .ava img:not([src]){visibility:hidden}
+  .ava span{position:absolute;right:2px;bottom:2px;width:38px;height:38px;border-radius:50%;background:var(--card);
+    display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .ava.busy img{opacity:.5}
+  .photo{width:100%;height:340px;object-fit:cover;display:block;background:linear-gradient(135deg,#FFD3E2,#FFE7C2)}
+  .score{flex:0 0 74px;height:74px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+         background:conic-gradient(var(--coral) calc(var(--p)*1%),var(--line) 0);position:relative}
+  .score::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--card)}
+  .score b,.score i{position:relative}
+  .score b{font-size:1.25rem;font-weight:900}
+  .score i{font-style:normal;font-size:.62rem;font-weight:800;color:var(--muted);margin-top:-3px}
+  .why{margin-top:12px;padding:14px;border-radius:18px;background:var(--why);color:var(--whyink);font-size:.95rem}
+  .why .label{color:var(--whyink);opacity:.8;margin-bottom:4px}
+  .why div+div{margin-top:6px}
+  .acts{display:flex;gap:10px;padding:0 18px 18px}
+  .acts .skip{flex:0 0 64px;background:var(--card);color:var(--muted);border:2px solid var(--line);box-shadow:none;font-size:1.3rem}
+  .undo{text-align:center;padding:10px;margin-bottom:12px;border-radius:16px;border:2px dashed var(--line);color:var(--muted);font-weight:800;cursor:pointer}
+  .empty{text-align:center;padding:40px 24px}
+  .empty .big{font-size:3.4rem;display:inline-block;animation:wiggle 2.4s ease-in-out infinite}
+  .empty .h2{margin-top:10px}
+
+  /* ===== Проверка ===== */
+  input{width:100%;margin-top:12px;background:var(--bg);border:2px solid var(--line);border-radius:16px;color:var(--ink);
+        font:700 16px 'Nunito',sans-serif;padding:13px 14px;outline:none}
+  input:focus{border-color:var(--coral)}
+  :root[data-theme="dark"] input{color-scheme:dark}
+  .bignum{flex:0 0 74px;height:74px;border-radius:50%;background:var(--c);color:#fff;display:flex;align-items:center;justify-content:center;
+          font-size:2.4rem;font-weight:900;animation:pop .5s cubic-bezier(.3,1.7,.5,1) both}
+
+  .disclaimer{font-size:.8rem;color:var(--muted);text-align:center;padding:8px 20px 4px}
+  .loader{text-align:center;padding:50px;color:var(--muted);font-weight:800}
+  .loader::before{content:"✨";display:block;font-size:2rem;animation:spin 1.2s linear infinite}
+  .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 20px;
+         border-radius:99px;font-weight:800;z-index:99;animation:drop .35s cubic-bezier(.3,1.6,.5,1);white-space:nowrap}
+  .confetti{position:fixed;width:10px;height:14px;border-radius:3px;z-index:98;pointer-events:none;
+            animation:fly 1s cubic-bezier(.2,.7,.4,1) forwards}
+
+  /* Шторка «что это за энергия» */
+  .tile{cursor:pointer}
+  .tapnote{font-size:.8rem;color:var(--muted);text-align:center;margin-top:10px}
+  .shade{position:fixed;inset:0;background:rgba(30,10,50,.45);z-index:50;animation:fadein .2s ease}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--card);border-radius:28px 28px 0 0;
+         max-height:86vh;overflow:auto;padding:10px 20px calc(24px + env(safe-area-inset-bottom));
+         box-shadow:0 -10px 30px rgba(0,0,0,.25);animation:up .35s cubic-bezier(.2,1.2,.4,1)}
+  .sheet .grab{width:44px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 14px}
+  .sheet .top{display:flex;align-items:center;gap:14px}
+  .sheet .big{flex:0 0 72px;height:72px;border-radius:22px;background:var(--c);color:#fff;display:flex;align-items:center;
+              justify-content:center;font-size:2.3rem;font-weight:900;animation:pop .5s cubic-bezier(.3,1.7,.5,1) both}
+  .sheet .close{margin-left:auto;align-self:flex-start;width:36px;height:36px;border-radius:50%;border:none;background:var(--bg);
+                color:var(--ink);font-size:1.1rem;cursor:pointer}
+  .sheet .verdict{margin-top:14px;padding:14px;border-radius:18px;background:color-mix(in srgb,var(--c) 15%,var(--card))}
+  .sheet h4{font-size:.75rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:16px 0 4px}
+  .sheet ul{list-style:none;margin-top:4px}
+  .sheet li{padding-left:22px;position:relative;margin-top:6px}
+  .sheet li::before{content:"✦";position:absolute;left:0;color:var(--c)}
+  /* Профиль */
+  .fontctl .avatar{min-width:34px;font-size:1rem;background:var(--grad);border:none;color:#fff}
+  .fl{display:block;margin-top:14px;font-size:.8rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .fl input,.fl textarea,.fl .pick{margin-top:6px;text-transform:none;letter-spacing:0}
+  select{width:100%;margin-top:6px;background:var(--bg);border:2px solid var(--line);border-radius:16px;color:var(--ink);
+         font:700 16px 'Nunito',sans-serif;padding:12px 14px;outline:none}
+  textarea{width:100%;background:var(--bg);border:2px solid var(--line);border-radius:16px;color:var(--ink);
+           font:700 16px/1.45 'Nunito',sans-serif;padding:12px 14px;outline:none;resize:vertical}
+  textarea:focus{border-color:var(--coral)}
+  .small{font-size:.82rem;margin-top:6px}
+  .pick{display:flex;gap:6px;background:var(--bg);border-radius:16px;padding:4px}
+  .pick div{flex:1;text-align:center;padding:9px 4px;border-radius:12px;font-weight:900;font-size:.9rem;color:var(--muted);cursor:pointer}
+  .pick .on{background:var(--grad);color:#fff}
+  .sw{display:flex;align-items:center;gap:12px;margin-top:14px;cursor:pointer}
+  .sw span{flex:1;font-weight:800}
+  .sw small{display:block;font-weight:700;color:var(--muted);font-size:.8rem}
+  .sw input{display:none}
+  .sw i{flex:0 0 52px;height:30px;border-radius:99px;background:var(--line);position:relative;transition:background .2s}
+  .sw i::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;
+               box-shadow:0 2px 6px rgba(0,0,0,.2);transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+  .sw input:checked+i{background:var(--mint)}
+  .sw input:checked+i::after{transform:translateX(22px)}
+  .btn.danger{background:transparent;color:var(--c9);border:2px solid var(--c9);box-shadow:none}
+  /* Группа */
+  .grow{display:flex;gap:8px;margin-top:8px}
+  .grow input{margin-top:0}
+  .grow input[type=text]{flex:1.1}.grow input[type=date]{flex:1.4}
+  .grow button{flex:0 0 40px;border:none;border-radius:12px;background:var(--bg);color:var(--muted);font-size:1rem;cursor:pointer}
+  .gm{width:100%;border-collapse:separate;border-spacing:4px;margin-top:10px;font-size:.8rem}
+  .gm th{font-weight:900;color:var(--muted);text-align:center;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gm td{text-align:center;border-radius:10px;padding:8px 2px;font-weight:900}
+  .gm .hi{background:color-mix(in srgb,var(--mint) 30%,var(--card))}
+  .gm .mid{background:color-mix(in srgb,var(--sun) 30%,var(--card))}
+  .gm .lo{background:color-mix(in srgb,var(--coral) 22%,var(--card))}
+  .gm .self{background:var(--bg);color:var(--muted)}
+  @keyframes up{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes fadein{from{opacity:0}}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes pop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+  @keyframes bounce{0%{transform:translateY(0)}40%{transform:translateY(-6px) scale(1.15)}100%{transform:none}}
+  @keyframes wiggle{0%,100%{transform:rotate(0)}10%{transform:rotate(-12deg)}20%{transform:rotate(10deg)}30%{transform:rotate(0)}}
+  @keyframes drop{from{transform:translate(-50%,-30px);opacity:0}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+  @media (prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span>Joy<i>Dao</i></span><span class="star">✨</span></div>
+  <div class="fontctl"><button id="fminus" aria-label="Мельче">A−</button><button id="fplus" aria-label="Крупнее">A+</button><button id="profBtn" class="avatar" aria-label="Мой профиль">👤</button></div>
+</header>
+
+<div id="today" class="page"><div class="loader">Считаю твою энергию…</div></div>
+<div id="portrait" class="page"><div class="loader">Рисую портрет…</div></div>
+<div id="pairs" class="page">
+  <div class="seg" id="pseg" style="display:none"></div>
+  <div id="feed"><div class="loader">Ищу созвучных людей…</div></div>
+  <div id="matches" style="display:none"></div>
+</div>
+<div id="profile" class="page"></div>
+<div id="check" class="page">
+  <div class="card"><div class="body">
+    <div class="h2">🔍 Разгадай дату</div>
+    <div class="txt muted">Партнёр по бизнесу, друг, коллега или тот, кто нравится 👀 Разбор можно отправить ему в один тап.</div>
+    <input id="checkDate" type="date" min="1920-01-01" aria-label="Дата рождения">
+    <div class="fl">Совместимость для чего?
+      <div class="pick" id="ckind">
+        <div data-v="love" class="on">💞 Любовь</div><div data-v="business">💼 Бизнес</div><div data-v="friend">🤝 Дружба</div>
+      </div></div>
+    <div class="btns">
+      <button class="btn ghost" id="checkBtn">🔍 Кто это?</button>
+      <button class="btn" id="compatBtn">💞 Сравнить</button>
+    </div>
+  </div></div>
+  <div id="checkResult"></div>
+  <div class="card"><div class="body">
+    <div class="h2">🔢 Калькулятор энергии</div>
+    <div class="txt muted">Имя латиницей, город, номер карты, телефона или авто — у всего есть своя цифра.</div>
+    <input id="calcText" type="text" placeholder="Anna · Dubai · 4276 1600…" aria-label="Текст для расчёта">
+    <div class="btns"><button class="btn sun" id="calcBtn">Посчитать ✨</button></div>
+  </div></div>
+  <div id="calcResult"></div>
+  <div class="card"><div class="body">
+    <div class="h2">👨‍👩‍👧‍👦 Совместимость группы</div>
+    <div class="txt muted">Команда, семья или компания друзей: кто с кем сработается, кто связующее звено и где искрит. Ты уже в группе.</div>
+    <div class="fl">Для чего?
+      <div class="pick" id="gkind"><div data-v="business" class="on">💼 Команда</div><div data-v="friend">🤝 Друзья</div><div data-v="love">💞 Семья/пара</div></div></div>
+    <div id="gpeople"></div>
+    <div class="btns"><button class="btn ghost" id="gAdd">＋ Добавить человека</button><button class="btn" id="gGo">Посчитать 👥</button></div>
+  </div></div>
+  <div id="groupResult"></div>
+</div>
+
+<nav class="tabs">
+  <div class="tab" data-p="today"><span class="ico">☀️</span>Сегодня</div>
+  <div class="tab" data-p="portrait"><span class="ico">🔮</span>Портрет</div>
+  <div class="tab" data-p="pairs"><span class="ico">👥</span>Люди</div>
+  <div class="tab" data-p="check"><span class="ico">🔍</span>Проверка</div>
+</nav>
+
+<script>
+const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
+const $ = id => document.getElementById(id);
+
+// Тема: следуем за Telegram (светлая — игривая кремовая, тёмная — сливовая)
+// Выбор темы: auto (как в Telegram) / light / dark — запоминается на устройстве
+const getThemePref = () => { try{ return localStorage.getItem('theme') || 'auto'; }catch(e){ return 'auto'; } };
+function applyTheme(){
+  const pref = getThemePref();
+  const dark = pref === 'auto' ? tg.colorScheme === 'dark' : pref === 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  const bg = dark ? '#1A1030' : '#FFF6EA';
+  try{ tg.setHeaderColor(bg); tg.setBackgroundColor(bg); }catch(e){}
+}
+applyTheme(); tg.onEvent?.('themeChanged', applyTheme);
+
+// Масштаб шрифта A− / A+ (запоминается)
+const FZ = [0.85, 1, 1.15, 1.3, 1.45];
+let fz = parseInt(localStorage.getItem('fzIdx') ?? '1', 10); if (!(fz >= 0 && fz < FZ.length)) fz = 1;
+const applyFz = () => { document.documentElement.style.fontSize = (16*FZ[fz])+'px'; localStorage.setItem('fzIdx', fz); };
+applyFz();
+$('fplus').onclick = () => { if (fz < FZ.length-1){ fz++; applyFz(); haptic('sel'); } };
+$('fminus').onclick = () => { if (fz > 0){ fz--; applyFz(); haptic('sel'); } };
+
+// ===== Переводы: ключ — русская строка, словарь грузится с сервера =====
+let I18N = {}, LANG = 'ru';
+const T = (s, v) => { let r = I18N[s] || s; if (v) for (const k in v) r = r.split('{'+k+'}').join(v[k]); return r; };
+function translateStatic(){  // статичная разметка: текстовые узлы, подсказки и aria-label
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n; (n = w.nextNode());){ const k = n.nodeValue.trim(); if (k && I18N[k]) n.nodeValue = n.nodeValue.replace(k, I18N[k]); }
+  document.querySelectorAll('[aria-label],[placeholder]').forEach(el => ['aria-label','placeholder'].forEach(a => {
+    const v = el.getAttribute(a); if (v && I18N[v]) el.setAttribute(a, I18N[v]); }));
+}
+
+const H = {'X-Init-Data': tg.initData};
+const api = (p, opt={}) => fetch('/api'+p, {...opt, headers:{...H, ...(opt.headers||{})}})
+  .then(r => { if(!r.ok) throw r; return r.json(); });
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : '';
+function haptic(k){ const h = tg.HapticFeedback; if(!h) return;
+  k==='sel' ? h.selectionChanged() : k==='ok' ? h.notificationOccurred('success') : h.impactOccurred(k); }
+function toast(t){ const el = document.createElement('div'); el.className='toast'; el.textContent=t;
+  document.body.appendChild(el); setTimeout(()=>el.remove(), 2600); }
+function confetti(x, y){
+  const cols = ['#FF5E8A','#FF9A3D','#FFC42E','#9B7BFF','#2FCBA8','#5DBBF5'];
+  for (let i=0;i<22;i++){ const c = document.createElement('i'); c.className='confetti';
+    const a = Math.random()*Math.PI*2, d = 60+Math.random()*120;
+    c.style.cssText = `left:${x}px;top:${y}px;background:${cols[i%6]};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d-60}px;--r:${Math.random()*540}deg`;
+    document.body.appendChild(c); setTimeout(()=>c.remove(), 1000); }
+}
+const share = (url, text) => { haptic('medium');
+  tg.openTelegramLink('https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text)); };
+
+const NAMES = {1:'Власть',2:'Психология',3:'Анализ',4:'Знания',5:'Борьба',6:'Творчество',7:'Йога',8:'Труд',9:'Служение'};
+const LAYOUT = [3,6,9,2,5,8,1,4,7];
+// Квадрат 3×3: цифра повторяется столько раз, сколько встречается в дате
+const grid = (m, ctx) => `<div class="grid" data-ctx="${ctx}">${LAYOUT.map(e => { const c = +m[e] || 0;
+  return `<div class="tile n${e} ${c ? (c>1?'strong':'') : 'off'}" data-e="${e}" data-c="${c}"><b>${c ? String(e).repeat(Math.min(c,3)) : e}</b><span>${T(NAMES[e])}</span></div>`;
+}).join('')}</div><div class="tapnote">${T('👆 Нажми на клетку — расскажу, что это за энергия')}</div>`;
+function balance(m){
+  const strong = LAYOUT.filter(e=>m[e]>1).sort(), one = LAYOUT.filter(e=>m[e]==1).sort(), miss = LAYOUT.filter(e=>!m[e]).sort();
+  const chips = (arr, x) => arr.map(e=>`<span class="chip n${e}"><span class="dot"></span>${T(NAMES[e])}${x?' ×'+m[e]:''}</span>`).join(' ');
+  return `<div class="bal">
+    ${strong.length?`<div>${T('💪 <b>В избытке</b> — опора, только не перегибай')}<div class="legend">${chips(strong,1)}</div></div>`:''}
+    ${one.length?`<div>${T('✅ <b>Есть</b>')}<div class="legend">${chips(one)}</div></div>`:''}
+    <div>${T('🌱 <b>Наработать</b> — этому учишься у жизни и у партнёра')}<div class="legend">${miss.length?chips(miss):`<span class="chip">${T('все 9 на месте 🎉')}</span>`}</div></div>
+  </div>`;
+}
+
+// ===== Энергии матрицы: что это и что значит их количество =====
+// Нумерология — рефлексивная практика: формулировки — повод подумать, а не диагноз.
+const ENERGY = {
+  1: {emo:'👑', name:'Власть', what:'Энергия лидера: умение принимать решения, брать ответственность и вести за собой. Это про «я сам(а) решаю, как жить», а не про командование другими.',
+      one:'Ты умеешь постоять за себя и принять решение, когда надо. Лидерство включается по ситуации — без лишнего давления.',
+      many:'Лидер в квадрате! Решения даются легко, люди идут за тобой. Ловушка — желание всё контролировать и обида, когда «не слушаются». Сила раскрывается, когда ты вдохновляешь, а не командуешь.',
+      none:'Решения иногда хочется отдать другим, а сказать «нет» — сложно. Это не слабость, а зона роста: власть нарабатывается маленькими шагами.',
+      tips:['Принимай одно небольшое решение в день сам(а), не советуясь','Тренируй спокойное «нет» без оправданий','Возьми на себя организацию одной встречи или поездки']},
+  2: {emo:'🫶', name:'Психология', what:'Энергия чуткости: чувствовать людей, понимать мотивы, договариваться. Это внутренний «радар», который считывает настроение раньше слов.',
+      one:'Ты хорошо чувствуешь людей и умеешь найти подход. Дипломатия — твой рабочий инструмент.',
+      many:'Сверхчуткий радар: ты понимаешь людей с полувзгляда и легко располагаешь к себе. Ловушка — брать чужие эмоции на себя и обижаться, когда тебя не понимают так же тонко.',
+      none:'Чужие чувства иногда кажутся загадкой, а тонкие намёки проходят мимо. Хорошая новость: эмпатия тренируется вниманием.',
+      tips:['Спрашивай «как ты на самом деле?» и дослушивай','Замечай эмоции по лицу и интонации, не только по словам','Перед спором попробуй пересказать позицию другого']},
+  3: {emo:'🦉', name:'Анализ', what:'Энергия ума и системы: раскладывать по полочкам, видеть закономерности, планировать. Голова, которая любит порядок.',
+      one:'У тебя трезвый ум: можешь разобраться в сложном и составить план, когда это нужно.',
+      many:'Мозг-компьютер 🧠 Ты видишь систему там, где другие видят хаос. Ловушка — передумывать и раздражаться на «нелогичных» людей. Иногда стоит просто довериться сердцу.',
+      none:'Скорее действуешь по чувству, чем по плану, а длинные схемы утомляют. Анализ нарабатывается привычкой записывать и сравнивать.',
+      tips:['Перед важным решением выпиши плюсы и минусы','Веди простой план на неделю','Разбирай одну ошибку в неделю: что сработало, что нет']},
+  4: {emo:'📚', name:'Знания', what:'Энергия передачи опыта: учиться, учить и объяснять. Это про «я понял — и могу рассказать другому».',
+      one:'Ты умеешь объяснять и делиться опытом — к тебе приходят за советом.',
+      many:'Прирождённый наставник: знания липнут к тебе и легко передаются другим. Ловушка — учить без спроса. Лучше всего тебя слышат, когда сами попросили.',
+      none:'Учиться «по учебнику» скучно, а объяснять другим непривычно. Знания приходят через практику — и через того, кто тебя учит.',
+      tips:['Объясни кому-нибудь то, что понял(а) сегодня','Читай по 10 страниц в день','Найди наставника в том, что тебе интересно']},
+  5: {emo:'⚔️', name:'Борьба', what:'Энергия движения и напора: пробивать стены, конкурировать, отстаивать своё. Внутренний мотор, который не даёт сдаться.',
+      one:'В нужный момент ты умеешь собраться и пойти напролом. Мотор есть — и он включается по делу.',
+      many:'Боец с турбонаддувом 🔥 Препятствия тебя только заводят. Ловушка — воевать там, где можно договориться. Направь напор в спорт и цели, а не в споры.',
+      none:'Конфликтов хочется избегать, а соревнование не заводит. Это нормально: борьба нарабатывается через тело и маленькие вызовы.',
+      tips:['Займись спортом с элементом соревнования','Ставь себе маленькие челленджи на неделю','Говори о своих интересах прямо, даже если неловко']},
+  6: {emo:'🎨', name:'Творчество', what:'Энергия красоты и созидания: создавать, украшать, придумывать. Умение сделать мир вокруг чуть приятнее.',
+      one:'В тебе живёт художник: ты умеешь сделать красиво и уютно, когда захочешь.',
+      many:'Творец на максималках ✨ Идеи, вкус, умение превратить обычное в особенное. Ловушка — бросать начатое, когда пропало вдохновение. Доделывай хотя бы маленькое.',
+      none:'Кажется, что «я не творческий человек». Неправда: творчество — это не только рисование, а любой способ сделать по-своему.',
+      tips:['Каждый день делай что-то руками: готовь, рисуй, собирай','Укрась своё пространство одной новой деталью','Попробуй хобби, где важен процесс, а не результат']},
+  7: {emo:'🧘', name:'Йога', what:'Энергия внутренней глубины: тишина, интуиция, связь с собой. Умение остановиться и услышать, чего ты на самом деле хочешь.',
+      one:'Ты умеешь иногда выключить шум и прислушаться к себе. Интуиция подсказывает — и ты её слышишь.',
+      many:'Глубина как океан 🌊 Интуиция и самопознание даются легко. Ловушка — уходить в себя и отдаляться от людей. Делись тем, что видишь внутри.',
+      none:'Тишина может напрягать, а остаться наедине с собой — непривычно. Эта энергия нарабатывается паузами и практиками.',
+      tips:['5 минут в день без телефона — просто дыши','Гуляй одна/один без наушников','Веди дневник: одна честная мысль перед сном']},
+  8: {emo:'🦫', name:'Труд', what:'Энергия упорства: доводить до конца, строить шаг за шагом, зарабатывать. Надёжность, на которую можно опереться.',
+      one:'Ты умеешь работать и доводить дело до результата, когда цель важна.',
+      many:'Человек-скала 🏔 Дисциплина и выносливость — твоя суперсила. Ловушка — жить только работой и считать отдых ленью. Отдых тоже часть результата.',
+      none:'Рутина утомляет, а длинные проекты хочется бросить на середине. Упорство нарабатывается маленькими, но регулярными делами.',
+      tips:['Правило «2 минуты»: начни, остальное подтянется','Доводи до конца одно дело в день','Отмечай прогресс галочками — это мотивирует']},
+  9: {emo:'🤝', name:'Служение', what:'Энергия помощи людям: поддерживать, защищать, отдавать. Чувство «я нужен(на) и делаю мир лучше».',
+      one:'Ты умеешь помочь, когда это действительно нужно, — и делаешь это от души.',
+      many:'Сердце нараспашку 💛 Ты всегда рядом, когда кому-то плохо. Ловушка — ждать благодарности и выгорать, спасая всех. Помогай и себе тоже.',
+      none:'Сначала думаешь о своих задачах, а просьбы о помощи могут раздражать. Служение нарабатывается маленькими добрыми делами без ожидания ответа.',
+      tips:['Сделай одно доброе дело в неделю анонимно','Предложи помощь, не дожидаясь просьбы','Поблагодари того, кто помог тебе']},
+};
+
+function openEnergy(e, c, ctx){
+  const E = ENERGY[e], today = ctx === 'today';
+  const [label, text] = c > 1 ? [T(today ? '💪 {n} раз(а) в сегодняшней дате — в избытке' : '💪 {n} раз(а) в твоей дате рождения — в избытке', {n: c}), E.many]
+                      : c === 1 ? [T(today ? '✅ Есть в сегодняшней дате' : '✅ Есть в твоей дате рождения'), E.one]
+                      : [T(today ? '🌱 Нет в сегодняшней дате — зона роста' : '🌱 Нет в твоей дате рождения — зона роста'), E.none];
+  const todayNote = today
+    ? T(c ? 'Сегодня этой энергии больше в воздухе — ей легко пользоваться.' : 'Сегодня её мало вокруг — добери сам(а) маленьким действием.') : '';
+  haptic('light');
+  document.querySelectorAll('.shade,.sheet').forEach(x => x.remove());
+  const shade = document.createElement('div'); shade.className = 'shade';
+  const sh = document.createElement('div'); sh.className = `sheet n${e}`;
+  sh.innerHTML = `<div class="grab"></div>
+    <div class="top"><div class="big">${e}</div>
+      <div><div class="label">${T('Энергия {n}', {n: e})}</div><div class="h2">${E.emo} ${T(E.name)}</div></div>
+      <button class="close" aria-label="${T('Закрыть')}">✕</button></div>
+    <div class="txt" style="margin-top:12px">${T(E.what)}</div>
+    <div class="verdict"><b>${label}</b><div class="txt" style="margin-top:6px">${T(text)}</div>
+      ${todayNote ? `<div class="txt muted" style="margin-top:6px">${todayNote}</div>` : ''}</div>
+    <h4>${T(c ? 'Как использовать' : 'Как нарабатывать')}</h4>
+    <ul>${E.tips.map(t => `<li>${T(t)}</li>`).join('')}</ul>
+    <div class="disclaimer" style="margin-top:14px">${T('Нумерология — повод для рефлексии, а не диагноз 🙂')}</div>`;
+  document.body.append(shade, sh);
+  const close = () => { shade.remove(); sh.remove(); tg.BackButton?.hide(); tg.BackButton?.offClick(close); };
+  shade.onclick = close; sh.querySelector('.close').onclick = close;
+  tg.BackButton?.onClick(close); tg.BackButton?.show();  // системная «назад» тоже закрывает
+}
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('.tile'); if (!t) return;
+  openEnergy(+t.dataset.e, +t.dataset.c, t.closest('.grid').dataset.ctx);
+});
+
+// ===== Навигация =====
+let ME = null;
+function go(p){
+  document.querySelectorAll('.tab,.page').forEach(e => e.classList.remove('active'));
+  document.querySelector(`.tab[data-p="${p}"]`)?.classList.add('active');
+  $(p).classList.add('active'); window.scrollTo(0,0);
+  if (p === 'profile'){ renderProfile(); tg.BackButton?.show(); }
+  else { lastTab = p; tg.BackButton?.hide(); }
+  if (p==='portrait') loadPortrait();
+  if (p==='pairs') loadFeed();
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { haptic('sel'); go(t.dataset.p); });
+// Лента «Люди»: отдельная вкладка на каждую цель из профиля + «Взаимно»
+const GOAL_UI = {love:{tab:'💞 Любовь', like:'Нравится ♥'}, friend:{tab:'🤝 Дружба', like:'Хочу дружить 🤝'},
+                 business:{tab:'💼 Бизнес', like:'Интересно 💼'}};
+let curGoal = null;
+function buildSeg(){
+  const goals = ME.settings.goals.length ? ME.settings.goals : ['love'];
+  if (!goals.includes(curGoal)) curGoal = goals[0];
+  $('pseg').style.display = '';
+  $('pseg').innerHTML = goals.map(g => `<div data-s="${g}" class="${g===curGoal?'on':''}">${T(GOAL_UI[g].tab)}</div>`).join('')
+    + `<div data-s="matches">${T('✨ Взаимно')}</div>`;
+  $('pseg').querySelectorAll('div').forEach(x => x.onclick = () => {
+    haptic('sel'); $('pseg').querySelectorAll('div').forEach(y => y.classList.toggle('on', y === x));
+    const m = x.dataset.s === 'matches';
+    $('feed').style.display = m ? 'none' : ''; $('matches').style.display = m ? '' : 'none';
+    if (m) loadMatches(); else { curGoal = x.dataset.s; loadFeed(); }
+  });
+}
+
+let lastTab = 'today';
+$('profBtn').onclick = () => { haptic('sel'); go('profile'); };
+tg.BackButton?.onClick(() => { if ($('profile').classList.contains('active')) go(lastTab); });
+
+// Язык: словарь, направление письма (арабский — справа налево) и статичные подписи
+const LANGS = ['ru','uk','en','zh','hi','es','ar'];
+async function setLang(code){
+  code = (code || 'ru').toLowerCase().split('-')[0];
+  LANG = LANGS.includes(code) ? code : 'en';
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+  if (LANG !== 'ru') { try { I18N = await api('/i18n/' + LANG); } catch(e){ I18N = {}; } }
+  translateStatic();
+}
+
+// ===== Старт: кто пришёл и куда его вести =====
+async function boot(){
+  const want = new URLSearchParams(location.search).get('tab');
+  try{ ME = await api('/me'); }
+  catch(e){ // нет даты рождения — честно ведём в бота, а не в пустой экран
+    await setLang(tg.initDataUnsafe?.user?.language_code);
+    document.querySelector('.tabs').style.display='none'; $('profBtn').style.display='none';
+    $('today').innerHTML = `<div class="card"><div class="empty"><span class="big">🎂</span>
+      <div class="h2">${T('Сначала — дата рождения')}</div><div class="txt muted">${T('Один шаг в чате с ботом, и здесь появится твой код души.')}</div>
+      <div class="btns"><button class="btn" onclick="tg.close()">${T('Ввести дату в чате')}</button></div></div></div>`;
+    $('today').classList.add('active'); return;
+  }
+  await setLang(ME.lang);
+  addPerson(); addPerson();
+  renderToday();
+  go(['today','portrait','pairs','check','profile'].includes(want) ? want : (want==='feed' ? 'pairs' : 'today'));  // обычный вход — всегда «Сегодня»; вкладку открывают только явные кнопки бота
+  if (want==='matches'){ go('pairs'); document.querySelector('#pseg [data-s="matches"]')?.click(); }
+}
+
+// ===== СЕГОДНЯ =====
+function renderToday(){
+  const t = ME.today, n = t.n;
+  $('today').innerHTML = `
+    <div class="card n${n}"><div class="hero">
+      <div class="label">${T('Твоя энергия дня')}</div>
+      <div class="h2">${esc(t.title)}</div>
+      <span class="date">${esc(t.date)}</span>
+      <div class="bubble">${n}</div>
+    </div>
+    <div class="body">
+      <div class="say"><span class="em">🎯</span><div>${esc(t.advice)}</div></div>
+      <div class="say" style="margin-top:12px"><span class="em">💞</span><div>${esc(cap(t.love.replace(/^[^:：]{1,30}[:：]\s*/,'')))}</div></div>
+    </div></div>
+    ${t.gifts.length?`<div class="card gift"><div class="body say"><span class="em">🎁</span>
+      <div>${T('<b>Подарок дня:</b> сегодняшняя дата несёт <b>{gifts}</b> — этого нет в твоей дате рождения. Потренируйся!', {gifts: esc(t.gifts.join(', '))})}</div></div></div>`:''}
+    <div class="card"><div class="body">
+      <div class="label">${T('Баланс сегодняшней даты')}</div>
+      <div class="txt">${T('Каждая цифра — энергия. Цветные есть в дате, яркие — повторяются, пунктир — то, что день просит добрать.')}</div>
+      ${grid(t.matrix, 'today')}
+    </div></div>
+    <div class="card"><div class="body">
+      <div class="h2">${T('С кем ты сегодня на одной волне? 👀')}</div>
+      <div class="txt muted">${T('Отправь ссылку — человек введёт свою дату, и вы оба увидите процент. Даты друг другу не показываются.')}</div>
+      <div class="btns"><button class="btn" id="tShare">${T('💞 Проверить совместимость')}</button></div>
+      <div class="btns"><button class="btn ghost" id="tCheck">${T('🔍 Разгадать дату друга')}</button></div>
+    </div></div>
+    <div class="card"><div class="body">
+      <div class="h2">${T('👥 Сообщество JoyDao')}</div>
+      <div class="txt muted">${T('Люди, которым интересно, что скрывает дата рождения: разборы, челленджи, совместимость в любви, дружбе и бизнесе.')}</div>
+      ${ME.community_chat ? `<div class="btns"><button class="btn" id="tChat">${T('💬 Общий чат сообщества')}</button></div>` : ''}
+      <div class="btns"><button class="btn ghost" id="tCommunity">${T('📣 Канал сообщества')}</button></div>
+    </div></div>
+    <div class="disclaimer">${T('Цифровая нумерология — игра и повод для рефлексии, а не научный вердикт 🙂')}</div>`;
+  $('tCommunity').onclick = () => { haptic('light'); tg.openTelegramLink('https://t.me/joydao'); };
+  if (ME.community_chat) $('tChat').onclick = () => { haptic('light'); tg.openTelegramLink(ME.community_chat); };
+  $('tShare').onclick = () => share(ME.ref_link, T('Давай проверим нашу совместимость по коду души 💞'));
+  $('tCheck').onclick = () => { haptic('sel'); go('check'); };
+}
+
+// ===== ПОРТРЕТ =====
+let portraitDone = false;
+function loadPortrait(){
+  if (portraitDone || !ME) return; portraitDone = true;
+  const {profile, portrait: p} = ME;
+  $('portrait').innerHTML = `
+    <div class="card"><div class="body">
+      <div class="label">${T('Код души')}</div>
+      <div class="h2" style="font-size:1.6rem">${esc(profile.name)}</div>
+      <div class="nums">
+        <div class="num n${p.chs}"><b>${p.chs}</b><span>${T('Сознание')}</span></div>
+        <div class="num n${p.mission}"><b>${p.mission}</b><span>${T('Миссия')}</span></div>
+        <div class="num n${p.personal_year}"><b>${p.personal_year}</b><span>${T('Личный год')}</span></div>
+      </div>
+      <div style="margin-top:12px"><span class="chip n${p.chs}"><span class="dot"></span>${esc(profile.chs_short)}</span></div>
+    </div></div>
+    <div class="card"><div class="body">
+      <div class="label">${T('Баланс твоей даты')}</div>
+      ${grid(p.matrix, 'me')}${balance(p.matrix)}
+    </div></div>
+    ${[['chs','🔮 Число Сознания — глубокий разбор'],['triggers','⚡ Что выводит из себя'],['mission','🧭 Миссия'],
+       ['task','🎯 Задача'],['year','📅 Личный год']].map(([k, title]) =>
+      `<details><summary>${T(title)}</summary><pre data-text="${k}">${LANG === 'ru' ? esc(p.texts[k]) : T('⏳ Переводим текст… это нужно только один раз')}</pre></details>`).join('')}
+    <div class="btns" style="margin-bottom:10px"><button class="btn" id="pShare">${T('↗️ Показать портрет другу')}</button></div>
+    <div class="disclaimer">${T('Цифровая нумерология — практика самопознания, а не научный вердикт.')}</div>`;
+  $('pShare').onclick = () => share(ME.ref_link, T('Мой код души — {n}: {title} ✨ А какой у тебя? Проверим и нашу совместимость:',
+    {n: p.chs, title: profile.chs_short.split(/[:：]/)[0]}));
+  if (LANG !== 'ru') api('/texts').then(tx => {  // глубокие тексты — ИИ-перевод (один раз, дальше из кэша)
+    document.querySelectorAll('#portrait [data-text]').forEach(el => { el.textContent = tx[el.dataset.text] || ''; });
+  }).catch(() => document.querySelectorAll('#portrait [data-text]').forEach(el => { el.textContent = p.texts[el.dataset.text]; }));
+}
+
+// ===== ПАРЫ =====
+async function loadFeed(){
+  const box = $('feed');
+  if (!ME.is_dating){ // главный нюанс: человек без анкеты не упирается в стену
+    box.innerHTML = `<div class="card"><div class="empty"><span class="big">👥</span>
+      <div class="h2">${T('Люди в сообществе')}</div>
+      <div class="txt muted">${T('Найди того, с кем ты на одной волне: 💞 любовь, 🤝 друзей или 💼 партнёров по бизнесу. Каждый день — несколько людей с высоким созвучием и объяснение почему. Анкета — пара минут в чате с ботом.')}</div>
+      <div class="btns"><button class="btn" id="toDating">${T('📝 Заполнить анкету')}</button></div>
+      <div class="btns"><button class="btn ghost" id="fShare">${T('💞 Сначала проверю совместимость с другом')}</button></div>
+    </div></div>`;
+    $('toDating').onclick = () => { haptic('medium'); tg.openTelegramLink(`https://t.me/${ME.bot}?start=dating`); setTimeout(()=>tg.close(), 300); };
+    $('fShare').onclick = () => share(ME.ref_link, T('Давай проверим нашу совместимость по коду души 💞'));
+    return;
+  }
+  buildSeg();
+  try{
+    const {candidates, bonus, ref_link} = await api('/candidates?goal=' + curGoal);
+    if (bonus && !sessionStorage.getItem('bonusShown')){ toast(T('🎁 +{n} сегодня — спасибо другу!', {n: bonus})); sessionStorage.setItem('bonusShown','1'); }
+    const undo = `<div class="undo" id="undoBtn">${T('↩️ Ой, пролистал(а) — вернуть')}</div>`;
+    if (!candidates.length){
+      box.innerHTML = undo + `<div class="card"><div class="empty"><span class="big">🌙</span>
+        <div class="h2">${T('На сегодня всё!')}</div><div class="txt muted">${T('Новые созвучные люди появятся завтра. А каждый, кто проверит совместимость с тобой по ссылке, добавит +1 человека уже сегодня.')}</div>
+        <div class="btns"><button class="btn" id="emptyShare">${T('💞 Позвать друга')}</button></div></div></div>`;
+      $('emptyShare').onclick = () => share(ref_link, T('Давай проверим нашу совместимость по коду души 💞'));
+    } else {
+      box.innerHTML = undo;
+      candidates.forEach(c => box.appendChild(candidateCard(c)));
+    }
+    $('undoBtn').onclick = undoLast;
+  }catch(e){ box.innerHTML = `<div class="card"><div class="empty"><span class="big">🙈</span><div class="h2">${T('Не загрузилось')}</div></div></div>`; }
+}
+
+function candidateCard(c){
+  const card = document.createElement('div'); card.className = 'card';
+  card.innerHTML = `
+    <img class="photo" alt="">
+    <div class="body">
+      <div class="row">
+        <div><div class="h2">${esc(c.name)}</div><div class="muted">${esc(c.city)}</div></div>
+        <div class="score" style="--p:${c.compat}"><b>${c.compat}%</b><i>${T('созвучие')}</i></div>
+      </div>
+      <div style="margin-top:10px"><span class="chip n${c.chs}"><span class="dot"></span>${c.chs} · ${esc(c.chs_short.split(/[:：]/)[0])}</span></div>
+      <div class="txt">${esc(c.bio)}</div>
+      <div class="why"><div class="label">${T('Почему вы подходите')}</div>${c.explanation.map(e=>`<div>${esc(e)}</div>`).join('')}</div>
+    </div>
+    <div class="acts"><button class="btn skip" aria-label="${T('Пропустить')}">✕</button><button class="btn like">${T(GOAL_UI[curGoal]?.like || 'Нравится ♥')}</button></div>`;
+  if (c.has_photo !== false) fetch('/api/photo/'+c.id, {headers:H}).then(r => r.ok && r.blob())
+    .then(b => { if (b) card.querySelector('.photo').src = URL.createObjectURL(b); }).catch(()=>{});
+  const act = like => async ev => {
+    haptic('medium');
+    if (like) confetti(ev.clientX, ev.clientY);
+    card.style.transition = 'all .4s cubic-bezier(.4,0,.6,1)'; card.style.opacity = 0;
+    card.style.transform = like ? 'translateX(70px) rotate(6deg)' : 'translateX(-70px) rotate(-6deg)';
+    setTimeout(() => card.remove(), 380);
+    try{ const r = await api('/like/'+c.id+'?is_like='+like, {method:'POST'});
+      if (r.match){ haptic('ok'); confetti(innerWidth/2, innerHeight/3); toast(T('💞 Взаимно! Бот уже написал подробности')); }
+    }catch(e){}
+  };
+  card.querySelector('.skip').onclick = act(false);
+  card.querySelector('.like').onclick = act(true);
+  return card;
+}
+
+async function undoLast(){
+  haptic('light');
+  try{ const r = await api('/undo', {method:'POST'});
+    if (r.restored){ toast(r.candidate ? T('↩️ {name} снова здесь', {name: r.candidate.name}) : T('↩️ Вернул')); loadFeed(); }
+    else toast(T('Нечего возвращать'));
+  }catch(e){ toast(T('Не получилось')); }
+}
+
+async function loadMatches(){
+  const box = $('matches'); box.innerHTML = '<div class="loader">…</div>';
+  try{
+    const {matches} = await api('/matches');
+    if (!matches.length){ box.innerHTML = `<div class="card"><div class="empty"><span class="big">✨</span>
+      <div class="h2">${T('Пока без взаимности')}</div><div class="txt muted">${T('Загляни в ленту — там ждут созвучные тебе люди.')}</div></div></div>`; return; }
+    box.innerHTML = matches.map(m => `<div class="card"><div class="body"><div class="row">
+        <div><div class="h2">${esc(m.name)}</div><div class="muted">${esc(m.city)}</div>
+          <div style="margin-top:6px"><span class="chip n${m.chs}"><span class="dot"></span>${m.chs}</span></div></div>
+        <div class="score" style="--p:${m.compat}"><b>${m.compat}%</b><i>${T('созвучие')}</i></div></div></div>
+      ${m.username ? `<div class="acts"><button class="btn" data-u="${esc(m.username)}">${T('✍️ Написать')}</button></div>`
+                   : `<div class="disclaimer">${T('Ссылка для связи — в сообщении от бота о взаимной симпатии')}</div>`}</div>`).join('');
+    box.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { haptic('medium'); tg.openTelegramLink('https://t.me/'+encodeURIComponent(b.dataset.u)); });
+  }catch(e){ box.innerHTML = `<div class="empty">${T('Ошибка загрузки')}</div>`; }
+}
+
+// ===== ПРОФИЛЬ =====
+function renderProfile(){
+  const s = ME.settings, d = ME.is_dating;
+  const pick = (f, opts, val) => `<div class="pick" data-f="${f}">${opts.map(([v,l]) =>
+    `<div data-v="${v}" class="${v===val?'on':''}">${T(l)}</div>`).join('')}</div>`;
+  $('profile').innerHTML = `
+    <div class="card"><div class="body">
+      <div class="h2">${T('👤 Мой профиль')}</div>
+      ${d ? `<label class="ava" title="${T('📷 Сменить фото')}"><img id="pfAva" alt=""><span>📷</span>
+        <input type="file" id="pfFile" accept="image/*" hidden></label>` : ''}
+      <label class="fl">${T('Имя')}<input id="pfName" maxlength="50" value="${esc(s.name)}"></label>
+      <label class="fl">${T('Дата рождения')}<input id="pfBirth" type="date" min="1920-01-01" value="${esc(s.birth)}"></label>
+      <div class="txt muted small">${T('Сменишь дату — пересчитаются портрет, энергия дня и совместимость.')}</div>
+      ${d ? `
+      <label class="fl">${T('Город')}<input id="pfCity" maxlength="60" value="${esc(s.city)}"></label>
+      <label class="fl">${T('О себе')}<textarea id="pfBio" maxlength="500" rows="4">${esc(s.bio)}</textarea></label>
+      <div class="fl">${T('Кого ищу в JoyDao')} <span style="text-transform:none">${T('(можно несколько)')}</span>
+        <div class="pick multi" data-f="goals">${[['love','💞 Любовь'],['friend','🤝 Дружба'],['business','💼 Бизнес']].map(([v,l]) =>
+          `<div data-v="${v}" class="${s.goals.includes(v)?'on':''}">${T(l)}</div>`).join('')}</div></div>
+      <div class="fl">${T('Я')}${pick('gender', [['m','Мужчина'],['f','Женщина']], s.gender)}</div>
+      <div class="fl" id="pfSeekRow" style="${s.goals.includes('love')?'':'display:none'}">${T('Для любви ищу')}${pick('seek', [['m','Мужчину'],['f','Женщину'],['any','Неважно']], s.seek)}</div>` : ''}
+      <div class="btns"><button class="btn" id="pfSave">${T('Сохранить ✨')}</button></div>
+      ${d ? `<div class="btns"><button class="btn ghost" id="pfPhoto">${T('📷 Сменить фото')}</button></div>` : ''}
+    </div></div>
+    <div class="card"><div class="body">
+      <div class="h2">${T('⚙️ Настройки')}</div>
+      <label class="fl">🌐 ${T('Язык')}<select id="pfLang">${Object.entries(ME.languages).map(([c, n]) =>
+        `<option value="${c}" ${c===LANG?'selected':''}>${esc(n)}</option>`).join('')}</select></label>
+      <div class="fl">${T('Тема')}${pick('theme', [['auto','📱 Авто'],['light','☀️ Светлая'],['dark','🌙 Тёмная']], getThemePref())}</div>
+      <label class="sw"><span>${T('☀️ Энергия дня по утрам')}<small>${T('Сообщение от бота каждый день')}</small></span>
+        <input type="checkbox" id="swDaily" ${s.daily?'checked':''}><i></i></label>
+      ${d ? `<label class="sw"><span>${T('👀 Показывать меня в ленте')}<small>${T('Выключи, чтобы взять паузу — анкета сохранится')}</small></span>
+        <input type="checkbox" id="swVisible" ${s.visible?'checked':''}><i></i></label>`
+          : `<div class="btns"><button class="btn ghost" id="pfDating">${T('💌 Включить знакомства')}</button></div>`}
+    </div></div>
+    <div class="card"><div class="body">
+      <div class="h2">${T('🗑 Удалить аккаунт')}</div>
+      <div class="txt muted">${T('Удалим дату рождения, анкету, фото, лайки и взаимные симпатии. Вернуть будет нельзя.')}</div>
+      <div class="btns"><button class="btn danger" id="pfDelete">${T('Удалить навсегда')}</button></div>
+    </div></div>`;
+  $('pfLang').onchange = async e => {  // язык — сразу и для бота, и для приложения
+    haptic('sel');
+    try { await api('/profile', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lang: e.target.value})});
+      location.reload(); } catch(err){ toast(T('Не получилось сохранить')); }
+  };
+
+  const P = $('profile');
+  P.querySelectorAll('.pick div').forEach(o => o.onclick = () => {
+    haptic('sel');
+    if (o.parentNode.classList.contains('multi')){  // цели: несколько сразу
+      o.classList.toggle('on');
+      $('pfSeekRow').style.display = P.querySelector('[data-f="goals"] [data-v="love"]').classList.contains('on') ? '' : 'none';
+      return;
+    }
+    o.parentNode.querySelectorAll('div').forEach(x => x.classList.toggle('on', x === o));
+    if (o.parentNode.dataset.f === 'theme'){  // тема применяется сразу, без «Сохранить»
+      try{ localStorage.setItem('theme', o.dataset.v); }catch(e){}
+      applyTheme();
+    }
+  });
+  $('pfSave').onclick = () => {
+    const now = {name: $('pfName').value.trim(), birth: $('pfBirth').value};
+    if (d) Object.assign(now, {city: $('pfCity').value.trim(), bio: $('pfBio').value.trim(),
+      gender: P.querySelector('[data-f="gender"] .on')?.dataset.v || s.gender,
+      seek: P.querySelector('[data-f="seek"] .on')?.dataset.v || s.seek});
+    const patch = Object.fromEntries(Object.entries(now).filter(([k, v]) => v !== s[k]));
+    if (d){
+      const goals = [...P.querySelectorAll('[data-f="goals"] .on')].map(x => x.dataset.v);
+      if (!goals.length) { toast(T('Выбери хотя бы одну цель')); return; }
+      if (goals.includes('love') && !now.seek) { toast(T('Для любви выбери, кого ищешь')); return; }
+      if (goals.join() !== s.goals.join()) { patch.goals = goals; if (now.seek) patch.seek = now.seek; }
+    }
+    if (!now.name) { toast(T('Имя не может быть пустым')); return; }
+    if (!Object.keys(patch).length) { toast(T('Ничего не изменилось 🙂')); return; }
+    saveProfile(patch, T('Сохранено ✨'));
+  };
+  $('swDaily').onchange = e => saveProfile({daily: e.target.checked},
+    T(e.target.checked ? '☀️ Энергия дня включена' : '🔕 Рассылка выключена'));
+  if (d){
+    $('swVisible').onchange = e => saveProfile({visible: e.target.checked},
+      T(e.target.checked ? '👀 Ты снова в ленте' : '⏸ Пауза: тебя не видно в ленте'));
+    const loadAva = () => fetch('/api/photo/'+ME.id+'?t='+Date.now(), {headers:H}).then(r => r.ok && r.blob())
+      .then(b => { if (b) $('pfAva').src = URL.createObjectURL(b); }).catch(()=>{});
+    loadAva();
+    $('pfPhoto').onclick = () => { haptic('medium'); $('pfFile').click(); };
+    $('pfFile').onchange = async e => {  // фото меняется прямо здесь, без перехода в бота
+      const f = e.target.files[0]; e.target.value = '';
+      if (!f) return;
+      $('pfAva').src = URL.createObjectURL(f); $('pfAva').parentNode.classList.add('busy');
+      try { await api('/photo', {method:'POST', headers:{'Content-Type': f.type || 'application/octet-stream'}, body: f});
+        haptic('ok'); toast(T('Фото обновлено ✨')); }
+      catch(err){ toast(T('Не получилось сохранить')); loadAva(); }
+      $('pfAva').parentNode.classList.remove('busy');
+    };
+  } else {
+    $('pfDating').onclick = () => { haptic('medium'); tg.openTelegramLink(`https://t.me/${ME.bot}?start=dating`); setTimeout(() => tg.close(), 300); };
+  }
+  $('pfDelete').onclick = () => {
+    haptic('heavy');
+    const ask = (txt, cb) => tg.showConfirm ? tg.showConfirm(txt, cb) : cb(confirm(txt));
+    ask(T('Удалить аккаунт навсегда? Все данные и симпатии пропадут.'), async ok => {
+      if (!ok) return;
+      try { await api('/profile/delete', {method:'POST'}); toast(T('Аккаунт удалён. Будем скучать 💛')); setTimeout(() => tg.close(), 1500); }
+      catch(e){ toast(T('Не получилось удалить')); }
+    });
+  };
+}
+
+async function saveProfile(patch, okText){
+  haptic('light');
+  try{
+    await api('/profile', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch)});
+    ME = await api('/me'); renderToday(); portraitDone = false;
+    haptic('ok'); toast(okText);
+    if ($('profile').classList.contains('active')) renderProfile();
+  }catch(e){
+    const msg = {400:'Проверь дату: сервис 18+', 409:'Сначала заполни анкету знакомств', 422:'Проверь поля'}[e.status];
+    toast(T(msg || 'Не получилось сохранить')); renderProfile();
+  }
+}
+
+// ===== ПРОВЕРКА =====
+$('checkBtn').onclick = async () => {
+  const d = $('checkDate').value, box = $('checkResult');
+  if (!d) { toast(T('Выбери дату 📅')); return; }
+  haptic('light'); delete box.dataset.kind; box.innerHTML = `<div class="loader">${T('Читаю код этой даты…')}</div>`;
+  try{
+    const t = await api('/check?d='+d);
+    box.innerHTML = `<div class="card"><div class="body">
+        <div class="row"><div><div class="label">${T('дата {date}', {date: esc(t.date)})}</div><div class="h2">${esc(t.title)}</div></div>
+          <div class="bignum n${t.chs}">${t.chs}</div></div>
+        <div class="txt">${esc(cap(t.essence))}.</div>
+        <div class="why"><div class="label">${T('Интрига этой даты')}</div>⚡ ${esc(t.hook)}</div>
+        <div class="bal" style="margin-top:12px">
+          ${t.strong.length?`<div>${T('💪 <b>В избытке:</b>')} ${esc(t.strong.join(', '))}</div>`:''}
+          ${t.present.length?`<div>${T('✅ <b>Есть:</b>')} ${esc(t.present.join(', '))}</div>`:''}
+          <div>${T('🌱 <b>Наработать:</b>')} ${esc(t.missing.join(', ') || T('все 9 энергий на месте'))}</div>
+        </div>
+      </div>
+      <div class="acts"><button class="btn" id="shareCheck">${T('↗️ Отправить знакомому')}</button></div></div>`;
+    $('shareCheck').onclick = () => share(t.ref_link, t.share_text);
+  }catch(e){ box.innerHTML = `<div class="empty">${T('Не получилось разобрать дату 🙈')}</div>`; }
+};
+
+// Вид отношений: любовь / бизнес / дружба — меняет веса расчёта и формулировки
+const KIND_UI = {love:{btn:'💞 Сравнить', head:'💞 Созвучие в любви', share:'↗️ Отправить этому человеку'},
+                 business:{btn:'💼 Сравнить', head:'💼 Деловое созвучие', share:'↗️ Отправить партнёру'},
+                 friend:{btn:'🤝 Сравнить', head:'🤝 Созвучие в дружбе', share:'↗️ Отправить другу'}};
+let ckind = 'love';
+$('ckind').querySelectorAll('div').forEach(o => o.onclick = () => {
+  haptic('sel'); ckind = o.dataset.v;
+  $('ckind').querySelectorAll('div').forEach(x => x.classList.toggle('on', x === o));
+  $('compatBtn').textContent = T(KIND_UI[ckind].btn);
+  if ($('checkResult').dataset.kind) $('compatBtn').click();  // уже считали совместимость — пересчитать
+});
+const roleList = (title, arr, emo) => arr.length ? `<div style="margin-top:8px"><b>${emo} ${T(title)}</b><div class="legend">${
+  arr.map(r => `<span class="chip">${esc(r)}</span>`).join(' ')}</div></div>` : '';
+
+$('compatBtn').onclick = async ev => {
+  const d = $('checkDate').value, box = $('checkResult');
+  if (!d) { toast(T('Выбери дату 📅')); return; }
+  haptic('light'); box.innerHTML = `<div class="loader">${T('Сравниваю ваши коды…')}</div>`;
+  try{
+    const t = await api('/compat-check?d='+d+'&kind='+ckind), U = KIND_UI[t.kind];
+    box.dataset.kind = t.kind;
+    if (t.score >= 75) confetti(ev.clientX, ev.clientY);
+    box.innerHTML = `<div class="card"><div class="body">
+        <div class="row"><div><div class="label">${T('с человеком {date}', {date: esc(t.date)})}</div><div class="h2">${T(U.head)}</div></div>
+          <div class="score" style="--p:${t.score}"><b>${t.score}%</b><i>${T('созвучие')}</i></div></div>
+        <div class="txt"><i>${esc(t.verdict)}</i></div>
+        <div class="why"><div class="label">${T('Будет получаться легко')}</div>${t.pros.map(x=>`<div>➕ ${esc(x)}</div>`).join('')}</div>
+        <div class="why" style="background:var(--soft);color:var(--ink)"><div class="label" style="color:var(--muted)">${T('Над чем поработать')}</div>${
+          (t.cons.length ? t.cons : [T('Явных зон напряжения не видно — берегите то, что есть')]).map(x=>`<div>➖ ${esc(x)}</div>`).join('')}</div>
+        ${t.roles ? `<div class="label" style="margin-top:16px">${T('Роли в общем деле')}</div>
+          ${roleList('Ты приносишь', t.roles.you, '🙋')}${roleList('Партнёр приносит', t.roles.partner, '🤝')}
+          ${roleList('Сильны оба', t.roles.both, '💪')}${roleList('Никто не закрывает — делегируйте или наймите', t.roles.gap, '🧩')}` : ''}
+      </div>
+      <div class="acts"><button class="btn" id="shareCompat">${T(U.share)}</button></div></div>`;
+    $('shareCompat').onclick = () => share(t.ref_link, t.share_text);
+  }catch(e){ box.innerHTML = `<div class="empty">${T('Не получилось посчитать 🙈')}</div>`; }
+};
+
+// ===== СОВМЕСТИМОСТЬ ГРУППЫ =====
+let gkind = 'business';
+$('gkind').querySelectorAll('div').forEach(o => o.onclick = () => {
+  haptic('sel'); gkind = o.dataset.v; $('gkind').querySelectorAll('div').forEach(x => x.classList.toggle('on', x === o)); });
+function addPerson(){
+  if ($('gpeople').children.length >= 8) { toast(T('До 8 человек плюс ты')); return; }
+  const row = document.createElement('div'); row.className = 'grow';
+  row.innerHTML = `<input type="text" maxlength="20" placeholder="${T('Имя')}"><input type="date" min="1920-01-01"><button aria-label="${T('Убрать')}">✕</button>`;
+  row.querySelector('button').onclick = () => { haptic('light'); row.remove(); };
+  $('gpeople').appendChild(row);
+}
+// две пустые строки группы — после загрузки словаря (см. boot)
+$('gAdd').onclick = () => { haptic('light'); addPerson(); };
+$('gGo').onclick = async () => {
+  const people = [...$('gpeople').children].map(r => ({name: r.children[0].value.trim(), date: r.children[1].value}))
+    .filter(p => p.date);
+  if (!people.length) { toast(T('Добавь хотя бы одну дату 📅')); return; }
+  const box = $('groupResult'); haptic('light'); box.innerHTML = `<div class="loader">${T('Считаю группу…')}</div>`;
+  try{
+    const r = await api('/group', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({people, kind: gkind})});
+    const P = r.people, nm = i => esc(P[i].name), cls = v => v == null ? 'self' : v >= 75 ? 'hi' : v >= 60 ? 'mid' : 'lo';
+    box.innerHTML = `<div class="card"><div class="body">
+        <div class="row"><div><div class="label">${T('группа {kind}', {kind: esc(r.kind_label)})}</div><div class="h2">${T('Созвучие группы')}</div></div>
+          <div class="score" style="--p:${r.team}"><b>${r.team}%</b><i>${T('в среднем')}</i></div></div>
+        <div class="why"><div class="label">${T('Кто есть кто')}</div>
+          <div>${T('🧲 <b>Связующее звено:</b> {name} — в среднем {avg}% со всеми', {name: nm(r.glue), avg: P[r.glue].avg})}</div>
+          <div>${T('💫 <b>Лучшая пара:</b> {a} + {b} — {score}%', {a: nm(r.best.a), b: nm(r.best.b), score: r.best.score})}</div>
+          ${P.length > 2 ? `<div>${T('⚡ <b>Где искрит:</b> {a} + {b} — {score}%. Им полезно договориться о правилах заранее.', {a: nm(r.hard.a), b: nm(r.hard.b), score: r.hard.score})}</div>` : ''}
+        </div>
+        <table class="gm"><tr><th></th>${P.map(p => `<th>${esc(p.name)}</th>`).join('')}</tr>
+          ${r.matrix.map((row, i) => `<tr><th>${esc(P[i].name)}</th>${row.map(v => `<td class="${cls(v)}">${v ?? '—'}</td>`).join('')}</tr>`).join('')}</table>
+        ${r.gap ? `${roleList('Команда закрывает', r.covered, '✅')}${roleList('Никто не закрывает — ищите человека', r.gap, '🧩')}` : ''}
+      </div></div>`;
+    if (r.team >= 75) confetti(innerWidth/2, innerHeight/2);
+  }catch(e){ box.innerHTML = `<div class="empty">${T('Не получилось посчитать — проверь даты 🙈')}</div>`; }
+};
+
+$('calcBtn').onclick = async () => {
+  const t = $('calcText').value.trim(), box = $('calcResult');
+  if (!t) { toast(T('Введи имя или номер')); return; }
+  if (/[^\x00-\x7F№ ]/.test(t.replace(/[\s·.,-]/g, ''))) { toast(T('Только латиница: Anna, а не Анна')); return; }
+  haptic('light'); box.innerHTML = `<div class="loader">${T('Считаю…')}</div>`;
+  try{
+    const r = await api('/calc?text='+encodeURIComponent(t));
+    const scale = Object.entries(r.scale).map(([k,v]) =>
+      `<div style="${+k===r.number?'font-weight:900':'opacity:.6'}">${k} — ${esc(v)}</div>`).join('');
+    box.innerHTML = `<div class="card"><div class="body">
+        <div class="row"><div><div class="label">${T('итоговая цифра')}</div><div class="h2">${esc(r.text)}</div></div>
+          <div class="bignum n${r.number}">${r.number}</div></div>
+        <div style="margin-top:10px"><span class="chip n${r.number}"><span class="dot"></span>${esc(r.meaning)}</span></div>
+        <div class="why"><div class="label">${T('Шкала значений')}</div>${scale}</div>
+      </div></div>`;
+  }catch(e){ box.innerHTML = `<div class="empty">${T('Нужна латиница или цифры 🙈')}</div>`; }
+};
+
+boot();
+</script>
+</body>
+</html>

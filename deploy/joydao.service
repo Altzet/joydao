@@ -1,0 +1,12 @@
+[Unit]
+Description=JoyDao bot + Mini App
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/joydao
+ExecStart=/opt/joydao/.venv/bin/python -m app.main
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
