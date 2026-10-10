@@ -70,6 +70,7 @@
        font:900 1.02rem 'Nunito',sans-serif;cursor:pointer;color:#fff;background:var(--grad);
        box-shadow:0 8px 18px rgba(255,94,138,.35);transition:transform .15s cubic-bezier(.3,1.6,.5,1)}
   .btn:active{transform:scale(.94)}
+  .btn:disabled{opacity:.45;box-shadow:none}
   .btn.ghost{background:var(--card);color:var(--ink);box-shadow:none;border:2px solid var(--line)}
   .btn.sun{background:var(--sun);color:#3A2400;box-shadow:0 8px 18px rgba(255,196,46,.35)}
   .btns{display:flex;gap:10px;margin-top:14px}
@@ -125,7 +126,7 @@
   .seg{display:flex;background:var(--card);border-radius:18px;padding:4px;margin-bottom:14px;box-shadow:var(--shadow)}
   .seg div{flex:1;text-align:center;padding:9px;border-radius:14px;font-weight:900;font-size:.92rem;color:var(--muted);cursor:pointer}
   .seg .on{background:var(--grad);color:#fff}
-  .ava{position:relative;display:block;width:128px;height:128px;margin:14px auto 4px;border-radius:50%;cursor:pointer;
+  .ava{position:relative;display:block;border:0;padding:0;width:128px;height:128px;margin:14px auto 4px;border-radius:50%;cursor:pointer;
     background:linear-gradient(135deg,#FFD3E2,#FFE7C2);box-shadow:0 8px 24px rgba(255,107,129,.25)}
   .ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
   .ava img:not([src]){visibility:hidden}
@@ -153,6 +154,8 @@
   input{width:100%;margin-top:12px;background:var(--bg);border:2px solid var(--line);border-radius:16px;color:var(--ink);
         font:700 16px 'Nunito',sans-serif;padding:13px 14px;outline:none}
   input:focus{border-color:var(--coral)}
+  input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;min-height:52px;text-align:left}
+  input::-webkit-date-and-time-value{text-align:left}
   :root[data-theme="dark"] input{color-scheme:dark}
   .bignum{flex:0 0 74px;height:74px;border-radius:50%;background:var(--c);color:#fff;display:flex;align-items:center;justify-content:center;
           font-size:2.4rem;font-weight:900;animation:pop .5s cubic-bezier(.3,1.7,.5,1) both}
@@ -193,6 +196,18 @@
            font:700 16px/1.45 'Nunito',sans-serif;padding:12px 14px;outline:none;resize:vertical}
   textarea:focus{border-color:var(--coral)}
   .small{font-size:.82rem;margin-top:6px}
+  /* ===== JOY energy ===== */
+  .joy .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .joy .bal{font-size:2rem;font-weight:900;line-height:1.1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .joy .bolt{width:52px;height:52px;border-radius:18px;background:var(--grad);display:grid;place-items:center;font-size:1.6rem;flex:none}
+  .joy .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .joy .step{margin-top:14px;padding:12px 14px;border-radius:18px;background:var(--bg)}
+  .pick.col{flex-direction:column}
+  .pick.col div{text-align:left;padding:11px 14px;font-weight:800}
+  .pick .ok{background:var(--mint);color:#fff}
+  .pick .bad{background:var(--coral);color:#fff;opacity:.75}
+  .jq{margin-top:14px}
+  .jq .txt{margin-bottom:6px}
   .pick{display:flex;gap:6px;background:var(--bg);border-radius:16px;padding:4px}
   .pick div{flex:1;text-align:center;padding:9px 4px;border-radius:12px;font-weight:900;font-size:.9rem;color:var(--muted);cursor:pointer}
   .pick .on{background:var(--grad);color:#fff}
@@ -514,6 +529,7 @@ function renderToday(){
     </div></div>
     ${t.gifts.length?`<div class="card gift"><div class="body say"><span class="em">🎁</span>
       <div>${T('<b>Подарок дня:</b> сегодняшняя дата несёт <b>{gifts}</b> — этого нет в твоей дате рождения. Потренируйся!', {gifts: esc(t.gifts.join(', '))})}</div></div></div>`:''}
+    <div id="joyBox"></div>
     <div class="card"><div class="body">
       <div class="label">${T('Баланс сегодняшней даты')}</div>
       <div class="txt">${T('Каждая цифра — энергия. Цветные есть в дате, яркие — повторяются, пунктир — то, что день просит добрать.')}</div>
@@ -536,6 +552,70 @@ function renderToday(){
   if (ME.community_chat) $('tChat').onclick = () => { haptic('light'); tg.openTelegramLink(ME.community_chat); };
   $('tShare').onclick = () => share(ME.ref_link, T('Давай проверим нашу совместимость по коду души 💞'));
   $('tCheck').onclick = () => { haptic('sel'); go('check'); };
+  loadJoy();
+}
+
+// ===== JOY energy: баланс, тест принципов, «Число дня» (логика и награды — на сервере, app/joy.py) =====
+const fmtJoy = n => (+n).toLocaleString(ME?.lang || undefined, {maximumFractionDigits: 3});
+async function loadJoy(){
+  try{ renderJoy(await api('/joy')); }catch(e){ $('joyBox') && ($('joyBox').innerHTML = ''); }
+}
+function joyReward(j, amount){  // радость начисления: конфетти + вибрация + тост
+  if (!amount) return;
+  haptic('ok'); const b = $('joyBox').getBoundingClientRect(); confetti(b.left + b.width/2, b.top + 60);
+  toast(T('⚡ +{n} JOY', {n: fmtJoy(amount)}));
+}
+function renderJoy(j){
+  const box = $('joyBox'); if (!box) return;
+  const toNext = j.next != null ? T('до следующего уровня {n} JOY', {n: fmtJoy(j.next - j.earned)}) : T('высший уровень');
+  const step = {
+    need_test: `<div class="step"><div class="txt">${T('9 цифр — 9 энергий — 9 принципов клуба. Пройди тест — и получи свой первый JOY.')}</div>
+      <div class="btns"><button class="btn" id="jTestOpen">${T('Пройти тест · 9 принципов')}</button></div><div id="jTest"></div></div>`,
+    need_profile: `<div class="step"><div class="txt">${T('Тест сдан ✅ Заполни анкету с фото — и первый JOY твой.')}</div>
+      <div class="btns"><button class="btn" id="jProfile">${T('💌 Заполнить анкету')}</button></div></div>`,
+    pending: `<div class="step"><div class="txt">${T('Ты в клубе ✅ Первый JOY придёт {date} — или раньше, как только случится взаимная симпатия 💞', {date: esc(j.hold_until)})}</div></div>`,
+    done: ''}[j.status];
+  let quiz = '';
+  if (j.quiz){
+    const a = j.quiz.answered;
+    quiz = `<div class="jq"><div class="label">${T('🔢 Число дня · +{n} JOY', {n: fmtJoy(j.quiz.reward)})}</div>
+      <div class="txt" style="margin-top:6px"><b>${esc(j.quiz.q)}</b></div>
+      <div class="pick col" id="jQuiz">${j.quiz.options.map((o, i) => `<div data-i="${i}" class="${a ? (i===a.answer ? 'ok' : i===a.choice ? 'bad' : '') : ''}">${esc(o)}</div>`).join('')}</div>
+      ${a ? `<div class="txt muted small">${a.correct ? T('Верно! Завтра — новый вопрос 🌅') : T('Мимо. Завтра — новый шанс 🌅')}</div>` : ''}</div>`;
+  }
+  box.innerHTML = `<div class="card joy"><div class="body">
+    <div class="top"><div><div class="label">${T('⚡ JOY энергия')}</div><div class="bal">${fmtJoy(j.balance)} JOY</div></div><div class="bolt">⚡</div></div>
+    <div class="meta"><span class="chip">${esc(j.level)}</span>${j.streak ? `<span class="chip">${T('🔥 {n} дн. подряд', {n: j.streak})}</span>` : ''}</div>
+    <div class="txt muted small">${toNext}</div>
+    ${step}${quiz}</div></div>`;
+  joyReward(j, j.new_award);
+  if ($('jProfile')) $('jProfile').onclick = () => { haptic('medium'); tg.openTelegramLink(`https://t.me/${ME.bot}?start=dating`); setTimeout(()=>tg.close(), 300); };
+  if ($('jTestOpen')) $('jTestOpen').onclick = () => { haptic('sel'); $('jTestOpen').parentElement.remove(); renderJoyTest(j.test); };
+  if (j.quiz && !j.quiz.answered) $('jQuiz').querySelectorAll('div').forEach(o => o.onclick = async () => {
+    haptic('sel'); $('jQuiz').style.pointerEvents = 'none';
+    try{ const r = await api('/joy/quiz', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({choice: +o.dataset.i})});
+      renderJoy(r); joyReward(r, r.reward); if (!r.correct) haptic('heavy'); }
+    catch(e){ toast(T('Не получилось, попробуй ещё раз')); $('jQuiz').style.pointerEvents = ''; }
+  });
+}
+function renderJoyTest(test){
+  const picked = test.map(() => -1);
+  $('jTest').innerHTML = test.map((q, n) => `<div class="jq" id="jq${n}"><span class="chip n${q.e}"><span class="dot"></span>${q.e} · ${T(NAMES[q.e])}</span>
+    <div class="txt" style="margin-top:8px"><b>${esc(q.q)}</b></div>
+    <div class="pick col" data-q="${n}">${q.options.map((o, i) => `<div data-i="${i}">${esc(o)}</div>`).join('')}</div><div class="jwhy"></div></div>`).join('')
+    + `<div class="btns"><button class="btn" id="jTestGo" disabled>${T('Проверить ✨')}</button></div>`;
+  $('jTest').querySelectorAll('.pick').forEach(p => p.querySelectorAll('div').forEach(o => o.onclick = () => {
+    haptic('sel'); p.querySelectorAll('div').forEach(x => x.classList.toggle('on', x === o));
+    picked[+p.dataset.q] = +o.dataset.i; $('jTestGo').disabled = picked.includes(-1);
+  }));
+  $('jTestGo').onclick = async () => {
+    try{ const r = await api('/joy/test', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({answers: picked})});
+      if (r.passed){ haptic('ok'); toast(T('Добро пожаловать в клуб JoyDao 🎉')); renderJoy(r); }
+      else { haptic('heavy'); toast(T('Верно {right} из {total}, нужно {need} — ещё раз 🙂', {right: r.right, total: r.total, need: r.need}));
+        r.review.forEach((v, n) => $('jq'+n).querySelector('.jwhy').innerHTML = v.ok ? '' : `<div class="why">${esc(v.why)}</div>`);
+        $('jq' + r.review.findIndex(v => !v.ok))?.scrollIntoView({behavior: 'smooth', block: 'center'}); }
+    }catch(e){ toast(T('Не получилось, попробуй ещё раз')); }
+  };
 }
 
 // ===== ПОРТРЕТ =====
@@ -657,6 +737,21 @@ async function loadMatches(){
   }catch(e){ box.innerHTML = `<div class="empty">${T('Ошибка загрузки')}</div>`; }
 }
 
+// Уменьшаем картинку в браузере до 1280 px JPEG. Не вышло (редкий формат) — шлём как есть.
+const shrink = f => new Promise(res => {
+  const img = new Image(), url = URL.createObjectURL(f);
+  img.onload = () => {
+    const k = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    c.toBlob(b => res(b || f), 'image/jpeg', 0.88);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); res(f); };
+  img.src = url;
+});
+
 // ===== ПРОФИЛЬ =====
 function renderProfile(){
   const s = ME.settings, d = ME.is_dating;
@@ -666,7 +761,8 @@ function renderProfile(){
     <div class="card"><div class="body">
       <div class="h2">${T('👤 Мой профиль')}</div>
       ${d ? `<label class="ava" title="${T('📷 Сменить фото')}"><img id="pfAva" alt=""><span>📷</span>
-        <input type="file" id="pfFile" accept="image/*" hidden></label>` : ''}
+        <input type="file" id="pfFile" accept="image/*" hidden></label>`
+          : `<button class="ava" id="pfAvaJoin" aria-label="${T('💌 Включить знакомства')}"><img id="pfAva" alt=""><span>💌</span></button>`}
       <label class="fl">${T('Имя')}<input id="pfName" maxlength="50" value="${esc(s.name)}"></label>
       <label class="fl">${T('Дата рождения')}<input id="pfBirth" type="date" min="1920-01-01" value="${esc(s.birth)}"></label>
       <div class="txt muted small">${T('Сменишь дату — пересчитаются портрет, энергия дня и совместимость.')}</div>
@@ -746,13 +842,16 @@ function renderProfile(){
       const f = e.target.files[0]; e.target.value = '';
       if (!f) return;
       $('pfAva').src = URL.createObjectURL(f); $('pfAva').parentNode.classList.add('busy');
-      try { await api('/photo', {method:'POST', headers:{'Content-Type': f.type || 'application/octet-stream'}, body: f});
+      try { const body = await shrink(f);  // фото с телефона — 3–10 МБ; жмём до ~300 КБ, чтобы прокси не отверг
+        await api('/photo', {method:'POST', headers:{'Content-Type': body.type || 'application/octet-stream'}, body});
         haptic('ok'); toast(T('Фото обновлено ✨')); }
-      catch(err){ toast(T('Не получилось сохранить')); loadAva(); }
+      catch(err){ toast(T('Не получилось сохранить') + (err && err.status ? ` (${err.status})` : '')); loadAva(); }
       $('pfAva').parentNode.classList.remove('busy');
     };
   } else {
-    $('pfDating').onclick = () => { haptic('medium'); tg.openTelegramLink(`https://t.me/${ME.bot}?start=dating`); setTimeout(() => tg.close(), 300); };
+    // без анкеты фото ещё нет: показываем аватар из Telegram, тап ведёт в анкету (фото — её шаг)
+    const tgPhoto = tg.initDataUnsafe?.user?.photo_url; if (tgPhoto) $('pfAva').src = tgPhoto;
+    $('pfDating').onclick = $('pfAvaJoin').onclick = () => { haptic('medium'); tg.openTelegramLink(`https://t.me/${ME.bot}?start=dating`); setTimeout(() => tg.close(), 300); };
   }
   $('pfDelete').onclick = () => {
     haptic('heavy');

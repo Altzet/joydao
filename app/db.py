@@ -63,6 +63,23 @@ CREATE TABLE IF NOT EXISTS events (
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS events_ev_ts ON events(event, created_at);
+-- JOY energy: журнал начислений и трат (баланс = сумма), см. app/joy.py.
+-- При удалении аккаунта НЕ чистится: иначе удалил-зарегистрировался = новый JOY.
+CREATE TABLE IF NOT EXISTS joy_ledger (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    delta      INTEGER NOT NULL,          -- mJOY: 1 JOY = 1000
+    reason     TEXT NOT NULL,             -- onboarding | quiz:2026-10-10 | streak:2026-W41
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE (user_id, reason)              -- одна награда за одно событие
+);
+CREATE TABLE IF NOT EXISTS joy_answers (
+    user_id INTEGER NOT NULL,
+    day     TEXT NOT NULL,                -- вопрос «Числа дня»: один ответ в день
+    choice  INTEGER NOT NULL,
+    correct INTEGER NOT NULL,
+    PRIMARY KEY (user_id, day)
+);
 CREATE TABLE IF NOT EXISTS signups_source (
     tg_id      INTEGER PRIMARY KEY,
     source     TEXT NOT NULL,             -- метка из /start src_<источник>
@@ -80,6 +97,7 @@ _MIGRATIONS = [
     "ALTER TABLE users ADD COLUMN goals TEXT DEFAULT 'love'",
     "ALTER TABLE shown ADD COLUMN goal TEXT DEFAULT 'love'",
     "ALTER TABLE users ADD COLUMN lang TEXT DEFAULT ''",  # язык интерфейса (пусто — как в Telegram)
+    "ALTER TABLE users ADD COLUMN member_at TEXT DEFAULT ''",  # сдан тест принципов — участник клуба
 ]
 
 GOALS = ("love", "friend", "business")

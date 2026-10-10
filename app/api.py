@@ -16,7 +16,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
-from . import compat, config, db, suisai
+from . import compat, config, db, joy, suisai
 from .i18n import NAMES, SUPPORTED, T, long_text, table, user_lang
 
 app = FastAPI(title="Suisai Dating API")
@@ -283,6 +283,56 @@ async def matches(x_init_data: str | None = Header(default=None)):
     # username отдаём только взаимным симпатиям — для кнопки «Написать»
     return {"matches": [{**_user_card(r, my_birth, lang=user_lang(me_row)), "username": r["username"] or ""}
                         for r in db.get_matches(uid)]}
+
+
+# --- JOY energy (фаза 1: начисления; см. app/joy.py) ---
+
+@app.get("/api/joy")
+async def joy_state(x_init_data: str | None = Header(default=None)):
+    uid = _auth(x_init_data)
+    user = db.get_user(uid)
+    if not user:
+        raise HTTPException(404, "Нет анкеты")
+    return joy.state(uid, user_lang(user))
+
+
+class JoyTestIn(BaseModel):
+    answers: list[int] = Field(..., min_length=len(joy.PRINCIPLES), max_length=len(joy.PRINCIPLES))
+
+
+@app.post("/api/joy/test")
+async def joy_test(body: JoyTestIn, x_init_data: str | None = Header(default=None)):
+    """Тест на понимание принципов сообщества: сдан — человек становится участником клуба."""
+    uid = _auth(x_init_data)
+    user = db.get_user(uid)
+    if not user:
+        raise HTTPException(404, "Нет анкеты")
+    passed, right = joy.pass_test(uid, body.answers)
+    if passed:
+        db.log_event(uid, "joy_member")
+    lang = user_lang(user)
+    return {"passed": passed, "right": right, "need": joy.PASS, "total": len(joy.PRINCIPLES),
+            "review": joy.review(body.answers, lang), **joy.state(uid, lang)}
+
+
+class JoyQuizIn(BaseModel):
+    choice: int = Field(..., ge=0, le=2)
+
+
+@app.post("/api/joy/quiz")
+async def joy_quiz(body: JoyQuizIn, x_init_data: str | None = Header(default=None)):
+    """Ответ на «Число дня»: один в день, только для участников клуба."""
+    uid = _auth(x_init_data)
+    user = db.get_user(uid)
+    if not user:
+        raise HTTPException(404, "Нет анкеты")
+    if not joy.is_member(user):
+        raise HTTPException(409, "Сначала тест принципов")
+    res = joy.answer_quiz(uid, body.choice)
+    if res is None:
+        raise HTTPException(409, "Уже отвечал сегодня")
+    db.log_event(uid, "joy_quiz", int(res["correct"]))
+    return {**res, "reward": res["joy"] / joy.UNIT, **joy.state(uid, user_lang(user))}
 
 
 @app.get("/api/thanks-wall")
