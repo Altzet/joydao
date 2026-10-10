@@ -32,7 +32,7 @@ cp .env.example .env        # впишите BOT_TOKEN и WEBAPP_URL
 ```
 
 Тесты: `pip install pytest httpx && BOT_TOKEN=1:t python -m pytest -q tests`.
-Сервер: systemd-юнит и Caddy лежат в [deploy/](deploy/).
+Сервер: systemd-юнит и скрипт установки (nginx + certbot) лежат в [deploy/](deploy/): `bash deploy/server-setup.sh ваш.домен`.
 
 ## Переводы
 
