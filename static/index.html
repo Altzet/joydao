@@ -144,7 +144,12 @@
   .why .label{color:var(--whyink);opacity:.8;margin-bottom:4px}
   .why div+div{margin-top:6px}
   .acts{display:flex;gap:10px;padding:0 18px 18px}
-  .acts .like{font-size:1.7rem;padding:10px 18px}
+  /* Ряд круглых кнопок карточки: ✕ · ✨ Искра · 💖 симпатия */
+  .acts.round{justify-content:center;align-items:center;gap:22px;padding:4px 18px 20px}
+  .acts.round .btn{flex:none;border-radius:50%;padding:0;width:62px;height:62px;font-size:1.5rem}
+  .acts.round .like{width:78px;height:78px;font-size:2.1rem}
+  .acts.round .sparkBtn{flex-direction:column;gap:0;font-size:1.35rem;line-height:1;border:2px solid var(--sun);color:var(--ink)}
+  .acts.round .sparkBtn small{font-size:.62rem;font-weight:900;margin-top:2px;color:var(--muted)}
   .acts .skip{flex:0 0 64px;background:var(--card);color:var(--muted);border:2px solid var(--line);box-shadow:none;font-size:1.3rem}
   .undo{text-align:center;padding:10px;margin-bottom:12px;border-radius:16px;border:2px dashed var(--line);color:var(--muted);font-weight:800;cursor:pointer}
   .empty{text-align:center;padding:40px 24px}
@@ -760,8 +765,9 @@ function candidateCard(c){
       <div class="txt">${esc(c.bio)}</div>
       <div class="why"><div class="label">${T('Почему вы подходите')}</div>${c.explanation.map(e=>`<div>${esc(e)}</div>`).join('')}</div>
     </div>
-    <div class="acts"><button class="btn skip" aria-label="${T('Пропустить')}">✕</button><button class="btn like" aria-label="${T(GOAL_UI[curGoal]?.like || 'Нравится ♥')}">${GOAL_UI[curGoal]?.emoji || '💖'}</button></div>
-    <div class="acts" style="padding-top:0"><button class="btn ghost sparkBtn">${T('✨ Искра · {n} JOY', {n: fmtJoy(JOY?.prices?.spark ?? 0.1)})}</button></div>`;
+    <div class="acts round"><button class="btn skip" aria-label="${T('Пропустить')}">✕</button>
+      <button class="btn ghost sparkBtn" aria-label="${T('✨ Искра · {n} JOY', {n: fmtJoy(JOY?.prices?.spark ?? 0.1)})}">✨<small>${fmtJoy(JOY?.prices?.spark ?? 0.1)}</small></button>
+      <button class="btn like" aria-label="${T(GOAL_UI[curGoal]?.like || 'Нравится ♥')}">${GOAL_UI[curGoal]?.emoji || '💖'}</button></div>`;
   if (c.has_photo !== false) fetch('/api/photo/'+c.id, {headers:H}).then(r => r.ok && r.blob())
     .then(b => { if (b) card.querySelector('.photo').src = URL.createObjectURL(b); }).catch(()=>{});
   const act = like => async ev => {
