@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import uvicorn
 from aiogram import Bot, Dispatcher
 
-from . import agent, api, config, mailing
+from . import agent, api, config, joy, mailing
 from .bot import router
 
 log = logging.getLogger("joydao")
@@ -32,6 +32,36 @@ async def every_day_at(hour: int, job, bot: Bot, weekday: int | None = None) -> 
             await job(bot)
         except Exception:
             log.exception("Ошибка задачи %s", job.__name__)
+
+
+async def settle_tournament(bot: Bot) -> None:
+    """Воскресенье, закрытие турнира: призы троим лучшим (или возврат взносов) и письмо каждому участнику."""
+    from .db import get_user
+    from .i18n import T, user_lang
+    week = joy.tour_week()
+    res = joy.settle_tournament(week)
+    prizes = dict(res["places"])
+    places = {r["user_id"]: i + 1 for i, r in enumerate(res["board"])}
+    for uid in res["entrants"]:
+        user = get_user(uid)
+        if not user:
+            continue
+        lang = user_lang(user)
+        if uid in res["refunded"]:
+            text = T("🏆 Турнир недели не состоялся — финишировали меньше трёх человек. Взнос вернули на баланс.", lang)
+        elif uid in prizes:
+            text = T("🏆 Турнир недели: ты на {place} месте! Приз +{n} JOY уже на балансе 🎉", lang,
+                     place=places[uid], n=prizes[uid] / joy.UNIT)
+        elif uid in places:
+            text = T("🏆 Турнир недели завершён: ты на {place} месте из {total}. Новый турнир уже открыт!", lang,
+                     place=places[uid], total=len(places))
+        else:
+            continue
+        try:
+            await bot.send_message(uid, text)
+        except Exception:
+            pass
+    log.info("Турнир %s: призы %s, возвраты %s", week, res["places"], len(res["refunded"]))
 
 
 BOT_DESCRIPTION = (  # исходник для переводов; русское описание задаётся вручную в @BotFather
@@ -88,6 +118,7 @@ async def main() -> None:
         server.serve(),
         every_day_at(config.MAILING_HOUR, mailing.daily_broadcast, bot),
         every_day_at((config.POST_HOUR + 1) % 24, agent.weekly_report, bot, weekday=0),
+        every_day_at(joy.TOUR_CLOSE_HOUR, settle_tournament, bot, weekday=6),
     ]
     if config.ANTHROPIC_API_KEY and config.CHANNEL_ID:
         jobs.append(every_day_at(config.POST_HOUR, agent.daily_run, bot))

@@ -95,6 +95,14 @@ CREATE TABLE IF NOT EXISTS pair_quiz (       -- квиз пары: ответы 
     created_at TEXT DEFAULT (datetime('now')),
     PRIMARY KEY (user_id, other_id)
 );
+CREATE TABLE IF NOT EXISTS tournament (      -- клубный турнир: одна попытка в неделю
+    week       TEXT NOT NULL,                 -- «2026-W41»
+    user_id    INTEGER NOT NULL,
+    started_at TEXT DEFAULT (datetime('now')),
+    score      INTEGER,                       -- NULL — вошёл, ещё не ответил
+    seconds    INTEGER,                       -- время прохождения: при равенстве баллов выше быстрый
+    PRIMARY KEY (week, user_id)
+);
 CREATE TABLE IF NOT EXISTS signups_source (
     tg_id      INTEGER PRIMARY KEY,
     source     TEXT NOT NULL,             -- метка из /start src_<источник>

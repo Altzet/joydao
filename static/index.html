@@ -531,6 +531,7 @@ function renderToday(){
     ${t.gifts.length?`<div class="card gift"><div class="body say"><span class="em">🎁</span>
       <div>${T('<b>Подарок дня:</b> сегодняшняя дата несёт <b>{gifts}</b> — этого нет в твоей дате рождения. Потренируйся!', {gifts: esc(t.gifts.join(', '))})}</div></div></div>`:''}
     <div id="joyBox"></div>
+    <div id="tourBox"></div>
     <div class="card"><div class="body">
       <div class="label">${T('Баланс сегодняшней даты')}</div>
       <div class="txt">${T('Каждая цифра — энергия. Цветные есть в дате, яркие — повторяются, пунктир — то, что день просит добрать.')}</div>
@@ -553,7 +554,55 @@ function renderToday(){
   if (ME.community_chat) $('tChat').onclick = () => { haptic('light'); tg.openTelegramLink(ME.community_chat); };
   $('tShare').onclick = () => share(ME.ref_link, T('Давай проверим нашу совместимость по коду души 💞'));
   $('tCheck').onclick = () => { haptic('sel'); go('check'); };
-  loadJoy();
+  loadJoy(); loadTour();
+}
+
+// ===== Клубный турнир недели: 9 вопросов, 10 минут, банк — троим лучшим (расчёт и таймер — на сервере) =====
+async function loadTour(){ try{ renderTour(await api('/tour')); }catch(e){} }
+const mmss = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+let tourTimer = null;
+function renderTour(t){
+  const box = $('tourBox'); if (!box) return;
+  clearInterval(tourTimer);
+  const head = `<div class="label">${T('🏆 Клубный турнир недели')}</div>
+    <div class="txt muted small">${T('{len} вопросов · {m} минут · в банке {pool} JOY · участников: {n}', {len: t.len, m: t.minutes, pool: fmtJoy(t.pool), n: t.entries})}</div>`;
+  const top = t.top.length ? `<div class="jq">${t.top.map((r, i) => `<div class="txt small">${['🥇','🥈','🥉','4.','5.'][i]} ${esc(r.name)} — ${r.score}/${t.len} · ${mmss(r.seconds)}</div>`).join('')}</div>` : '';
+  let body;
+  if (t.questions){
+    body = `<div class="jq"><div class="txt"><b>${T('Осталось')}: <span id="tourLeft">…</span></b></div></div>
+      ${t.questions.map((q, n) => `<div class="jq"><div class="txt"><b>${n+1}. ${esc(q.q)}</b></div>
+        <div class="pick col" data-n="${n}">${q.options.map((o, i) => `<div data-i="${i}">${esc(o)}</div>`).join('')}</div></div>`).join('')}
+      <div class="btns"><button class="btn" id="tourGo" disabled>${T('Завершить 🏁')}</button></div>`;
+  } else if (t.joined){
+    body = `<div class="jq"><div class="txt"><b>${T('Твой результат: {s} из {len}', {s: t.score, len: t.len})}</b>${t.place ? ' · ' + T('место {p}', {p: t.place}) : ''}</div>
+      <div class="txt muted small">${T('Итоги — {time}. Призы троим лучшим: 50% / 30% / 20% банка.', {time: esc(localTime(t.closes))})}</div></div>`;
+  } else if (!t.open){
+    body = `<div class="txt muted small">${T('Турнир закрыт, итоги подведены. Новый — с понедельника.')}</div>`;
+  } else if (!t.member){
+    body = `<div class="txt muted small">${T('Турнир — для участников клуба. Пройди тест 9 принципов выше.')}</div>`;
+  } else {
+    body = `<div class="txt muted small">${T('Одна попытка. Больше верных — выше; при равенстве выше тот, кто быстрее. Итоги — {time}.', {time: esc(localTime(t.closes))})}</div>
+      <div class="btns"><button class="btn sun" id="tourJoin">${T('🏆 Участвовать · {n} JOY', {n: fmtJoy(t.entry)})}</button></div>`;
+  }
+  box.innerHTML = `<div class="card"><div class="body">${head}${body}${top}</div></div>`;
+  if ($('tourJoin')) $('tourJoin').onclick = async () => { haptic('medium');
+    try{ const r = await api('/tour/join', {method:'POST'}); renderJoy(r.joy); renderTour(r); }catch(e){ joyFail(e); } };
+  if (t.questions){
+    const picked = t.questions.map(() => -1), end = new Date(t.deadline.replace(' ', 'T') + 'Z');
+    const tick = () => { const left = Math.max(0, Math.round((end - Date.now()) / 1000)); $('tourLeft') && ($('tourLeft').textContent = mmss(left));
+      if (!left){ clearInterval(tourTimer); $('tourGo').disabled = false; } };
+    tick(); tourTimer = setInterval(tick, 1000);
+    box.querySelectorAll('.pick').forEach(p => p.querySelectorAll('div').forEach(o => o.onclick = () => {
+      haptic('sel'); p.querySelectorAll('div').forEach(x => x.classList.toggle('on', x === o));
+      picked[+p.dataset.n] = +o.dataset.i; $('tourGo').disabled = picked.includes(-1);
+    }));
+    $('tourGo').onclick = async () => {
+      try{ const r = await api('/tour/answer', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({answers: picked.map(x => Math.max(0, x))})});
+        haptic('ok'); toast(T('🏁 {s} из {len}!', {s: r.score, len: t.len})); renderTour(r);
+      }catch(e){ toast(T('Не получилось, попробуй ещё раз')); }
+    };
+  }
 }
 
 // ===== JOY energy: баланс, тест принципов, «Число дня» (логика и награды — на сервере, app/joy.py) =====

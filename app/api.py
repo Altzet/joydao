@@ -468,6 +468,43 @@ async def _notify_pair_quiz(uid: int, other_id: int, res: dict) -> None:
         pass
 
 
+@app.get("/api/tour")
+async def tour(x_init_data: str | None = Header(default=None)):
+    uid, user = _joy_user(x_init_data)
+    return {**joy.tour_state(uid, user_lang(user)), "member": joy.is_member(user)}
+
+
+@app.post("/api/tour/join")
+async def tour_join(x_init_data: str | None = Header(default=None)):
+    """Вход в турнир недели за 0,5 JOY. Сразу после входа идёт отсчёт 10 минут."""
+    uid, user = _joy_user(x_init_data)
+    if not joy.is_member(user):
+        raise HTTPException(409, "Сначала тест принципов")
+    try:
+        if joy.tour_join(uid):
+            db.log_event(uid, "tour_join")
+    except joy.NotEnough:
+        raise HTTPException(402, "Не хватает JOY")
+    except ValueError:
+        raise HTTPException(409, "Турнир этой недели закрыт")
+    lang = user_lang(user)
+    return {**joy.tour_state(uid, lang), "joy": joy.state(uid, lang)}
+
+
+class TourIn(BaseModel):
+    answers: list[int] = Field(..., min_length=joy.TOUR_LEN, max_length=joy.TOUR_LEN)
+
+
+@app.post("/api/tour/answer")
+async def tour_answer(body: TourIn, x_init_data: str | None = Header(default=None)):
+    uid, user = _joy_user(x_init_data)
+    try:
+        res = joy.tour_answer(uid, body.answers)
+    except LookupError:
+        raise HTTPException(409, "Сначала войди в турнир")
+    return {**res, **joy.tour_state(uid, user_lang(user))}
+
+
 @app.get("/api/thanks-wall")
 async def wall():
     return {"thanks": [dict(r) for r in db.thanks_wall()]}

@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import random
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from . import db, suisai
 from .i18n import T
@@ -369,7 +369,7 @@ def daily_question(day: date, lang: str = "ru") -> dict:
     else:  # чего нет в сегодняшней дате
         right = rnd.choice(missing)
         present = [e for e in names if e not in missing]
-        q = T("Какой энергии нет в сегодняшней дате {date}?", lang, date=day.strftime("%d.%m.%Y"))
+        q = T("Какой энергии нет в дате {date}?", lang, date=day.strftime("%d.%m.%Y"))
         wrong = rnd.sample(present, 2)
         opts = [T(names[right], lang)] + [T(names[e], lang) for e in wrong]
     order = [0, 1, 2]
@@ -417,6 +417,125 @@ def streak(uid: int, day: date | None = None) -> int:
     while d.isoformat() in days:
         n, d = n + 1, d - timedelta(days=1)
     return n
+
+
+# --- клубный турнир: раз в неделю, на знание, банк — троим лучшим ---
+
+TOUR_ENTRY = 500           # взнос 0,5 JOY
+TOUR_LEN = 9               # 9 цифр — 9 вопросов
+TOUR_MINUTES = 10          # на прохождение после входа
+TOUR_SPLIT = (50, 30, 20)  # % призового фонда за 1–3 место
+TOUR_BURN = 10             # % банка сжигается
+TOUR_MIN = 3               # меньше финишировавших — всем возврат
+TOUR_CLOSE_HOUR = 18       # закрытие: воскресенье 18:00 UTC (21:00 по Киеву)
+
+
+def tour_week(now: datetime | None = None) -> str:
+    """Неделя турнира, например «2026-W41»."""
+    y, w, _ = (now or datetime.utcnow()).isocalendar()
+    return f"{y}-W{w:02d}"
+
+
+def tour_closes(week: str) -> datetime:
+    y, w = week.split("-W")
+    return datetime.fromisocalendar(int(y), int(w), 7).replace(hour=TOUR_CLOSE_HOUR)
+
+
+def tour_open(week: str, now: datetime | None = None) -> bool:
+    return (now or datetime.utcnow()) < tour_closes(week)
+
+
+def tour_questions(week: str, lang: str = "ru") -> list[dict]:
+    """9 вопросов недели, одинаковых для всех: вопросы «Числа дня» для 9 случайных дат."""
+    rnd = random.Random(week)
+    out, seen = [], set()
+    while len(out) < TOUR_LEN:  # без повторов: «какую энергию несёт цифра 3» — только один раз
+        q = daily_question(date(1970, 1, 1) + timedelta(days=rnd.randrange(365 * 60)), lang)
+        if q["q"] not in seen:
+            seen.add(q["q"]); out.append(q)
+    return out
+
+
+def tour_join(uid: int, week: str | None = None) -> bool:
+    """Оплатить вход и засечь старт. False — уже участвует."""
+    week = week or tour_week()
+    if not tour_open(week):
+        raise ValueError("closed")
+    fresh = spend(uid, TOUR_ENTRY, f"spend:tour:{week}")
+    if fresh:
+        with db.connect() as c:
+            c.execute("INSERT OR IGNORE INTO tournament (week, user_id) VALUES (?,?)", (week, uid))
+    return fresh
+
+
+def tour_answer(uid: int, answers: list[int], week: str | None = None) -> dict:
+    """Принять ответы (один раз). Опоздал больше чем на 10 минут — 0 баллов."""
+    week = week or tour_week()
+    qs = tour_questions(week)
+    with db.connect() as c:
+        r = c.execute("SELECT (julianday('now') - julianday(started_at)) * 86400 sec, score "
+                      "FROM tournament WHERE week=? AND user_id=?", (week, uid)).fetchone()
+        if not r:
+            raise LookupError("not joined")
+        if r["score"] is not None:
+            return {"score": r["score"], "again": True}
+        sec = int(r["sec"])
+        score = sum(a == q["answer"] for a, q in zip(answers, qs)) if sec <= TOUR_MINUTES * 60 else 0
+        c.execute("UPDATE tournament SET score=?, seconds=? WHERE week=? AND user_id=? AND score IS NULL",
+                  (score, sec, week, uid))
+    return {"score": score, "seconds": sec}
+
+
+def tour_board(week: str, limit: int | None = None) -> list[dict]:
+    """Таблица финишировавших: больше верных — выше, при равенстве — кто быстрее."""
+    with db.connect() as c:
+        rows = c.execute(
+            "SELECT t.user_id, u.name, t.score, t.seconds FROM tournament t LEFT JOIN users u ON u.tg_id = t.user_id "
+            "WHERE t.week=? AND t.score IS NOT NULL ORDER BY t.score DESC, t.seconds ASC, t.user_id"
+            + (f" LIMIT {int(limit)}" if limit else ""), (week,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def tour_info(week: str) -> dict:
+    with db.connect() as c:
+        n = c.execute("SELECT COUNT(*) FROM tournament WHERE week=?", (week,)).fetchone()[0]
+    return {"entries": n, "pool": n * TOUR_ENTRY / UNIT}
+
+
+def settle_tournament(week: str) -> dict:
+    """Итоги недели (идемпотентно — повторный запуск ничего не начислит дважды).
+    Возвращает {"places": [(uid, приз mJOY)], "refunded": [uid], "board": [...], "entrants": [uid]}."""
+    board = tour_board(week)
+    with db.connect() as c:
+        entrants = [r[0] for r in c.execute("SELECT user_id FROM tournament WHERE week=?", (week,))]
+        if len(board) < TOUR_MIN:
+            refunded = [u for u in entrants if _award(c, u, TOUR_ENTRY, f"tour:{week}:refund")]
+            return {"places": [], "refunded": refunded, "board": board, "entrants": entrants}
+        prize = len(entrants) * TOUR_ENTRY * (100 - TOUR_BURN) // 100
+        places = []
+        for row, pct in zip(board, TOUR_SPLIT):
+            amount = prize * pct // 100
+            if _award(c, row["user_id"], amount, f"tour:{week}:place"):
+                places.append((row["user_id"], amount))
+    return {"places": places, "refunded": [], "board": board, "entrants": entrants}
+
+
+def tour_state(uid: int, lang: str = "ru") -> dict:
+    """Турнир для экрана: открыт ли, банк, моё участие, топ-5."""
+    week = tour_week()
+    with db.connect() as c:
+        me = c.execute("SELECT started_at, score, seconds, datetime(started_at, ?) deadline FROM tournament "
+                       "WHERE week=? AND user_id=?", (f"+{TOUR_MINUTES} minutes", week, uid)).fetchone()
+    board = tour_board(week)
+    out = {"week": week, "open": tour_open(week), "closes": tour_closes(week).strftime("%Y-%m-%d %H:%M:%S"),
+           "entry": TOUR_ENTRY / UNIT, "len": TOUR_LEN, "minutes": TOUR_MINUTES, **tour_info(week),
+           "joined": bool(me), "score": me["score"] if me else None,
+           "place": next((i + 1 for i, r in enumerate(board) if r["user_id"] == uid), None),
+           "top": [{"name": r["name"] or "—", "score": r["score"], "seconds": r["seconds"]} for r in board[:5]]}
+    if me and me["score"] is None:  # вошёл, но ещё не ответил — продолжить с того же места
+        out["questions"] = [{"q": q["q"], "options": q["options"]} for q in tour_questions(week, lang)]
+        out["deadline"] = me["deadline"]
+    return out
 
 
 # --- всё для экрана ---

@@ -174,3 +174,54 @@ def test_pair_quiz_for_matches_rewards_members_once(monkeypatch):
     TestClient(api.app).post("/api/pairquiz/1", json={"mine": [1] * 5, "guess": [1] * 5})  # повтор не перезаписывает и не награждает
     assert joy.totals(1)[0] == before == joy.ONBOARD + joy.PAIR_QUIZ
     assert joy.pair_quiz_result(2, 1)["same"] == 3
+
+
+def test_tournament_join_answer_settle(monkeypatch):
+    from datetime import datetime
+    week = "2026-W41"
+    monkeypatch.setattr(joy, "tour_week", lambda now=None: week)
+    monkeypatch.setattr(joy, "tour_open", lambda w, now=None: True)
+    right = [q["answer"] for q in joy.tour_questions(week)]
+    for uid in range(1, 6):
+        _rich(uid)
+        assert joy.tour_join(uid) and not joy.tour_join(uid)         # второй вход — без списания
+    joy.tour_answer(1, right)                                        # 9 из 9
+    joy.tour_answer(2, right[:8] + [(right[8] + 1) % 3])             # 8 из 9
+    joy.tour_answer(3, right[:8] + [(right[8] + 1) % 3])             # 8 из 9, но позже (по секундам — тот же порядок по id)
+    with db.connect() as c:                                          # 4 опоздал: старт 11 минут назад
+        c.execute("UPDATE tournament SET started_at=datetime('now','-11 minutes') WHERE user_id=4")
+    assert joy.tour_answer(4, right)["score"] == 0
+    assert joy.tour_answer(1, [0] * 9)["again"]                      # вторая попытка не принимается
+    res = joy.settle_tournament(week)
+    pool = 5 * joy.TOUR_ENTRY * 90 // 100                            # 5 входов, 10% сгорает
+    assert res["places"] == [(1, pool * 50 // 100), (2, pool * 30 // 100), (3, pool * 20 // 100)]
+    assert joy.settle_tournament(week)["places"] == []               # повторный расчёт ничего не начисляет
+    assert joy.totals(1)[0] == joy.ONBOARD - joy.TOUR_ENTRY + pool // 2
+    assert joy.tour_closes(week) == datetime(2026, 10, 11, 18, 0)
+
+
+def test_tournament_refund_when_few_finish(monkeypatch):
+    week = "2026-W42"
+    monkeypatch.setattr(joy, "tour_week", lambda now=None: week)
+    monkeypatch.setattr(joy, "tour_open", lambda w, now=None: True)
+    _rich(1); _rich(2)
+    joy.tour_join(1); joy.tour_join(2); joy.tour_answer(1, [0] * 9)
+    res = joy.settle_tournament(week)
+    assert sorted(res["refunded"]) == [1, 2] and joy.totals(2)[0] == joy.ONBOARD
+
+
+def test_tournament_settle_job_notifies(monkeypatch):
+    import asyncio
+    from app import main
+    week = "2026-W43"
+    monkeypatch.setattr(joy, "tour_week", lambda now=None: week)
+    monkeypatch.setattr(joy, "tour_open", lambda w, now=None: True)
+    for uid in (1, 2, 3):
+        _rich(uid); joy.tour_join(uid); joy.tour_answer(uid, [0] * 9)
+    sent = []
+
+    class Bot:
+        async def send_message(self, uid, text, **kw):
+            sent.append((uid, text))
+    asyncio.run(main.settle_tournament(Bot()))
+    assert sorted(u for u, _ in sent) == [1, 2, 3] and "месте" in sent[0][1]
