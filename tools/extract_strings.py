@@ -32,7 +32,7 @@ def walk(x):
 for data in (suisai.CHS_SHORT, suisai.ENERGY_NAMES, suisai.TEXT_CALC_MEANINGS, mailing.DAY_TEXTS,
              teaser.HOOKS, teaser.TEXTS, teaser.ROLES, teaser.KINDS, bot.GOAL_LABELS,
              bot.PAIR_INVITE_TEXT, [w["note"] for w in bot.CRYPTO_WALLETS.values()],
-             compat.RULES["planet_of"], joy.PRINCIPLES, joy.PAIR_QUESTIONS, [n for _, n in joy.LEVELS]):
+             compat.RULES["planet_of"], [t for _, t in mailing.NUDGES], joy.PRINCIPLES, joy.PAIR_QUESTIONS, [n for _, n in joy.LEVELS]):
     walk(data)
 
 # 3) Приложение: строковые литералы с кириллицей в скрипте + статичная разметка

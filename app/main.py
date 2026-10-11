@@ -122,6 +122,7 @@ async def main() -> None:
         every_day_at(config.MAILING_HOUR, mailing.daily_broadcast, bot),
         every_day_at((config.POST_HOUR + 1) % 24, agent.weekly_report, bot, weekday=0),
         every_day_at(joy.TOUR_CLOSE_HOUR, settle_tournament, bot, weekday=6),
+        every_day_at(mailing.NUDGE_HOUR, mailing.profile_nudges, bot),
     ]
     if config.ANTHROPIC_API_KEY and config.CHANNEL_ID:
         jobs.append(every_day_at(config.POST_HOUR, agent.daily_run, bot))

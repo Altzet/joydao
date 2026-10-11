@@ -268,3 +268,59 @@ async def daily_broadcast(bot) -> None:
             failed += 1  # закрыл личку/заблокировал — не мешаем остальным
         await asyncio.sleep(0.04)
     log.info("Энергия дня: отправлено %s, не доставлено %s", sent, failed)
+
+
+# --- Напоминания заполнить анкету: тем, кто остановился на дате рождения ---
+
+NUDGE_HOUR = 16  # UTC (19:00 по Киеву) — вечером, отдельно от утренней энергии дня
+# (через сколько дней после регистрации, текст). Каждое — один раз; давно зарегистрированным —
+# только последнее подходящее, а не все сразу.
+NUDGES = [
+    (1, "🌸 {name}, твой код души уже раскрыт — осталось показать его людям!\n\n"
+        "В JoyDao {people} чел. с анкетой ищут созвучных: 💞 любовь, 🤝 дружба, 💼 партнёры. "
+        "Анкета — 2 минуты: пол, город, пара слов о себе и фото.\n\n"
+        "🎁 А за анкету и короткий тест 9 принципов клуба — твой первый ⚡ JOY."),
+    (3, "👀 {name}, в ленте «Люди» уже есть те, с кем у тебя высокое созвучие, — но они тебя пока не видят.\n\n"
+        "Заполни анкету за 2 минуты и узнай, кто это. ⚡ Первый JOY — за анкету и тест 9 принципов."),
+    (7, "💌 {name}, последнее напоминание — обещаем!\n\n"
+        "Анкета открывает ленту людей, квиз пары, клубный турнир и твой первый ⚡ JOY. "
+        "Если не сейчас — ничего страшного: энергия дня продолжит приходить каждое утро ☀️"),
+]
+
+
+def nudges_due() -> list[tuple]:
+    """(пользователь, номер напоминания) — кому пора напомнить про анкету."""
+    out = []
+    with db.connect() as c:
+        rows = c.execute(
+            "SELECT u.*, CAST(julianday('now') - julianday(u.created_at) AS INTEGER) age, "
+            "COALESCE((SELECT MAX(step) FROM profile_nudges n WHERE n.user_id = u.tg_id), -1) last "
+            "FROM users u WHERE u.daily_opt = 1").fetchall()
+    for u in rows:
+        if db.is_dating(u):
+            continue
+        due = max((i for i, (days, _) in enumerate(NUDGES) if u["age"] >= days), default=-1)
+        if due > u["last"]:
+            out.append((u, due))
+    return out
+
+
+async def profile_nudges(bot) -> None:
+    """Раз в день: напомнить «лёгким» пользователям заполнить анкету (с кнопкой и обещанием JOY)."""
+    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+    people, sent = db.community_size(), 0
+    for u, step in nudges_due():
+        lang = user_lang(u)
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
+            text=T("💌 Заполнить анкету", lang), callback_data="dating")]])
+        try:
+            await bot.send_message(u["tg_id"], T(NUDGES[step][1], lang, name=u["name"], people=people),
+                                   reply_markup=kb)
+            sent += 1
+        except Exception:
+            pass  # закрыл личку — больше не пробуем этот шаг
+        with db.connect() as c:  # отмечаем и при ошибке, чтобы не стучаться каждый день
+            c.execute("INSERT OR IGNORE INTO profile_nudges (user_id, step) VALUES (?,?)", (u["tg_id"], step))
+        await asyncio.sleep(0.04)
+    log.info("Напоминания об анкете: отправлено %s", sent)
+

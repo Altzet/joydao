@@ -286,3 +286,30 @@ def test_light_users_get_profile_nudge():
     _light(1, "1992-03-21", "Оля")
     kb = mailing._kb(db.get_user(1))
     assert any(b.callback_data == "dating" for row in kb.inline_keyboard for b in row)
+
+
+def test_profile_nudges_once_per_step_latest_only():
+    from app import mailing
+    for uid, age in ((1, 0), (2, 2), (3, 4), (4, 10)):           # «лёгкие»: только дата рождения
+        _light(uid, name=f"L{uid}")
+        with db.connect() as c:
+            c.execute("UPDATE users SET created_at=datetime('now', ?) WHERE tg_id=?", (f"-{age} days", uid))
+    _light(5); db.update_user(5, daily_opt=0)                     # отписался — не трогаем
+    with db.connect() as c:
+        c.execute("UPDATE users SET created_at=datetime('now','-10 days') WHERE tg_id=5")
+    _dating(6, "1988-07-06", "m", "f")                            # с анкетой — не нужно
+    sent = []
+
+    class Bot:
+        async def send_message(self, uid, text, **kw):
+            sent.append((uid, text))
+    asyncio.run(mailing.profile_nudges(Bot()))
+    assert sorted(u for u, _ in sent) == [2, 3, 4]               # через 1+ день, кроме отписанных и с анкетой
+    texts = dict(sent)
+    assert texts[2].startswith("🌸 L2") and texts[3].startswith("👀") and texts[4].startswith("💌")
+    sent.clear(); asyncio.run(mailing.profile_nudges(Bot()))
+    assert sent == []                                             # повторно — ничего
+    with db.connect() as c:                                       # прошло время: второму пора следующее
+        c.execute("UPDATE users SET created_at=datetime('now','-4 days') WHERE tg_id=2")
+    asyncio.run(mailing.profile_nudges(Bot()))
+    assert [u for u, _ in sent] == [2] and sent[0][1].startswith("👀")
