@@ -212,16 +212,13 @@ SKIP_DAYS = 7  # пропущенный человек снова появитс
 
 def daily_candidates(tg_id: int, limit: int | None = None, rank=None, goal: str = "love") -> list[sqlite3.Row]:
     """Лента: все подходящие анкеты, без дневного лимита.
-    Не показываем: себя, тех, кому уже поставлен лайк, пропущенных за последние SKIP_DAYS дней
-    и реферальные пары (пригласивший/приглашённый друг другу не показываются).
+    Не показываем: себя, тех, кому уже поставлен лайк, и пропущенных за последние SKIP_DAYS дней.
     «Любовь» и «бизнес» — только те, кто выбрал эту цель (для любви ещё и пол / «кого ищу» с обеих сторон);
     «дружба» — все с анкетой, пол и цель не важны.
     rank(row) -> число: порядок ленты (по умолчанию — случайно); limit — сколько отдать."""
     me = get_user(tg_id)
     if not me:
         return []
-    excluded = referral_partners(tg_id)
-    excl_cond = f"AND u.tg_id NOT IN ({','.join('?' * len(excluded))})" if excluded else ""
     params: list = [tg_id, tg_id, f"-{SKIP_DAYS} days"]
     goal_cond = ""
     if goal != "friend":
@@ -234,14 +231,13 @@ def daily_candidates(tg_id: int, limit: int | None = None, rank=None, goal: str 
         params.append(me["gender"])
         if seek != "any":
             params.append(seek)
-    params += excluded
     with connect() as c:
         rows = c.execute(
             f"""SELECT u.* FROM users u
                 WHERE u.tg_id != ? AND u.active = 1
                 AND u.tg_id NOT IN (SELECT to_id FROM likes WHERE from_id=?
                                     AND (is_like = 1 OR created_at > datetime('now', ?)))
-                {goal_cond} {gender_cond} {excl_cond}
+                {goal_cond} {gender_cond}
                 ORDER BY RANDOM()""",
             params,
         ).fetchall()
@@ -382,7 +378,7 @@ def bonus_today(tg_id: int) -> int:
 
 
 def referral_partners(tg_id: int) -> list[int]:
-    """Люди, связанные с этим пользователем реферальной программой — исключаются из подбора."""
+    """Люди, связанные с этим пользователем реферальной программой (для статистики; из ленты не исключаются)."""
     with connect() as c:
         rows = c.execute(
             "SELECT referrer_id, referred_id FROM referrals WHERE referrer_id=? OR referred_id=?",

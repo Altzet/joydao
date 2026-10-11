@@ -7,24 +7,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app import db  # noqa: E402
 
 
-def reasons(me, u, goal, shown, rated, partners):
-    """Причины, по которым u не попадёт в свежую ленту me (пусто — попадёт)."""
+def reasons(me, u, goal, liked, skipped):
+    """Причины, по которым u не попадёт в ленту me (пусто — попадёт). Правила — как в db.daily_candidates."""
     r = []
     if not u["active"]:
         r.append("анкета не закончена или скрыта (пауза)")
-    if goal not in db.goals_of(u):
+    if goal != "friend" and goal not in db.goals_of(u):
         r.append(f"не выбрал цель «{goal}» (его цели: {','.join(db.goals_of(u))})")
     if goal == "love":
         if me["seek"] != "any" and u["gender"] != me["seek"]:
             r.append(f"пол {u['gender'] or '—'}, а вы ищете {me['seek']}")
         if u["seek"] not in ("any", me["gender"]):
-            r.append(f"он ищет {u['seek'] or '—'}, а ваш пол {me['gender']}")
-    if u["tg_id"] in shown:
-        r.append(f"уже показан {shown[u['tg_id']]} — повторно не показываем")
-    if u["tg_id"] in rated:
-        r.append("вы уже лайкнули/пропустили")
-    if u["tg_id"] in partners:
-        r.append("связаны реферальной ссылкой")
+            r.append(f"он(а) ищет {u['seek'] or '—'}, а ваш пол {me['gender']}")
+    if u["tg_id"] in liked:
+        r.append("вы уже поставили лайк (смотрите во «Взаимно»)")
+    if u["tg_id"] in skipped:
+        r.append(f"вы пропустили {skipped[u['tg_id']][:10]} — вернётся через {db.SKIP_DAYS} дней")
     return r
 
 
@@ -42,15 +40,15 @@ def main():
         if not me:
             sys.exit(f"Нет пользователя {who}. Запустите без аргументов — покажу всех с id.")
         users = c.execute("SELECT * FROM users WHERE tg_id != ? ORDER BY created_at DESC", (me["tg_id"],)).fetchall()
-        shown = dict(c.execute("SELECT candidate_id, day FROM shown WHERE user_id=?", (me["tg_id"],)).fetchall())
-        rated = {r[0] for r in c.execute("SELECT to_id FROM likes WHERE from_id=?", (me["tg_id"],))}
-    partners = set(db.referral_partners(me["tg_id"]))
+        liked = {r[0] for r in c.execute("SELECT to_id FROM likes WHERE from_id=? AND is_like=1", (me["tg_id"],))}
+        skipped = dict(c.execute("SELECT to_id, created_at FROM likes WHERE from_id=? AND is_like=0 "
+                                 "AND created_at > datetime('now', ?)", (me["tg_id"], f"-{db.SKIP_DAYS} days")).fetchall())
     print(f"Вы: {me['name']} id={me['tg_id']} пол={me['gender'] or '—'} ищет={me['seek'] or '—'} "
           f"цели={','.join(db.goals_of(me))} active={me['active']} анкета={'да' if db.is_dating(me) else 'НЕТ'}")
     print(f"Лента «{goal}». Всего других людей: {len(users)}\n")
     ok = 0
     for u in users:
-        r = reasons(me, u, goal, shown, rated, partners)
+        r = reasons(me, u, goal, liked, skipped)
         ok += not r
         print(f"{'✅' if not r else '❌'} {u['created_at'][:16]}  {u['name']} @{u['username'] or '—'}"
               + ("" if not r else "  ← " + "; ".join(r)))

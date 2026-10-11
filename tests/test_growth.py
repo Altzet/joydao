@@ -313,3 +313,11 @@ def test_profile_nudges_once_per_step_latest_only():
         c.execute("UPDATE users SET created_at=datetime('now','-4 days') WHERE tg_id=2")
     asyncio.run(mailing.profile_nudges(Bot()))
     assert [u for u, _ in sent] == [2] and sent[0][1].startswith("👀")
+
+
+def test_referral_pair_sees_each_other_in_feed():
+    _dating(1, "1992-03-21", "f", "m")
+    _dating(2, "1988-07-06", "m", "f")
+    db.create_referral(1, 2); db.confirm_referral(2)               # 2 пришёл по ссылке 1
+    assert [r["tg_id"] for r in db.daily_candidates(1)] == [2]
+    assert [r["tg_id"] for r in db.daily_candidates(2)] == [1]
