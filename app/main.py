@@ -93,7 +93,15 @@ async def main() -> None:
         jobs.append(every_day_at(config.POST_HOUR, agent.daily_run, bot))
     else:
         log.info("Агент-контентщик выключен (нет ANTHROPIC_API_KEY или CHANNEL_ID)")
-    await asyncio.gather(*jobs)
+    # Бот и сервер сами завершаются по SIGTERM, а ежедневные задачи спят до своего часа.
+    # gather ждал бы их вечно (systemd убивал процесс через 90 с) — поэтому, как только
+    # первая задача закончилась, отменяем остальные и выходим.
+    tasks = [asyncio.create_task(j) for j in jobs]
+    _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+    for t in pending:
+        t.cancel()
+    await asyncio.gather(*pending, return_exceptions=True)
+    await bot.session.close()
 
 
 if __name__ == "__main__":
