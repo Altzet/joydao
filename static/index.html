@@ -144,6 +144,7 @@
   .why .label{color:var(--whyink);opacity:.8;margin-bottom:4px}
   .why div+div{margin-top:6px}
   .acts{display:flex;gap:10px;padding:0 18px 18px}
+  .acts .like{font-size:1.7rem;padding:10px 18px}
   .acts .skip{flex:0 0 64px;background:var(--card);color:var(--muted);border:2px solid var(--line);box-shadow:none;font-size:1.3rem}
   .undo{text-align:center;padding:10px;margin-bottom:12px;border-radius:16px;border:2px dashed var(--line);color:var(--muted);font-weight:800;cursor:pointer}
   .empty{text-align:center;padding:40px 24px}
@@ -463,8 +464,9 @@ function go(p){
 }
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => { haptic('sel'); go(t.dataset.p); });
 // Лента «Люди»: отдельная вкладка на каждую цель из профиля + «Взаимно»
-const GOAL_UI = {love:{tab:'💞 Любовь', like:'Нравится ♥'}, friend:{tab:'🤝 Дружба', like:'Хочу дружить 🤝'},
-                 business:{tab:'💼 Бизнес', like:'Интересно 💼'}};
+// Кнопка симпатии — одним эмодзи; текст остаётся подсказкой для экранного диктора
+const GOAL_UI = {love:{tab:'💞 Любовь', like:'Нравится ♥', emoji:'💖'}, friend:{tab:'🤝 Дружба', like:'Хочу дружить 🤝', emoji:'🤝'},
+                 business:{tab:'💼 Бизнес', like:'Интересно 💼', emoji:'💼'}};
 let curGoal = null;
 function buildSeg(){
   const goals = ME.settings.goals.length ? ME.settings.goals : ['love'];
@@ -758,7 +760,7 @@ function candidateCard(c){
       <div class="txt">${esc(c.bio)}</div>
       <div class="why"><div class="label">${T('Почему вы подходите')}</div>${c.explanation.map(e=>`<div>${esc(e)}</div>`).join('')}</div>
     </div>
-    <div class="acts"><button class="btn skip" aria-label="${T('Пропустить')}">✕</button><button class="btn like">${T(GOAL_UI[curGoal]?.like || 'Нравится ♥')}</button></div>
+    <div class="acts"><button class="btn skip" aria-label="${T('Пропустить')}">✕</button><button class="btn like" aria-label="${T(GOAL_UI[curGoal]?.like || 'Нравится ♥')}">${GOAL_UI[curGoal]?.emoji || '💖'}</button></div>
     <div class="acts" style="padding-top:0"><button class="btn ghost sparkBtn">${T('✨ Искра · {n} JOY', {n: fmtJoy(JOY?.prices?.spark ?? 0.1)})}</button></div>`;
   if (c.has_photo !== false) fetch('/api/photo/'+c.id, {headers:H}).then(r => r.ok && r.blob())
     .then(b => { if (b) card.querySelector('.photo').src = URL.createObjectURL(b); }).catch(()=>{});
