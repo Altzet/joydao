@@ -87,6 +87,14 @@ CREATE TABLE IF NOT EXISTS joy_reports (     -- кэш ИИ-текста куп�
     created_at TEXT DEFAULT (datetime('now')),
     PRIMARY KEY (user_id, other_id)
 );
+CREATE TABLE IF NOT EXISTS pair_quiz (       -- квиз пары: ответы о себе и догадки о партнёре
+    user_id  INTEGER NOT NULL,
+    other_id INTEGER NOT NULL,
+    self     TEXT NOT NULL,                  -- «01101»: выбор в каждом из 5 вопросов
+    guess    TEXT NOT NULL,                  -- догадки об ответах партнёра
+    created_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, other_id)
+);
 CREATE TABLE IF NOT EXISTS signups_source (
     tg_id      INTEGER PRIMARY KEY,
     source     TEXT NOT NULL,             -- метка из /start src_<источник>
@@ -175,6 +183,7 @@ def delete_user(tg_id: int) -> None:
         c.execute("DELETE FROM referral_bonus WHERE user_id=?", (tg_id,))
         c.execute("DELETE FROM signups_source WHERE tg_id=?", (tg_id,))
         c.execute("DELETE FROM events WHERE user_id=?", (tg_id,))
+        c.execute("DELETE FROM pair_quiz WHERE user_id=? OR other_id=?", (tg_id, tg_id))
         c.execute("UPDATE thanks SET user_id=0, message='' WHERE user_id=?", (tg_id,))
 
 

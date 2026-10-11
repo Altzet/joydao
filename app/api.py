@@ -291,7 +291,8 @@ async def matches(x_init_data: str | None = Header(default=None)):
     my_birth = date.fromisoformat(me_row["birth_date"])
     # username отдаём только взаимным симпатиям — для кнопки «Написать»
     return {"matches": [{**_user_card(r, my_birth, lang=user_lang(me_row)), "username": r["username"] or "",
-                         "report": joy.has_report(uid, r["tg_id"])}
+                         "report": joy.has_report(uid, r["tg_id"]),
+                         "quiz": joy.pair_quiz_status(uid, r["tg_id"])}
                         for r in db.get_matches(uid)]}
 
 
@@ -408,6 +409,63 @@ async def joy_report(other_id: int, x_init_data: str | None = Header(default=Non
         raise HTTPException(402, "Не хватает JOY")
     lang = user_lang(user)
     return {**await joy.deep_report(uid, other_id, lang), "joy": joy.state(uid, lang)}
+
+
+def _matched(uid: int, other_id: int) -> bool:
+    return any(r["tg_id"] == other_id for r in db.get_matches(uid))
+
+
+@app.get("/api/pairquiz/{other_id}")
+async def pair_quiz(other_id: int, x_init_data: str | None = Header(default=None)):
+    """Квиз пары: вопросы, статус и — когда ответили оба — сравнение."""
+    uid, user = _joy_user(x_init_data)
+    if not _matched(uid, other_id):
+        raise HTTPException(403, "Только для взаимной симпатии")
+    lang = user_lang(user)
+    return {"name": db.get_user(other_id)["name"], "questions": joy.pair_questions(uid, other_id, lang),
+            "status": joy.pair_quiz_status(uid, other_id), "reward": joy.PAIR_QUIZ / joy.UNIT,
+            "result": joy.pair_quiz_result(uid, other_id, lang)}
+
+
+class PairQuizIn(BaseModel):
+    mine: list[int] = Field(..., min_length=joy.PAIR_QUIZ_LEN, max_length=joy.PAIR_QUIZ_LEN)
+    guess: list[int] = Field(..., min_length=joy.PAIR_QUIZ_LEN, max_length=joy.PAIR_QUIZ_LEN)
+
+
+@app.post("/api/pairquiz/{other_id}")
+async def pair_quiz_answer(other_id: int, body: PairQuizIn, x_init_data: str | None = Header(default=None)):
+    uid, user = _joy_user(x_init_data)
+    if not _matched(uid, other_id):
+        raise HTTPException(403, "Только для взаимной симпатии")
+    res = joy.answer_pair_quiz(uid, other_id, body.mine, body.guess)
+    if not res.get("again"):
+        db.log_event(uid, "pair_quiz", other_id)
+        await _notify_pair_quiz(uid, other_id, res)
+    lang = user_lang(user)
+    return {"status": joy.pair_quiz_status(uid, other_id), "result": joy.pair_quiz_result(uid, other_id, lang),
+            "reward": joy.PAIR_QUIZ / joy.UNIT if uid in res["awarded"] else 0, "joy": joy.state(uid, lang)}
+
+
+async def _notify_pair_quiz(uid: int, other_id: int, res: dict) -> None:
+    """Партнёру: «твоя очередь» или «результат готов»."""
+    if not _bot:
+        return
+    from .bot import _app_kb
+    me, other = db.get_user(uid), db.get_user(other_id)
+    lang = user_lang(other)
+    if res["done"]:
+        r = joy.pair_quiz_result(other_id, uid, lang)
+        text = T("🎲 Квиз пары с {name} готов: вы совпали в {same} из {total}! Загляни — там повод для разговора.",
+                 lang, name=me["name"], same=r["same"], total=r["total"])
+        if other_id in res["awarded"]:
+            text += "\n" + T("⚡ +{n} JOY", lang, n=joy.PAIR_QUIZ / joy.UNIT)
+    else:
+        text = T("🎲 {name} прошёл(ла) квиз пары и угадывал(а) твои ответы. Твоя очередь — интересно, совпадёте ли вы?",
+                 lang, name=me["name"])
+    try:
+        await _bot.send_message(other_id, text, reply_markup=_app_kb(T("🎲 Открыть квиз", lang), "matches", lang))
+    except Exception:
+        pass
 
 
 @app.get("/api/thanks-wall")

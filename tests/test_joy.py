@@ -147,3 +147,30 @@ def test_deep_report_ai_text_cached(monkeypatch):
     assert asyncio.run(joy.deep_report(1, 2))["ai"] == "Разбор пары"
     assert asyncio.run(joy.deep_report(1, 2))["ai"] == "Разбор пары" and len(calls) == 1  # второй раз — из кэша
     assert "1990-05-05" not in calls[0]                                                   # дата не уходит даже в ИИ
+
+
+def test_pair_quiz_for_matches_rewards_members_once(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app import api
+    _rich(1)
+    db.upsert_user(2, name="u2", birth_date="1988-07-06", gender="m", seek="f", photo_id="p", active=1, username="")
+    joy.pass_test(2, RIGHT)
+    monkeypatch.setattr(api, "_auth", lambda _: 1)
+    cl = TestClient(api.app)
+    assert cl.get("/api/pairquiz/2").status_code == 403              # только взаимная симпатия
+    db.daily_candidates(1, 5); db.daily_candidates(2, 5)
+    db.set_like(1, 2, True); db.set_like(2, 1, True)
+    q = cl.get("/api/pairquiz/2").json()
+    assert len(q["questions"]) == 5 and q["status"] == "none"
+    assert joy.pair_questions(1, 2) == joy.pair_questions(2, 1)      # вопросы одинаковые у обоих
+    r = cl.post("/api/pairquiz/2", json={"mine": [0, 1, 0, 1, 0], "guess": [1, 1, 1, 1, 1]}).json()
+    assert r["status"] == "mine" and r["result"] is None             # ответы второго не видны, пока он не ответил
+    monkeypatch.setattr(api, "_auth", lambda _: 2)
+    r = TestClient(api.app).post("/api/pairquiz/1", json={"mine": [0, 1, 1, 1, 1], "guess": [0, 1, 0, 1, 0]}).json()
+    assert r["status"] == "done" and r["reward"] == 0.2
+    res = r["result"]
+    assert res["same"] == 3 and res["i_guessed"] == 5 and res["they_guessed"] == 4
+    before = joy.totals(1)[0]
+    TestClient(api.app).post("/api/pairquiz/1", json={"mine": [1] * 5, "guess": [1] * 5})  # повтор не перезаписывает и не награждает
+    assert joy.totals(1)[0] == before == joy.ONBOARD + joy.PAIR_QUIZ
+    assert joy.pair_quiz_result(2, 1)["same"] == 3

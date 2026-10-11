@@ -209,6 +209,88 @@ async def deep_report(uid: int, other_id: int, lang: str = "ru") -> dict:
     return {"name": other["name"], "kinds": kinds, "ai": text or ""}
 
 
+# --- квиз пары: ледокол после взаимной симпатии ---
+
+PAIR_QUIZ = 200          # +0,2 JOY каждому, когда ответили оба
+PAIR_QUIZ_DAILY = 3      # наград за квиз пары в день на человека
+PAIR_QUIZ_LEN = 5
+# «То или это»: легко ответить, интересно сравнить, есть о чём спросить потом
+PAIR_QUESTIONS = [
+    ("Идеальное утро", "Кофе в тишине", "Пробежка и музыка"),
+    ("Отпуск", "Горы", "Море"),
+    ("Вечер пятницы", "Дома с фильмом", "Выйти в люди"),
+    ("Планы", "Всё расписано", "Как пойдёт"),
+    ("Подарок", "Сюрприз", "То, что просили"),
+    ("Спор", "Сразу выяснить", "Остыть и вернуться"),
+    ("Кухня", "Готовлю сам(а)", "Знаю лучшие места"),
+    ("Новое", "Пробую первым(ой)", "Сначала почитаю отзывы"),
+    ("Сообщения", "Голосовые", "Только текст"),
+    ("Выходные", "Активно", "Восстанавливаюсь"),
+    ("Решения", "Сердцем", "Головой"),
+    ("Город мечты", "Шумный мегаполис", "Тихий городок у природы"),
+    ("Праздник", "Большая компания", "Самые близкие"),
+    ("Сила", "Слова", "Поступки"),
+    ("Время суток", "Жаворонок", "Сова"),
+]
+
+
+def pair_questions(a: int, b: int, lang: str = "ru") -> list[dict]:
+    """5 вопросов, одинаковых для обоих в паре (зерно — пара id)."""
+    lo, hi = sorted((a, b))
+    picks = random.Random(lo * 1_000_003 + hi).sample(range(len(PAIR_QUESTIONS)), PAIR_QUIZ_LEN)
+    return [{"q": T(PAIR_QUESTIONS[i][0], lang), "a": [T(PAIR_QUESTIONS[i][1], lang), T(PAIR_QUESTIONS[i][2], lang)]}
+            for i in picks]
+
+
+def _pq_row(uid: int, other_id: int):
+    with db.connect() as c:
+        return c.execute("SELECT self, guess FROM pair_quiz WHERE user_id=? AND other_id=?", (uid, other_id)).fetchone()
+
+
+def pair_quiz_status(uid: int, other_id: int) -> str:
+    """none — никто не ответил, mine — ответил я (ждём второго), theirs — ответил второй, done — оба."""
+    mine, theirs = _pq_row(uid, other_id), _pq_row(other_id, uid)
+    return "done" if mine and theirs else "mine" if mine else "theirs" if theirs else "none"
+
+
+def pair_quiz_result(uid: int, other_id: int, lang: str = "ru") -> dict | None:
+    """Сравнение ответов, когда ответили оба. Ответы второго видны только после своих — честная игра."""
+    mine, theirs = _pq_row(uid, other_id), _pq_row(other_id, uid)
+    if not (mine and theirs):
+        return None
+    ms, mg = [int(x) for x in mine["self"]], [int(x) for x in mine["guess"]]
+    ts, tg = [int(x) for x in theirs["self"]], [int(x) for x in theirs["guess"]]
+    qs = pair_questions(uid, other_id, lang)
+    return {"same": sum(a == b for a, b in zip(ms, ts)),
+            "i_guessed": sum(g == t for g, t in zip(mg, ts)),
+            "they_guessed": sum(g == m for g, m in zip(tg, ms)),
+            "total": PAIR_QUIZ_LEN,
+            "items": [{"q": q["q"], "me": q["a"][m], "them": q["a"][t], "same": m == t}
+                      for q, m, t in zip(qs, ms, ts)]}
+
+
+def answer_pair_quiz(uid: int, other_id: int, mine: list[int], guess: list[int]) -> dict:
+    """Сохранить ответы (один раз). Когда ответили оба — награда участникам клуба.
+    Возвращает {"done": bool, "awarded": [кто получил JOY]}."""
+    code = lambda xs: "".join(str(int(bool(x))) for x in xs)  # noqa: E731  ответы 0/1 → строка «01101»
+    with db.connect() as c:
+        if c.execute("INSERT OR IGNORE INTO pair_quiz (user_id, other_id, self, guess) VALUES (?,?,?,?)",
+                     (uid, other_id, code(mine), code(guess))).rowcount == 0:
+            return {"done": pair_quiz_status(uid, other_id) == "done", "awarded": [], "again": True}
+    if pair_quiz_status(uid, other_id) != "done":
+        return {"done": False, "awarded": []}
+    lo, hi = sorted((uid, other_id))
+    awarded = []
+    with db.connect() as c:
+        for who in (uid, other_id):
+            today = c.execute("SELECT COUNT(*) FROM joy_ledger WHERE user_id=? AND reason LIKE 'pairquiz:%' "
+                              "AND date(created_at) = date('now')", (who,)).fetchone()[0]
+            if is_member(db.get_user(who)) and today < PAIR_QUIZ_DAILY and \
+                    _award(c, who, PAIR_QUIZ, f"pairquiz:{lo}:{hi}"):
+                awarded.append(who)
+    return {"done": True, "awarded": awarded}
+
+
 # --- членство и первый JOY ---
 
 def is_member(user) -> bool:

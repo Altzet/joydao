@@ -761,8 +761,12 @@ async function loadMatches(){
       ${m.username ? `<div class="acts"><button class="btn" data-u="${esc(m.username)}">${T('✍️ Написать')}</button></div>`
                    : `<div class="disclaimer">${T('Ссылка для связи — в сообщении от бота о взаимной симпатии')}</div>`}
       <div class="acts" style="padding-top:0"><button class="btn ghost" data-r="${m.id}">${m.report ? T('🔮 Открыть глубокий разбор')
-        : T('🔮 Глубокий разбор · {n} JOY', {n: fmtJoy(JOY?.prices?.report ?? 0.5)})}</button></div><div id="rep${m.id}"></div></div>`).join('');
+        : T('🔮 Глубокий разбор · {n} JOY', {n: fmtJoy(JOY?.prices?.report ?? 0.5)})}</button></div><div id="rep${m.id}"></div>
+      <div class="acts" style="padding-top:0"><button class="btn ghost" data-q="${m.id}">${{
+        none: T('🎲 Квиз пары · +0,2 JOY'), theirs: T('🎲 {name} уже ответил(а) — твоя очередь!', {name: esc(m.name)}),
+        mine: T('🎲 Ждём ответа {name}…', {name: esc(m.name)}), done: T('🎲 Результат квиза пары')}[m.quiz]}</button></div><div id="pq${m.id}"></div></div>`).join('');
     box.querySelectorAll('[data-r]').forEach(b => b.onclick = () => openReport(+b.dataset.r, b));
+    box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => openPairQuiz(+b.dataset.q));
     box.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { haptic('medium'); tg.openTelegramLink('https://t.me/'+encodeURIComponent(b.dataset.u)); });
   }catch(e){ box.innerHTML = `<div class="empty">${T('Ошибка загрузки')}</div>`; }
 }
@@ -782,6 +786,43 @@ async function openReport(id, btn){
       <div class="disclaimer">${T('Цифровая нумерология — игра и повод для рефлексии, а не научный вердикт 🙂')}</div></div>`;
     $('rep'+id).scrollIntoView({behavior: 'smooth', block: 'start'});
   }catch(e){ joyFail(e); btn.disabled = false; }
+}
+
+// Квиз пары: 5 вопросов «то или это» о себе + догадки о партнёре. Ответы партнёра — только когда ответили оба.
+async function openPairQuiz(id){
+  haptic('sel'); const box = $('pq'+id);
+  try{
+    const r = await api('/pairquiz/'+id);
+    if (r.status === 'done') return renderPairResult(box, r);
+    if (r.status === 'mine'){ box.innerHTML = `<div class="body"><div class="txt muted">${T('Твои ответы сохранены. Как только {name} ответит, бот пришлёт результат 🎲', {name: esc(r.name)})}</div></div>`; return; }
+    const pick = {mine: r.questions.map(() => -1), guess: r.questions.map(() => -1)};
+    const row = (k, n, label, q) => `<div class="fl" style="margin-top:6px">${label}<div class="pick" data-k="${k}" data-n="${n}">${q.a.map((a, i) => `<div data-i="${i}">${esc(a)}</div>`).join('')}</div></div>`;
+    box.innerHTML = `<div class="body"><div class="txt muted">${T('Ответь про себя и угадай, что выберет {name}. Ответы откроются, когда ответите оба. Награда — +{n} JOY каждому.', {name: esc(r.name), n: fmtJoy(r.reward)})}</div>
+      ${r.questions.map((q, n) => `<div class="jq"><div class="txt"><b>${n+1}. ${esc(q.q)}</b></div>${row('mine', n, T('Я'), q)}${row('guess', n, esc(r.name), q)}</div>`).join('')}
+      <div class="btns"><button class="btn" id="pqGo${id}" disabled>${T('Отправить 🎲')}</button></div></div>`;
+    box.querySelectorAll('.pick').forEach(p => p.querySelectorAll('div').forEach(o => o.onclick = () => {
+      haptic('sel'); p.querySelectorAll('div').forEach(x => x.classList.toggle('on', x === o));
+      pick[p.dataset.k][+p.dataset.n] = +o.dataset.i;
+      $('pqGo'+id).disabled = [...pick.mine, ...pick.guess].includes(-1);
+    }));
+    $('pqGo'+id).onclick = async () => {
+      try{ const a = await api('/pairquiz/'+id, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(pick)});
+        if (a.joy) renderJoy(a.joy);
+        if (a.status === 'done'){ renderPairResult(box, {...r, result: a.result}); joyReward(a.joy, a.reward); }
+        else { haptic('ok'); box.innerHTML = `<div class="body"><div class="txt">${T('Готово! Мы позвали {name} — как только ответит, увидите, насколько вы совпадаете 🎲', {name: esc(r.name)})}</div></div>`; }
+        document.querySelector(`[data-q="${id}"]`).textContent = a.status === 'done' ? T('🎲 Результат квиза пары') : T('🎲 Ждём ответа {name}…', {name: r.name});
+      }catch(e){ toast(T('Не получилось, попробуй ещё раз')); }
+    };
+  }catch(e){ toast(T('Не получилось, попробуй ещё раз')); }
+}
+function renderPairResult(box, r){
+  const x = r.result;
+  box.innerHTML = `<div class="body"><div class="why"><div class="label">${T('Квиз пары')}</div>
+      <div><b>${T('Вы совпали в {same} из {total}', {same: x.same, total: x.total})}</b></div>
+      <div>${T('Ты угадал(а) {a} из {total}, {name} — {b}', {a: x.i_guessed, b: x.they_guessed, total: x.total, name: esc(r.name)})}</div></div>
+    ${x.items.map(i => `<div class="jq"><div class="label">${esc(i.q)}</div><div class="txt">${i.same ? '✅ ' + esc(i.me)
+      : `↔️ ${T('ты')}: ${esc(i.me)} · ${esc(r.name)}: ${esc(i.them)}`}</div></div>`).join('')}
+    <div class="txt muted small">${T('Где не совпали — лучший повод спросить «почему?» 😉')}</div></div>`;
 }
 
 // Уменьшаем картинку в браузере до 1280 px JPEG. Не вышло (редкий формат) — шлём как есть.
