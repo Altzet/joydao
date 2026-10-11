@@ -82,11 +82,14 @@ BOT_SHORT_DESCRIPTION = ("Сообщество по коду даты рожде
 async def set_translated_descriptions(bot: Bot) -> None:
     """Описание бота для пользователей с другим языком Telegram. Русское (по умолчанию)
     не трогаем — оно задаётся в @BotFather."""
-    from .i18n import SUPPORTED, T
+    from .i18n import REMOVED, SUPPORTED, T
     for lang in SUPPORTED:
         if lang != "ru":
             await bot.set_my_description(T(BOT_DESCRIPTION, lang)[:512], language_code=lang)
             await bot.set_my_short_description(T(BOT_SHORT_DESCRIPTION, lang)[:120], language_code=lang)
+    for lang in REMOVED:  # снять описания убранных языков — Telegram покажет английское по умолчанию
+        await bot.set_my_description("", language_code=lang)
+        await bot.set_my_short_description("", language_code=lang)
 
 
 async def setup_menu(bot: Bot) -> None:

@@ -225,3 +225,15 @@ def test_tournament_settle_job_notifies(monkeypatch):
             sent.append((uid, text))
     asyncio.run(main.settle_tournament(Bot()))
     assert sorted(u for u, _ in sent) == [1, 2, 3] and "месте" in sent[0][1]
+
+
+def test_three_languages_and_joy_translated():
+    from app.i18n import SUPPORTED, T, user_lang
+    assert SUPPORTED == ("ru", "uk", "en")
+    _dating(1); db.update_user(1, lang="zh")                         # язык, которого больше нет
+    assert user_lang(db.get_user(1)) == "en"
+    from app.i18n import table
+    texts = [q for _, q, opts, _, why in joy.PRINCIPLES for q in (q, why, *opts)]
+    texts += [x for row in joy.PAIR_QUESTIONS for x in row] + [n for _, n in joy.LEVELS]
+    for lang in ("uk", "en"):                                        # все тексты JOY есть в словарях
+        assert [t for t in texts if t not in table(lang)] == []

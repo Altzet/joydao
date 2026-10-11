@@ -14,10 +14,10 @@ from pathlib import Path
 
 from . import config, db
 
-# Русский (исходный) + украинский + 5 самых распространённых языков мира
-SUPPORTED = ("ru", "uk", "en", "zh", "hi", "es", "ar")
-NAMES = {"ru": "Русский", "uk": "Українська", "en": "English", "zh": "中文",
-         "hi": "हिन्दी", "es": "Español", "ar": "العربية"}
+# Русский (исходный), украинский и английский
+SUPPORTED = ("ru", "uk", "en")
+NAMES = {"ru": "Русский", "uk": "Українська", "en": "English"}
+REMOVED = ("zh", "hi", "es", "ar")  # были раньше: у кого выбраны — теперь английский
 _DIR = Path(__file__).parent / "i18n"
 _dicts: dict[str, dict[str, str]] = {}
 log = logging.getLogger("joydao.i18n")
@@ -47,7 +47,7 @@ def T(text: str, lang: str = "ru", **kw) -> str:
 def user_lang(user, fallback_code: str | None = None) -> str:
     """Язык пользователя: сохранённый в профиле, иначе — язык его Telegram."""
     if user is not None and "lang" in user.keys() and user["lang"]:
-        return user["lang"]
+        return norm(user["lang"])  # сохранённый язык, которого больше нет, → английский
     return norm(fallback_code)
 
 

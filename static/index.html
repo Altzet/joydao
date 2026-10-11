@@ -484,13 +484,12 @@ let lastTab = 'today';
 $('profBtn').onclick = () => { haptic('sel'); go('profile'); };
 tg.BackButton?.onClick(() => { if ($('profile').classList.contains('active')) go(lastTab); });
 
-// Язык: словарь, направление письма (арабский — справа налево) и статичные подписи
-const LANGS = ['ru','uk','en','zh','hi','es','ar'];
+// Язык: словарь и статичные подписи
+const LANGS = ['ru','uk','en'];
 async function setLang(code){
   code = (code || 'ru').toLowerCase().split('-')[0];
   LANG = LANGS.includes(code) ? code : 'en';
   document.documentElement.lang = LANG;
-  document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
   if (LANG !== 'ru') { try { I18N = await api('/i18n/' + LANG); } catch(e){ I18N = {}; } }
   translateStatic();
 }
@@ -811,9 +810,7 @@ async function loadMatches(){
                    : `<div class="disclaimer">${T('Ссылка для связи — в сообщении от бота о взаимной симпатии')}</div>`}
       <div class="acts" style="padding-top:0"><button class="btn ghost" data-r="${m.id}">${m.report ? T('🔮 Открыть глубокий разбор')
         : T('🔮 Глубокий разбор · {n} JOY', {n: fmtJoy(JOY?.prices?.report ?? 0.5)})}</button></div><div id="rep${m.id}"></div>
-      <div class="acts" style="padding-top:0"><button class="btn ghost" data-q="${m.id}">${{
-        none: T('🎲 Квиз пары · +0,2 JOY'), theirs: T('🎲 {name} уже ответил(а) — твоя очередь!', {name: esc(m.name)}),
-        mine: T('🎲 Ждём ответа {name}…', {name: esc(m.name)}), done: T('🎲 Результат квиза пары')}[m.quiz]}</button></div><div id="pq${m.id}"></div></div>`).join('');
+      <div class="acts" style="padding-top:0"><button class="btn ghost" data-q="${m.id}">${quizLabel(m)}</button></div><div id="pq${m.id}"></div></div>`).join('');
     box.querySelectorAll('[data-r]').forEach(b => b.onclick = () => openReport(+b.dataset.r, b));
     box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => openPairQuiz(+b.dataset.q));
     box.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { haptic('medium'); tg.openTelegramLink('https://t.me/'+encodeURIComponent(b.dataset.u)); });
@@ -837,6 +834,8 @@ async function openReport(id, btn){
   }catch(e){ joyFail(e); btn.disabled = false; }
 }
 
+const quizLabel = m => ({none: T('🎲 Квиз пары · +0,2 JOY'), theirs: T('🎲 {name} уже ответил(а) — твоя очередь!', {name: esc(m.name)}),
+  mine: T('🎲 Ждём ответа {name}…', {name: esc(m.name)}), done: T('🎲 Результат квиза пары')})[m.quiz];
 // Квиз пары: 5 вопросов «то или это» о себе + догадки о партнёре. Ответы партнёра — только когда ответили оба.
 async function openPairQuiz(id){
   haptic('sel'); const box = $('pq'+id);
