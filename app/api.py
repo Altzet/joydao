@@ -227,12 +227,16 @@ async def candidates(goal: str = "love", x_init_data: str | None = Header(defaul
     if goal not in db.goals_of(me_row):
         raise HTTPException(409, "Эта цель не выбрана в профиле")
     my_birth = date.fromisoformat(me_row["birth_date"])
+    sparks, boosted = joy.sparked_me(uid), joy.boosted()
+    # Прислал «Искру» — первым в ленте; анкета под бустом — выше остальных
+    lift = lambda tg_id: (1000 if tg_id in sparks else 0) + (joy.BOOST_RANK if tg_id in boosted else 0)  # noqa: E731
     rows = db.daily_candidates(
         uid, config.DAILY_LIMIT, goal=goal,
-        rank=lambda r: compat.compatibility(my_birth, date.fromisoformat(r["birth_date"]), kind=goal)["score"],
+        rank=lambda r: compat.compatibility(my_birth, date.fromisoformat(r["birth_date"]), kind=goal)["score"]
+        + lift(r["tg_id"]),
     )
-    cards = [_user_card(r, my_birth, goal, user_lang(me_row)) for r in rows]
-    cards.sort(key=lambda c: -c["compat"])
+    cards = [{**_user_card(r, my_birth, goal, user_lang(me_row)), "spark": r["tg_id"] in sparks} for r in rows]
+    cards.sort(key=lambda c: -(c["compat"] + lift(c["id"])))
     from . import teaser
     return {"candidates": cards, "daily_limit": config.DAILY_LIMIT, "bonus": db.bonus_today(uid),
             "ref_link": teaser.ref_link(uid)}
@@ -246,7 +250,13 @@ async def like(to_id: int, is_like: bool = True,
         raise HTTPException(400, "Некорректный кандидат")  # лайкать можно только показанных
     matched = db.set_like(uid, to_id, is_like)
     if is_like:
-        db.log_event(uid, "like", to_id)
+        await _after_like(uid, to_id, matched)
+    return {"match": matched}
+
+
+async def _after_like(uid: int, to_id: int, matched: bool) -> None:
+    """События воронки + уведомление обоим о взаимности (общая часть лайка и «Искры»)."""
+    db.log_event(uid, "like", to_id)
     if matched:
         db.log_event(uid, "match", to_id)
     if matched and _bot:
@@ -255,7 +265,6 @@ async def like(to_id: int, is_like: bool = True,
         c = compat.compatibility(date.fromisoformat(me_row["birth_date"]),
                                  date.fromisoformat(other["birth_date"]))
         await notify_match(_bot, uid, to_id, c["score"])
-    return {"match": matched}
 
 
 @app.post("/api/undo")
@@ -281,7 +290,8 @@ async def matches(x_init_data: str | None = Header(default=None)):
         raise HTTPException(404, "Нет анкеты")
     my_birth = date.fromisoformat(me_row["birth_date"])
     # username отдаём только взаимным симпатиям — для кнопки «Написать»
-    return {"matches": [{**_user_card(r, my_birth, lang=user_lang(me_row)), "username": r["username"] or ""}
+    return {"matches": [{**_user_card(r, my_birth, lang=user_lang(me_row)), "username": r["username"] or "",
+                         "report": joy.has_report(uid, r["tg_id"])}
                         for r in db.get_matches(uid)]}
 
 
@@ -333,6 +343,71 @@ async def joy_quiz(body: JoyQuizIn, x_init_data: str | None = Header(default=Non
         raise HTTPException(409, "Уже отвечал сегодня")
     db.log_event(uid, "joy_quiz", int(res["correct"]))
     return {**res, "reward": res["joy"] / joy.UNIT, **joy.state(uid, user_lang(user))}
+
+
+def _joy_user(x_init_data: str | None):
+    uid = _auth(x_init_data)
+    user = db.get_user(uid)
+    if not user:
+        raise HTTPException(404, "Нет анкеты")
+    return uid, user
+
+
+@app.post("/api/joy/spark/{to_id}")
+async def joy_spark(to_id: int, x_init_data: str | None = Header(default=None)):
+    """«Искра» — лайк за 0,1 JOY: получатель сразу узнаёт, а ты первый в его ленте."""
+    uid, user = _joy_user(x_init_data)
+    if uid == to_id or not db.get_user(to_id) or not db.was_shown(uid, to_id):
+        raise HTTPException(400, "Некорректный кандидат")
+    try:
+        fresh = joy.spend(uid, joy.SPARK, f"spend:spark:{to_id}")
+    except joy.NotEnough:
+        raise HTTPException(402, "Не хватает JOY")
+    matched = db.set_like(uid, to_id, True)
+    await _after_like(uid, to_id, matched)
+    db.log_event(uid, "joy_spark", to_id)
+    if fresh and not matched and _bot:
+        from .bot import _app_kb
+        other = db.get_user(to_id)
+        lang = user_lang(other)
+        try:
+            await _bot.send_message(
+                to_id, T("✨ Тебе прислали Искру! Кто-то из JoyDao очень хочет познакомиться — "
+                         "он(а) уже первым(ой) в твоей ленте «Люди».", lang),
+                reply_markup=_app_kb(T("👀 Посмотреть", lang), "feed", lang))
+        except Exception:
+            pass  # личка боту закрыта — увидит в ленте
+    return {"match": matched, **joy.state(uid, user_lang(user))}
+
+
+@app.post("/api/joy/boost")
+async def joy_boost(x_init_data: str | None = Header(default=None)):
+    """Буст анкеты на 24 часа за 0,3 JOY."""
+    uid, user = _joy_user(x_init_data)
+    if not db.is_dating(user) or not user["active"]:
+        raise HTTPException(409, "Нужна видимая анкета")
+    try:
+        joy.boost(uid)
+    except joy.NotEnough:
+        raise HTTPException(402, "Не хватает JOY")
+    db.log_event(uid, "joy_boost")
+    return joy.state(uid, user_lang(user))
+
+
+@app.post("/api/joy/report/{other_id}")
+async def joy_report(other_id: int, x_init_data: str | None = Header(default=None)):
+    """Глубокий разбор пары за 0,5 JOY (один раз на человека, дальше — бесплатно)."""
+    uid, user = _joy_user(x_init_data)
+    allowed = db.was_shown(uid, other_id) or any(r["tg_id"] == other_id for r in db.get_matches(uid))
+    if uid == other_id or not db.get_user(other_id) or not allowed:
+        raise HTTPException(400, "Некорректный человек")
+    try:
+        if joy.spend(uid, joy.REPORT, f"spend:report:{other_id}"):
+            db.log_event(uid, "joy_report", other_id)
+    except joy.NotEnough:
+        raise HTTPException(402, "Не хватает JOY")
+    lang = user_lang(user)
+    return {**await joy.deep_report(uid, other_id, lang), "joy": joy.state(uid, lang)}
 
 
 @app.get("/api/thanks-wall")

@@ -78,3 +78,72 @@ def test_wrong_answer_gives_nothing():
     d = date(2026, 10, 10)
     r = joy.answer_quiz(1, (joy.daily_question(d)["answer"] + 1) % 3, d)
     assert not r["correct"] and r["joy"] == 0 and joy.totals(1) == (0, 0)
+
+
+def _rich(uid):
+    """Участник клуба с первым JOY на балансе."""
+    _dating(uid); joy.pass_test(uid, RIGHT); _age(uid, 5); joy.state(uid)
+
+
+def test_spend_spark_boost_without_double_charge():
+    _rich(1); _dating(2)
+    assert joy.spend(1, joy.SPARK, "spend:spark:2") is True
+    assert joy.spend(1, joy.SPARK, "spend:spark:2") is False     # повторная «Искра» тому же — бесплатно, без списания
+    assert joy.sparked_me(2) == {1}
+    joy.boost(1); joy.boost(1)                                    # второй буст, пока идёт первый, не списывается
+    assert joy.boosted() == {1} and joy.boost_until(1)
+    assert joy.totals(1)[0] == joy.ONBOARD - joy.SPARK - joy.BOOST
+    with pytest.raises(joy.NotEnough):
+        joy.spend(1, joy.UNIT, "spend:report:2")
+    assert joy.totals(1)[0] >= 0                                  # в минус не уходим
+
+
+def test_spark_puts_sender_first_in_feed(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app import api
+    _rich(1)
+    for uid, birth in ((2, "1990-05-05"), (3, "1991-01-01"), (4, "1992-02-02")):
+        db.upsert_user(uid, name=f"u{uid}", birth_date=birth, gender="m", seek="f", photo_id="p", active=1, username="")
+    db.upsert_user(1, name="u1", birth_date="1985-12-31", gender="f", seek="m", photo_id="p", active=1, username="")
+    db.daily_candidates(1, 5)                                      # 1 видел 2, 3, 4
+    monkeypatch.setattr(api, "_auth", lambda _: 1)
+    r = TestClient(api.app).post("/api/joy/spark/2")
+    assert r.status_code == 200 and r.json()["balance"] == (joy.ONBOARD - joy.SPARK) / joy.UNIT
+    monkeypatch.setattr(api, "_auth", lambda _: 2)
+    db.update_user(2, seek="f")
+    cards = TestClient(api.app).get("/api/candidates?goal=love").json()["candidates"]
+    assert cards[0]["id"] == 1 and cards[0]["spark"]
+
+
+def test_deep_report_hides_birth_date_and_needs_joy(monkeypatch):
+    import asyncio
+    from fastapi.testclient import TestClient
+    from app import api, config
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "")
+    _dating(1)
+    db.upsert_user(2, name="u2", birth_date="1988-07-06", gender="m", seek="f", photo_id="p", active=1, username="")
+    assert [r["tg_id"] for r in db.daily_candidates(1, 5)] == [2]
+    monkeypatch.setattr(api, "_auth", lambda _: 1)
+    assert TestClient(api.app).post("/api/joy/report/2").status_code == 402   # без JOY не купить
+    joy.pass_test(1, RIGHT); _age(1, 5); joy.state(1)
+    rep = TestClient(api.app).post("/api/joy/report/2").json()
+    assert len(rep["kinds"]) == 3 and all("date" not in k for k in rep["kinds"]) and rep["ai"] == ""
+    TestClient(api.app).post("/api/joy/report/2")                  # повторное открытие — бесплатно
+    assert joy.totals(1)[0] == joy.ONBOARD - joy.REPORT
+    assert asyncio.run(joy.deep_report(1, 2))["name"] == "u2"
+
+
+def test_deep_report_ai_text_cached(monkeypatch):
+    import asyncio
+    from app import agent, config
+    calls = []
+
+    async def fake_ask(system, prompt, max_tokens=1024):
+        calls.append(prompt)
+        return "Разбор пары"
+    monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "k")
+    monkeypatch.setattr(agent, "_ask", fake_ask)
+    _dating(1); _dating(2)
+    assert asyncio.run(joy.deep_report(1, 2))["ai"] == "Разбор пары"
+    assert asyncio.run(joy.deep_report(1, 2))["ai"] == "Разбор пары" and len(calls) == 1  # второй раз — из кэша
+    assert "1990-05-05" not in calls[0]                                                   # дата не уходит даже в ИИ

@@ -80,6 +80,13 @@ CREATE TABLE IF NOT EXISTS joy_answers (
     correct INTEGER NOT NULL,
     PRIMARY KEY (user_id, day)
 );
+CREATE TABLE IF NOT EXISTS joy_reports (     -- кэш ИИ-текста купленного глубокого разбора
+    user_id  INTEGER NOT NULL,
+    other_id INTEGER NOT NULL,
+    text     TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, other_id)
+);
 CREATE TABLE IF NOT EXISTS signups_source (
     tg_id      INTEGER PRIMARY KEY,
     source     TEXT NOT NULL,             -- метка из /start src_<источник>

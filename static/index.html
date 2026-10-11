@@ -208,6 +208,7 @@
   .pick .bad{background:var(--coral);color:#fff;opacity:.75}
   .jq{margin-top:14px}
   .jq .txt{margin-bottom:6px}
+  .chip.spark{background:var(--grad);color:#fff;margin-left:4px}
   .pick{display:flex;gap:6px;background:var(--bg);border-radius:16px;padding:4px}
   .pick div{flex:1;text-align:center;padding:9px 4px;border-radius:12px;font-weight:900;font-size:.9rem;color:var(--muted);cursor:pointer}
   .pick .on{background:var(--grad);color:#fff}
@@ -556,6 +557,7 @@ function renderToday(){
 }
 
 // ===== JOY energy: баланс, тест принципов, «Число дня» (логика и награды — на сервере, app/joy.py) =====
+let JOY = null;  // последнее состояние JOY: цены и баланс для кнопок трат в ленте
 const fmtJoy = n => (+n).toLocaleString(ME?.lang || undefined, {maximumFractionDigits: 3});
 async function loadJoy(){
   try{ renderJoy(await api('/joy')); }catch(e){ $('joyBox') && ($('joyBox').innerHTML = ''); }
@@ -566,6 +568,7 @@ function joyReward(j, amount){  // радость начисления: конф
   toast(T('⚡ +{n} JOY', {n: fmtJoy(amount)}));
 }
 function renderJoy(j){
+  JOY = j;
   const box = $('joyBox'); if (!box) return;
   const toNext = j.next != null ? T('до следующего уровня {n} JOY', {n: fmtJoy(j.next - j.earned)}) : T('высший уровень');
   const step = {
@@ -587,8 +590,11 @@ function renderJoy(j){
     <div class="top"><div><div class="label">${T('⚡ JOY энергия')}</div><div class="bal">${fmtJoy(j.balance)} JOY</div></div><div class="bolt">⚡</div></div>
     <div class="meta"><span class="chip">${esc(j.level)}</span>${j.streak ? `<span class="chip">${T('🔥 {n} дн. подряд', {n: j.streak})}</span>` : ''}</div>
     <div class="txt muted small">${toNext}</div>
-    ${step}${quiz}</div></div>`;
+    ${step}${quiz}${boostHtml(j)}</div></div>`;
   joyReward(j, j.new_award);
+  if ($('jBoost')) $('jBoost').onclick = async () => { haptic('medium');
+    try{ renderJoy(await api('/joy/boost', {method:'POST'})); haptic('ok'); toast(T('🚀 Анкета поднята на 24 часа')); }
+    catch(e){ joyFail(e); } };
   if ($('jProfile')) $('jProfile').onclick = () => { haptic('medium'); tg.openTelegramLink(`https://t.me/${ME.bot}?start=dating`); setTimeout(()=>tg.close(), 300); };
   if ($('jTestOpen')) $('jTestOpen').onclick = () => { haptic('sel'); $('jTestOpen').parentElement.remove(); renderJoyTest(j.test); };
   if (j.quiz && !j.quiz.answered) $('jQuiz').querySelectorAll('div').forEach(o => o.onclick = async () => {
@@ -597,6 +603,15 @@ function renderJoy(j){
       renderJoy(r); joyReward(r, r.reward); if (!r.correct) haptic('heavy'); }
     catch(e){ toast(T('Не получилось, попробуй ещё раз')); $('jQuiz').style.pointerEvents = ''; }
   });
+}
+const joyFail = e => toast(e && e.status === 402 ? T('Не хватает JOY — заработай в «Числе дня» ⚡') : T('Не получилось, попробуй ещё раз'));
+const localTime = utc => new Date(utc.replace(' ', 'T') + 'Z').toLocaleString(ME?.lang || undefined, {weekday:'short', hour:'2-digit', minute:'2-digit'});
+function boostHtml(j){
+  if (!j.dating) return '';
+  return `<div class="jq"><div class="label">${T('🚀 Буст анкеты')}</div>` + (j.boost_until
+    ? `<div class="txt" style="margin-top:6px">${T('Твоя анкета выше в лентах до {t} ✨', {t: esc(localTime(j.boost_until))})}</div>`
+    : `<div class="txt muted small">${T('24 часа твоя анкета показывается выше — больше людей тебя увидят.')}</div>
+       <div class="btns"><button class="btn ghost" id="jBoost">${T('🚀 Поднять анкету · {n} JOY', {n: fmtJoy(j.prices.boost)})}</button></div>`) + `</div>`;
 }
 function renderJoyTest(test){
   const picked = test.map(() => -1);
@@ -691,11 +706,13 @@ function candidateCard(c){
         <div><div class="h2">${esc(c.name)}</div><div class="muted">${esc(c.city)}</div></div>
         <div class="score" style="--p:${c.compat}"><b>${c.compat}%</b><i>${T('созвучие')}</i></div>
       </div>
-      <div style="margin-top:10px"><span class="chip n${c.chs}"><span class="dot"></span>${c.chs} · ${esc(c.chs_short.split(/[:：]/)[0])}</span></div>
+      <div style="margin-top:10px"><span class="chip n${c.chs}"><span class="dot"></span>${c.chs} · ${esc(c.chs_short.split(/[:：]/)[0])}</span>
+        ${c.spark ? `<span class="chip spark">${T('✨ Прислал(а) тебе Искру')}</span>` : ''}</div>
       <div class="txt">${esc(c.bio)}</div>
       <div class="why"><div class="label">${T('Почему вы подходите')}</div>${c.explanation.map(e=>`<div>${esc(e)}</div>`).join('')}</div>
     </div>
-    <div class="acts"><button class="btn skip" aria-label="${T('Пропустить')}">✕</button><button class="btn like">${T(GOAL_UI[curGoal]?.like || 'Нравится ♥')}</button></div>`;
+    <div class="acts"><button class="btn skip" aria-label="${T('Пропустить')}">✕</button><button class="btn like">${T(GOAL_UI[curGoal]?.like || 'Нравится ♥')}</button></div>
+    <div class="acts" style="padding-top:0"><button class="btn ghost sparkBtn">${T('✨ Искра · {n} JOY', {n: fmtJoy(JOY?.prices?.spark ?? 0.1)})}</button></div>`;
   if (c.has_photo !== false) fetch('/api/photo/'+c.id, {headers:H}).then(r => r.ok && r.blob())
     .then(b => { if (b) card.querySelector('.photo').src = URL.createObjectURL(b); }).catch(()=>{});
   const act = like => async ev => {
@@ -710,6 +727,16 @@ function candidateCard(c){
   };
   card.querySelector('.skip').onclick = act(false);
   card.querySelector('.like').onclick = act(true);
+  // «Искра»: сначала списание на сервере (может не хватить JOY), потом анимация как у лайка
+  card.querySelector('.sparkBtn').onclick = async ev => {
+    haptic('medium');
+    try{ const r = await api('/joy/spark/'+c.id, {method:'POST'}); renderJoy(r);
+      confetti(ev.clientX, ev.clientY); haptic('ok');
+      card.style.transition = 'all .4s cubic-bezier(.4,0,.6,1)'; card.style.opacity = 0;
+      card.style.transform = 'translateY(-60px) scale(.9)'; setTimeout(() => card.remove(), 380);
+      toast(r.match ? T('💞 Взаимно! Бот уже написал подробности') : T('✨ Искра отправлена — {name} узнает сразу', {name: c.name}));
+    }catch(e){ joyFail(e); }
+  };
   return card;
 }
 
@@ -732,9 +759,29 @@ async function loadMatches(){
           <div style="margin-top:6px"><span class="chip n${m.chs}"><span class="dot"></span>${m.chs}</span></div></div>
         <div class="score" style="--p:${m.compat}"><b>${m.compat}%</b><i>${T('созвучие')}</i></div></div></div>
       ${m.username ? `<div class="acts"><button class="btn" data-u="${esc(m.username)}">${T('✍️ Написать')}</button></div>`
-                   : `<div class="disclaimer">${T('Ссылка для связи — в сообщении от бота о взаимной симпатии')}</div>`}</div>`).join('');
+                   : `<div class="disclaimer">${T('Ссылка для связи — в сообщении от бота о взаимной симпатии')}</div>`}
+      <div class="acts" style="padding-top:0"><button class="btn ghost" data-r="${m.id}">${m.report ? T('🔮 Открыть глубокий разбор')
+        : T('🔮 Глубокий разбор · {n} JOY', {n: fmtJoy(JOY?.prices?.report ?? 0.5)})}</button></div><div id="rep${m.id}"></div></div>`).join('');
+    box.querySelectorAll('[data-r]').forEach(b => b.onclick = () => openReport(+b.dataset.r, b));
     box.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { haptic('medium'); tg.openTelegramLink('https://t.me/'+encodeURIComponent(b.dataset.u)); });
   }catch(e){ box.innerHTML = `<div class="empty">${T('Ошибка загрузки')}</div>`; }
+}
+
+// Глубокий разбор пары: три сферы + ИИ-текст. Дата рождения второго человека не приходит с сервера.
+async function openReport(id, btn){
+  haptic('medium'); btn.disabled = true;
+  try{
+    const r = await api('/joy/report/'+id, {method:'POST'}); renderJoy(r.joy);
+    btn.textContent = T('🔮 Глубокий разбор'); 
+    $('rep'+id).innerHTML = `<div class="body">
+      ${r.ai ? `<div class="why"><div class="label">${T('Разбор пары')}</div><div style="white-space:pre-line">${esc(r.ai)}</div></div>` : ''}
+      ${r.kinds.map(k => `<div class="jq"><div class="row"><div class="label">${esc(k.kind_label)}</div><b>${k.score}%</b></div>
+        <div class="txt"><b>${esc(k.verdict)}</b></div>
+        ${k.pros.map(x => `<div class="txt small">✅ ${esc(x)}</div>`).join('')}
+        ${k.cons.map(x => `<div class="txt small">⚠️ ${esc(x)}</div>`).join('')}</div>`).join('')}
+      <div class="disclaimer">${T('Цифровая нумерология — игра и повод для рефлексии, а не научный вердикт 🙂')}</div></div>`;
+    $('rep'+id).scrollIntoView({behavior: 'smooth', block: 'start'});
+  }catch(e){ joyFail(e); btn.disabled = false; }
 }
 
 // Уменьшаем картинку в браузере до 1280 px JPEG. Не вышло (редкий формат) — шлём как есть.

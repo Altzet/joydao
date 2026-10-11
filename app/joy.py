@@ -20,6 +20,14 @@ STREAK = 300          # 7 дней подряд — 0,3 JOY, раз в неде�
 HOLD_DAYS = 3         # антифарм: 1 JOY через 3 дня после регистрации или после первой взаимной симпатии
 PASS = 7              # верных ответов из 9 в тесте принципов
 
+# Траты (фаза 2). 20% каждой траты считаются сожжёнными, 80% — вернувшимися в пул наград:
+# это учёт для on-chain фазы, в базе трата — просто отрицательная запись журнала.
+SPARK = 100           # «Искра» — 0,1 JOY: усиленный лайк, ты первый в ленте получателя
+BOOST = 300           # буст анкеты — 0,3 JOY на 24 часа
+REPORT = 500          # глубокий разбор пары — 0,5 JOY, один раз на человека
+BOOST_HOURS = 24
+BOOST_RANK = 15       # сколько «процентов созвучия» добавляет буст при ранжировании ленты
+
 # Уровень — по ЗАРАБОТАННОМУ (траты его не уменьшают, купить статус нельзя)
 LEVELS = [(0, "Новичок"), (1, "Искра"), (10, "Пламя"), (50, "Сияние"), (200, "Солнце")]
 
@@ -89,6 +97,116 @@ def level(earned: int) -> tuple[str, int | None]:
             name = title
             nxt = LEVELS[i + 1][0] if i + 1 < len(LEVELS) else None
     return name, nxt
+
+
+# --- траты ---
+
+class NotEnough(Exception):
+    """Не хватает JOY на трату."""
+
+
+def spend(uid: int, amount: int, reason: str) -> bool:
+    """Списать JOY. True — списано сейчас, False — уже было куплено (тот же reason).
+    NotEnough — баланса не хватает. Проверка и списание — в одной транзакции."""
+    with db.connect() as c:
+        c.execute("BEGIN IMMEDIATE")  # параллельные траты одного человека не уведут баланс в минус
+        if c.execute("SELECT 1 FROM joy_ledger WHERE user_id=? AND reason=?", (uid, reason)).fetchone():
+            return False
+        bal = c.execute("SELECT COALESCE(SUM(delta),0) FROM joy_ledger WHERE user_id=?", (uid,)).fetchone()[0]
+        if bal < amount:
+            raise NotEnough
+        return _award(c, uid, -amount, reason)
+
+
+def sparked_me(uid: int) -> set[int]:
+    """Кто отправил этому человеку «Искру»."""
+    with db.connect() as c:
+        return {r[0] for r in c.execute("SELECT user_id FROM joy_ledger WHERE reason=?", (f"spend:spark:{uid}",))}
+
+
+def boosted() -> set[int]:
+    """Чьи анкеты сейчас под бустом."""
+    with db.connect() as c:
+        return {r[0] for r in c.execute(
+            "SELECT DISTINCT user_id FROM joy_ledger WHERE reason LIKE 'spend:boost:%' "
+            "AND created_at > datetime('now', ?)", (f"-{BOOST_HOURS} hours",))}
+
+
+def boost_until(uid: int) -> str | None:
+    """До какого времени (UTC, «ГГГГ-ММ-ДД ЧЧ:ММ:СС») действует буст, или None."""
+    with db.connect() as c:
+        r = c.execute("SELECT datetime(MAX(created_at), ?) u FROM joy_ledger WHERE user_id=? "
+                      "AND reason LIKE 'spend:boost:%' HAVING u > datetime('now')",
+                      (f"+{BOOST_HOURS} hours", uid)).fetchone()
+    return r[0] if r else None
+
+
+def boost(uid: int) -> str:
+    """Включить буст на 24 часа. Повторно, пока действует, — не списываем."""
+    if boost_until(uid):
+        return boost_until(uid)
+    with db.connect() as c:
+        stamp = c.execute("SELECT strftime('%Y-%m-%dT%H:%M:%S','now')").fetchone()[0]
+    spend(uid, BOOST, f"spend:boost:{stamp}")
+    return boost_until(uid)
+
+
+def has_report(uid: int, other_id: int) -> bool:
+    with db.connect() as c:
+        return c.execute("SELECT 1 FROM joy_ledger WHERE user_id=? AND reason=?",
+                         (uid, f"spend:report:{other_id}")).fetchone() is not None
+
+
+def cached_report_text(uid: int, other_id: int) -> str | None:
+    with db.connect() as c:
+        r = c.execute("SELECT text FROM joy_reports WHERE user_id=? AND other_id=?", (uid, other_id)).fetchone()
+    return r[0] if r else None
+
+
+def save_report_text(uid: int, other_id: int, text: str) -> None:
+    with db.connect() as c:
+        c.execute("INSERT OR REPLACE INTO joy_reports (user_id, other_id, text) VALUES (?,?,?)",
+                  (uid, other_id, text))
+
+
+REPORT_SYSTEM = (
+    "Ты — тёплый и честный консультант сообщества JoyDao по цифровой нумерологии. "
+    "Нумерология у нас — игра и повод для рефлексии, а не вердикт: никаких приговоров. "
+    "Без эзотерического пафоса, без медицинских и финансовых советов. Пиши на языке: {lang}. "
+    "Обращайся к читателю на «ты», второго человека называй по имени."
+)
+
+
+async def deep_report(uid: int, other_id: int, lang: str = "ru") -> dict:
+    """Глубокий разбор пары: совместимость в трёх сферах + ИИ-текст (если есть ключ Anthropic).
+    ИИ-текст кэшируется — повторное открытие бесплатно и мгновенно.
+    Дату рождения второго человека не отдаём: в JoyDao даты друг другу не показываются."""
+    from . import agent, config, teaser
+    from .i18n import NAMES
+    me, other = db.get_user(uid), db.get_user(other_id)
+    b1, b2 = date.fromisoformat(me["birth_date"]), date.fromisoformat(other["birth_date"])
+    kinds = []
+    for k in ("love", "friend", "business"):
+        t = teaser.build_compat(b1, b2, k, lang)
+        t.pop("date", None)
+        kinds.append(t)
+    text = cached_report_text(uid, other_id)
+    if text is None and config.ANTHROPIC_API_KEY:
+        facts = "\n".join(f"{t['kind_label']}: {t['score']}% — {t['verdict']}. "
+                          f"Плюсы: {'; '.join(t['pros']) or '—'}. Риски: {'; '.join(t['cons']) or '—'}."
+                          for t in kinds)
+        prompt = (f"Пара: {me['name']} (Число Сознания {suisai.consciousness_number(b1)}) и "
+                  f"{other['name']} (Число Сознания {suisai.consciousness_number(b2)}).\n{facts}\n\n"
+                  "Напиши разбор пары на 120–160 слов: в чём их сила вместе, где может искрить "
+                  "и один конкретный совет для первого разговора или встречи.")
+        try:
+            text = await agent._ask(REPORT_SYSTEM.format(lang=NAMES.get(lang, lang)), prompt, 700)
+            save_report_text(uid, other_id, text)
+        except Exception:
+            import logging
+            logging.getLogger("joydao.joy").exception("ИИ-разбор пары не удался")
+            text = ""  # разбор по трём сферам всё равно есть — JOY потрачен не зря
+    return {"name": other["name"], "kinds": kinds, "ai": text or ""}
 
 
 # --- членство и первый JOY ---
@@ -229,7 +347,9 @@ def state(uid: int, lang: str = "ru") -> dict:
     name, nxt = level(earned)
     status = onboard_status(user)
     out = {"balance": bal / UNIT, "earned": earned / UNIT, "level": T(name, lang), "next": nxt,
-           "status": status, "new_award": ONBOARD / UNIT if new else 0, "streak": streak(uid)}
+           "status": status, "new_award": ONBOARD / UNIT if new else 0, "streak": streak(uid),
+           "dating": db.is_dating(user), "boost_until": boost_until(uid),
+           "prices": {"spark": SPARK / UNIT, "boost": BOOST / UNIT, "report": REPORT / UNIT}}
     if status == "pending":
         out["hold_until"] = hold_until(user)
     if not is_member(user):
