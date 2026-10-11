@@ -198,7 +198,7 @@ def test_compat_by_kind_business_roles():
 
 
 def test_feed_by_goal():
-    # Я ищу дружбу и бизнес; в ленте «дружба» — только те, кто тоже выбрал дружбу, пол не важен
+    # Я ищу дружбу и бизнес; в ленте «дружба» — все с анкетой (пол и цель не важны), в «бизнесе» — выбравшие бизнес
     _dating(1, "1992-03-21", "f", "")
     db.update_user(1, goals="friend,business")
     _dating(2, "1988-07-06", "f", "")
@@ -208,8 +208,22 @@ def test_feed_by_goal():
     db.update_user(4, goals="business")
     assert db.is_dating(db.get_user(1))        # без «кого ищу» — ок, любви нет в целях
     ids = lambda goal: {r["tg_id"] for r in db.daily_candidates(1, 10, goal=goal)}
-    assert ids("friend") == {2} and ids("business") == {4}
-    assert ids("friend") == {2}                # повторный запрос — те же показанные
+    assert ids("friend") == {2, 3, 4} and ids("business") == {4}
+    assert ids("friend") == {2, 3, 4}          # повторный запрос — те же люди
+
+
+def test_feed_has_no_daily_limit_and_skips_return_after_week():
+    _dating(1, "1992-03-21", "f", "m")
+    for uid in range(2, 12):                    # 10 мужчин, ищущих женщин
+        _dating(uid, "1988-07-06", "m", "f")
+    _dating(12, "1990-01-01", "f", "m")         # женщина — не в ленте любви для женщины, ищущей мужчину
+    ids = lambda: {r["tg_id"] for r in db.daily_candidates(1, goal="love")}  # noqa: E731
+    assert ids() == set(range(2, 12))           # все сразу, без лимита 5 в день
+    db.set_like(1, 2, True); db.set_like(1, 3, False)
+    assert 2 not in ids() and 3 not in ids()    # лайкнутый и только что пропущенный — не показываются
+    with db.connect() as c:
+        c.execute("UPDATE likes SET created_at=datetime('now','-8 days') WHERE from_id=1")
+    assert 3 in ids() and 2 not in ids()        # пропущенный вернулся через неделю, лайкнутый — нет
 
 
 def test_onboarding_goals_skip_seek_without_love():

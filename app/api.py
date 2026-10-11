@@ -231,14 +231,14 @@ async def candidates(goal: str = "love", x_init_data: str | None = Header(defaul
     # Прислал «Искру» — первым в ленте; анкета под бустом — выше остальных
     lift = lambda tg_id: (1000 if tg_id in sparks else 0) + (joy.BOOST_RANK if tg_id in boosted else 0)  # noqa: E731
     rows = db.daily_candidates(
-        uid, config.DAILY_LIMIT, goal=goal,
+        uid, config.FEED_LIMIT, goal=goal,
         rank=lambda r: compat.compatibility(my_birth, date.fromisoformat(r["birth_date"]), kind=goal)["score"]
         + lift(r["tg_id"]),
     )
     cards = [{**_user_card(r, my_birth, goal, user_lang(me_row)), "spark": r["tg_id"] in sparks} for r in rows]
     cards.sort(key=lambda c: -(c["compat"] + lift(c["id"])))
     from . import teaser
-    return {"candidates": cards, "daily_limit": config.DAILY_LIMIT, "bonus": db.bonus_today(uid),
+    return {"candidates": cards,
             "ref_link": teaser.ref_link(uid)}
 
 

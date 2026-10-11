@@ -118,8 +118,7 @@ async def _pair_result(bot: Bot, uid: int, other_id: int, target: Message) -> No
         await bot.send_message(
             other_id,
             T("💞 <b>{name}</b> открыл(а) вашу ссылку и проверил(а) совместимость с вами: "
-              "<b>{score}%</b>\n<i>{verdict}</i>\n\n"
-              "Каждый, кто проверит пару с вами, — ещё и +1 кандидат в вашей ленте.", lang2,
+              "<b>{score}%</b>\n<i>{verdict}</i>", lang2,
               name=me["name"], score=t2["score"], verdict=t2["verdict"]),
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
@@ -212,8 +211,7 @@ async def ob_birth(msg: Message, state: FSMContext):
         try:
             await msg.bot.send_message(
                 referrer_id,
-                T("🎉 {name} присоединился(ась) по вашей ссылке — "
-                  "сегодня вам покажем на 1 кандидата больше.", user_lang(db.get_user(referrer_id)),
+                T("🎉 {name} присоединился(ась) к JoyDao по вашей ссылке!", user_lang(db.get_user(referrer_id)),
                   name=user["name"]))
         except Exception:
             pass

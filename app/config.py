@@ -15,7 +15,8 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 WEBAPP_URL = os.environ.get("WEBAPP_URL", "")   # https://ваш-домен (для кнопки Mini App)
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8080"))
-DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "5"))
+# Сколько анкет отдавать в ленту за раз (лучшие по созвучию). Дневного лимита нет.
+FEED_LIMIT = int(os.environ.get("FEED_LIMIT", "100"))
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "")  # чат премодерации (опционально)
 
 # --- Агент-контентщик канала ---

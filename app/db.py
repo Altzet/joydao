@@ -200,62 +200,56 @@ def get_user(tg_id: int) -> sqlite3.Row | None:
         return c.execute("SELECT * FROM users WHERE tg_id=?", (tg_id,)).fetchone()
 
 
-def daily_candidates(tg_id: int, limit: int = 5, rank=None, goal: str = "love") -> list[sqlite3.Row]:
-    """Кандидаты дня: показанные сегодня + добор новых до лимита (+ реферальный бонус).
-    Реферальные пары (пригласивший/приглашённый) друг другу не показываются.
-    rank(row) -> число: добор берёт лучших по нему (по умолчанию — случайно)."""
+SKIP_DAYS = 7  # пропущенный человек снова появится в ленте через неделю
+
+
+def daily_candidates(tg_id: int, limit: int | None = None, rank=None, goal: str = "love") -> list[sqlite3.Row]:
+    """Лента: все подходящие анкеты, без дневного лимита.
+    Не показываем: себя, тех, кому уже поставлен лайк, пропущенных за последние SKIP_DAYS дней
+    и реферальные пары (пригласивший/приглашённый друг другу не показываются).
+    «Любовь» и «бизнес» — только те, кто выбрал эту цель (для любви ещё и пол / «кого ищу» с обеих сторон);
+    «дружба» — все с анкетой, пол и цель не важны.
+    rank(row) -> число: порядок ленты (по умолчанию — случайно); limit — сколько отдать."""
     me = get_user(tg_id)
     if not me:
         return []
-    limit += bonus_today(tg_id)
-    today = date.today().isoformat()
     excluded = referral_partners(tg_id)
     excl_cond = f"AND u.tg_id NOT IN ({','.join('?' * len(excluded))})" if excluded else ""
-    # Лента по цели: человек попадает в ленту «дружба», только если сам её выбрал.
-    # Пол и «кого ищу» учитываются только для любви.
-    params: list = [tg_id, tg_id, tg_id, f"%,{goal},%"]
+    params: list = [tg_id, tg_id, f"-{SKIP_DAYS} days"]
+    goal_cond = ""
+    if goal != "friend":
+        goal_cond = "AND (',' || COALESCE(u.goals, 'love') || ',') LIKE ?"
+        params.append(f"%,{goal},%")
+    gender_cond = ""
     if goal == "love":
         seek = me["seek"]
-        gender_cond = ("AND (u.seek = 'any' OR u.seek = (SELECT gender FROM users WHERE tg_id=?))"
-                       + ("" if seek == "any" else " AND u.gender = ?"))
-        params.append(tg_id)
+        gender_cond = ("AND (u.seek = 'any' OR u.seek = ?)" + ("" if seek == "any" else " AND u.gender = ?"))
+        params.append(me["gender"])
         if seek != "any":
             params.append(seek)
-    else:
-        gender_cond = ""
     params += excluded
-
     with connect() as c:
-        shown_today = c.execute(
-            f"""SELECT u.* FROM shown s JOIN users u ON u.tg_id = s.candidate_id
-                WHERE s.user_id=? AND s.day=? AND s.goal=? AND u.active=1
-                AND u.tg_id NOT IN (SELECT to_id FROM likes WHERE from_id=?)""",
-            (tg_id, today, goal, tg_id),
+        rows = c.execute(
+            f"""SELECT u.* FROM users u
+                WHERE u.tg_id != ? AND u.active = 1
+                AND u.tg_id NOT IN (SELECT to_id FROM likes WHERE from_id=?
+                                    AND (is_like = 1 OR created_at > datetime('now', ?)))
+                {goal_cond} {gender_cond} {excl_cond}
+                ORDER BY RANDOM()""",
+            params,
         ).fetchall()
-        need = limit - len(shown_today)
-        fresh: list[sqlite3.Row] = []
-        if need > 0:
-            fresh = c.execute(
-                f"""SELECT u.* FROM users u
-                    WHERE u.tg_id != ? AND u.active = 1
-                    AND u.tg_id NOT IN (SELECT candidate_id FROM shown WHERE user_id=?)
-                    AND u.tg_id NOT IN (SELECT to_id FROM likes WHERE from_id=?)
-                    AND (',' || COALESCE(u.goals, 'love') || ',') LIKE ?
-                    {gender_cond}
-                    {excl_cond}
-                    ORDER BY RANDOM()""",
-                params,
-            ).fetchall()
-            # ponytail: ранжируем всех подходящих в Python — O(N) на запрос,
-            # хватит до ~10k анкет; дальше — предрасчёт ЧС/миссии в колонки и SQL-фильтр.
-            if rank:
-                fresh.sort(key=rank, reverse=True)
-            fresh = fresh[:need]
-            c.executemany(
-                "INSERT OR IGNORE INTO shown (user_id, candidate_id, day, goal) VALUES (?,?,?,?)",
-                [(tg_id, r["tg_id"], today, goal) for r in fresh],
-            )
-        return list(shown_today) + fresh
+        # ponytail: ранжируем всех подходящих в Python — O(N) на запрос,
+        # хватит до ~10k анкет; дальше — предрасчёт ЧС/миссии в колонки и SQL-фильтр.
+        if rank:
+            rows.sort(key=rank, reverse=True)
+        rows = rows[:limit] if limit else rows
+        today = date.today().isoformat()
+        # «показан» нужен лайку и фото: лайкать и смотреть фото можно только тех, кто был в ленте
+        c.executemany(
+            "INSERT OR REPLACE INTO shown (user_id, candidate_id, day, goal) VALUES (?,?,?,?)",
+            [(tg_id, r["tg_id"], today, goal) for r in rows],
+        )
+        return list(rows)
 
 
 def was_shown(user_id: int, candidate_id: int) -> bool:

@@ -1,0 +1,4 @@
+758	"💞 <b>{name}</b> opened your link and checked your compatibility: <b>{score}%</b>\n<i>{verdict}</i>"
+759	"🎉 {name} joined JoyDao via your link!"
+760	"You've seen everyone 🌙"
+761	"New people will appear as soon as they join the community. Invite friends — the more of us, the more matches."

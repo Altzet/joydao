@@ -729,12 +729,11 @@ async function loadFeed(){
   }
   buildSeg();
   try{
-    const {candidates, bonus, ref_link} = await api('/candidates?goal=' + curGoal);
-    if (bonus && !sessionStorage.getItem('bonusShown')){ toast(T('🎁 +{n} сегодня — спасибо другу!', {n: bonus})); sessionStorage.setItem('bonusShown','1'); }
+    const {candidates, ref_link} = await api('/candidates?goal=' + curGoal);
     const undo = `<div class="undo" id="undoBtn">${T('↩️ Ой, пролистал(а) — вернуть')}</div>`;
     if (!candidates.length){
       box.innerHTML = undo + `<div class="card"><div class="empty"><span class="big">🌙</span>
-        <div class="h2">${T('На сегодня всё!')}</div><div class="txt muted">${T('Новые созвучные люди появятся завтра. А каждый, кто проверит совместимость с тобой по ссылке, добавит +1 человека уже сегодня.')}</div>
+        <div class="h2">${T('Ты посмотрел(а) всех 🌙')}</div><div class="txt muted">${T('Новые люди появятся, как только присоединятся к сообществу. Позови друзей — чем больше нас, тем больше созвучий.')}</div>
         <div class="btns"><button class="btn" id="emptyShare">${T('💞 Позвать друга')}</button></div></div></div>`;
       $('emptyShare').onclick = () => share(ref_link, T('Давай проверим нашу совместимость по коду души 💞'));
     } else {

@@ -756,5 +756,9 @@
 "Вы совпали в {same} из {total}": "You matched on {same} of {total}",
 "Ты угадал(а) {a} из {total}, {name} — {b}": "You guessed {a} of {total}, {name} — {b}",
 "ты": "you",
-"Где не совпали — лучший повод спросить «почему?» 😉": "Where you didn't match is the best excuse to ask «why?» 😉"
+"Где не совпали — лучший повод спросить «почему?» 😉": "Where you didn't match is the best excuse to ask «why?» 😉",
+"💞 <b>{name}</b> открыл(а) вашу ссылку и проверил(а) совместимость с вами: <b>{score}%</b>\n<i>{verdict}</i>": "💞 <b>{name}</b> opened your link and checked your compatibility: <b>{score}%</b>\n<i>{verdict}</i>",
+"🎉 {name} присоединился(ась) к JoyDao по вашей ссылке!": "🎉 {name} joined JoyDao via your link!",
+"Ты посмотрел(а) всех 🌙": "You've seen everyone 🌙",
+"Новые люди появятся, как только присоединятся к сообществу. Позови друзей — чем больше нас, тем больше созвучий.": "New people will appear as soon as they join the community. Invite friends — the more of us, the more matches."
 }
