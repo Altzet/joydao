@@ -505,6 +505,13 @@ async def tour_answer(body: TourIn, x_init_data: str | None = Header(default=Non
     return {**res, **joy.tour_state(uid, user_lang(user))}
 
 
+@app.get("/api/joy/rating")
+async def joy_rating(period: str = "week", x_init_data: str | None = Header(default=None)):
+    """Рейтинг клуба по заработанному JOY: неделя или всё время."""
+    uid, _ = _joy_user(x_init_data)
+    return joy.rating(uid, "all" if period == "all" else "week")
+
+
 @app.get("/api/thanks-wall")
 async def wall():
     return {"thanks": [dict(r) for r in db.thanks_wall()]}

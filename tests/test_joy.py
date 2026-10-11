@@ -237,3 +237,23 @@ def test_three_languages_and_joy_translated():
     texts += [x for row in joy.PAIR_QUESTIONS for x in row] + [n for _, n in joy.LEVELS]
     for lang in ("uk", "en"):                                        # все тексты JOY есть в словарях
         assert [t for t in texts if t not in table(lang)] == []
+
+
+def test_rating_by_earned_week_and_all_time(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app import api
+    for uid in (1, 2, 3):
+        _rich(uid)                                                   # у каждого 1 JOY за вход
+    _dating(4)                                                       # не член клуба — не в рейтинге
+    with db.connect() as c:
+        joy._award(c, 2, 2 * joy.UNIT, "tour:2026-W40:place")          # 2-му +2 JOY, но давно
+        c.execute("UPDATE joy_ledger SET created_at=datetime('now','-30 days') WHERE reason='tour:2026-W40:place'")
+        joy._award(c, 3, joy.QUIZ, "quiz:today")                       # 3-му +0,05 на этой неделе
+        joy._award(c, 1, joy.TOUR_ENTRY, "tour:2026-W41:refund")       # возврат взноса — не заработок
+    joy.spend(3, joy.SPARK, "spend:spark:1")                           # траты место не меняют
+    week, alltime = joy.rating(1, "week"), joy.rating(1, "all")
+    assert [b["name"] for b in week["top"]][0] == "u3" and week["total"] == 3
+    assert [b["name"] for b in alltime["top"]][0] == "u2" and alltime["top"][0]["joy"] == 3
+    assert alltime["me"]["place"] in (2, 3) and alltime["me"]["joy"] == 1
+    monkeypatch.setattr(api, "_auth", lambda _: 1)
+    assert TestClient(api.app).get("/api/joy/rating?period=all").json()["top"][0]["joy"] == 3

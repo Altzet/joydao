@@ -1,0 +1,5 @@
+765	"🏅 Club rating"
+766	"Week"
+767	"All time"
+768	"No one has earned JOY this week yet — be the first! ⚡"
+769	"We count earned JOY — spending never lowers your place."

@@ -214,6 +214,11 @@
   .pick .bad{background:var(--coral);color:#fff;opacity:.75}
   .jq{margin-top:14px}
   .jq .txt{margin-bottom:6px}
+  .rrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px}
+  .rrow.me{background:var(--soft)}
+  .rrow .rp{width:28px;text-align:center;font-weight:900}
+  .rrow .rn{flex:1;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rgap{text-align:center;color:var(--muted);line-height:1}
   .chip.spark{background:var(--grad);color:#fff;margin-left:4px}
   .pick{display:flex;gap:6px;background:var(--bg);border-radius:16px;padding:4px}
   .pick div{flex:1;text-align:center;padding:9px 4px;border-radius:12px;font-weight:900;font-size:.9rem;color:var(--muted);cursor:pointer}
@@ -538,6 +543,7 @@ function renderToday(){
       <div>${T('<b>Подарок дня:</b> сегодняшняя дата несёт <b>{gifts}</b> — этого нет в твоей дате рождения. Потренируйся!', {gifts: esc(t.gifts.join(', '))})}</div></div></div>`:''}
     <div id="joyBox"></div>
     <div id="tourBox"></div>
+    <div id="rateBox"></div>
     <div class="card"><div class="body">
       <div class="label">${T('Баланс сегодняшней даты')}</div>
       <div class="txt">${T('Каждая цифра — энергия. Цветные есть в дате, яркие — повторяются, пунктир — то, что день просит добрать.')}</div>
@@ -560,7 +566,25 @@ function renderToday(){
   if (ME.community_chat) $('tChat').onclick = () => { haptic('light'); tg.openTelegramLink(ME.community_chat); };
   $('tShare').onclick = () => share(ME.ref_link, T('Давай проверим нашу совместимость по коду души 💞'));
   $('tCheck').onclick = () => { haptic('sel'); go('check'); };
-  loadJoy(); loadTour();
+  loadJoy(); loadTour(); loadRating('week');
+}
+
+// ===== Рейтинг клуба: по заработанному JOY, неделя / всё время =====
+async function loadRating(period){
+  try{ renderRating(await api('/joy/rating?period=' + period)); }catch(e){}
+}
+function renderRating(r){
+  const box = $('rateBox'); if (!box) return;
+  const medal = p => ['🥇','🥈','🥉'][p-1] || p + '.';
+  const row = b => `<div class="rrow${b.me ? ' me' : ''}"><span class="rp">${medal(b.place)}</span><span class="rn">${esc(b.name)}${b.me ? ' · ' + T('ты') : ''}</span><b>${fmtJoy(b.joy)} JOY</b></div>`;
+  const mine = r.me && !r.top.some(b => b.me) ? `<div class="rgap">···</div>${row(r.me)}` : '';
+  box.innerHTML = `<div class="card"><div class="body">
+    <div class="label">${T('🏅 Рейтинг клуба')}</div>
+    <div class="pick" id="rPick" style="margin-top:10px"><div data-p="week" class="${r.period==='week'?'on':''}">${T('Неделя')}</div><div data-p="all" class="${r.period==='all'?'on':''}">${T('Всё время')}</div></div>
+    <div class="jq">${r.top.length ? r.top.map(row).join('') + mine
+      : `<div class="txt muted small">${T('Пока никто не заработал JOY на этой неделе — стань первым! ⚡')}</div>`}</div>
+    <div class="txt muted small">${T('Считаем заработанные JOY — траты место не опускают.')}</div></div></div>`;
+  box.querySelectorAll('#rPick div').forEach(d => d.onclick = () => { haptic('sel'); loadRating(d.dataset.p); });
 }
 
 // ===== Клубный турнир недели: 9 вопросов, 10 минут, банк — троим лучшим (расчёт и таймер — на сервере) =====

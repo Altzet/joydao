@@ -538,6 +538,24 @@ def tour_state(uid: int, lang: str = "ru") -> dict:
     return out
 
 
+# --- рейтинг клуба: по ЗАРАБОТАННОМУ JOY (траты не опускают, купить место нельзя) ---
+
+def rating(uid: int, period: str = "week", limit: int = 10) -> dict:
+    """Топ участников клуба по заработанному JOY за неделю (с понедельника, UTC) или за всё время.
+    Возвраты взносов турнира — не заработок."""
+    since = "date('now', 'weekday 0', '-6 days')" if period == "week" else "'0000-01-01'"
+    with db.connect() as c:
+        rows = c.execute(
+            f"""SELECT l.user_id, u.name, SUM(l.delta) earned FROM joy_ledger l JOIN users u ON u.tg_id = l.user_id
+                WHERE l.delta > 0 AND l.reason NOT LIKE '%:refund' AND l.created_at >= {since}
+                  AND COALESCE(u.member_at, '') != ''
+                GROUP BY l.user_id ORDER BY earned DESC, MIN(l.created_at)""").fetchall()
+    board = [{"place": i + 1, "name": r["name"], "joy": r["earned"] / UNIT, "me": r["user_id"] == uid}
+             for i, r in enumerate(rows)]
+    return {"period": period, "top": board[:limit], "me": next((b for b in board if b["me"]), None),
+            "total": len(board)}
+
+
 # --- всё для экрана ---
 
 def state(uid: int, lang: str = "ru") -> dict:
