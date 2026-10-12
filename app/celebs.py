@@ -33,7 +33,8 @@ def _name(c: dict, lang: str) -> str:
 def listing(opened: set[str], lang: str) -> dict:
     """Список для витрины: имя и категория — бесплатно, всё остальное — после открытия."""
     return {"cats": {k: T(v, lang) for k, v in CATS.items()},
-            "celebs": [{"id": c["id"], "cat": c["cat"], "name": _name(c, lang), "open": c["id"] in opened}
+            "celebs": [{"id": c["id"], "cat": c["cat"], "name": _name(c, lang), "open": c["id"] in opened,
+                         "photo": (c.get("photo") or {}).get("url")}
                        for c in _all().values()]}
 
 
@@ -47,4 +48,5 @@ def profile(c: dict, my_birth: date, lang: str) -> dict:
              + "\n" + T("А с какой звездой созвучен ты? Проверь в JoyDao 👇", lang))
     return {"id": c["id"], "name": name, "cat": T(CATS[c["cat"]], lang),
             "wiki": c["wiki"].get(lang) or c["wiki"].get("en"),
+            "photo": c.get("photo"),  # {url, author, license, page} — подпись обязательна по лицензии
             "card": teaser.build(birth, lang), "kinds": kinds, "share_text": share}

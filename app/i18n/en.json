@@ -781,5 +781,6 @@
 "🏆 Спорт": "🏆 Sports",
 "🧠 Гении": "🧠 Geniuses",
 "⭐ Я и {name}:": "⭐ Me and {name}:",
-"А с какой звездой созвучен ты? Проверь в JoyDao 👇": "Which star are you in tune with? Check in JoyDao 👇"
+"А с какой звездой созвучен ты? Проверь в JoyDao 👇": "Which star are you in tune with? Check in JoyDao 👇",
+"Фото: {author}, {license}": "Photo: {author}, {license}"
 }

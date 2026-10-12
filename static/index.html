@@ -213,6 +213,15 @@
   .pick .ok{background:var(--mint);color:#fff}
   .pick .bad{background:var(--coral);color:#fff;opacity:.75}
   .jq{margin-top:14px}
+  /* Звёзды: сетка аватаров с подписью; замок — пока разбор не открыт */
+  .celebs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;margin-top:8px}
+  .celeb{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;text-align:center;font-size:.72rem;font-weight:800;line-height:1.15}
+  .celeb .av{position:relative;width:60px;height:60px;border-radius:50%;background:var(--grad);display:grid;place-items:center;
+             font-size:1.4rem;color:#fff;overflow:visible;transition:transform .15s cubic-bezier(.3,1.6,.5,1)}
+  .celeb:active .av{transform:scale(.92)}
+  .celeb .av img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 20%}
+  .celeb .av i{position:absolute;right:-2px;bottom:-2px;font-style:normal;font-size:.8rem;background:var(--card);border-radius:99px;padding:1px 3px}
+  .celebHero{width:96px;height:96px;border-radius:50%;object-fit:cover;object-position:50% 20%;flex:none}
   .jq .txt{margin-bottom:6px}
   .rrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px}
   .rrow.me{background:var(--soft)}
@@ -1114,14 +1123,16 @@ $('compatBtn').onclick = async ev => {
 
 // ===== ЗВЁЗДЫ: имена бесплатно, разбор и совместимость — за JOY (один раз на звезду) =====
 let CELEBS = [];
+const initials = n => esc(n.split(' ').map(w => w[0]).slice(0, 2).join(''));
+const celebTile = c => `<div class="celeb" data-c="${esc(c.id)}"><div class="av">${c.photo
+  ? `<img src="${esc(c.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ''}${c.photo ? '' : initials(c.name)}<i>${c.open ? '⭐' : '🔒'}</i></div>${esc(c.name)}</div>`;
 async function loadCelebs(){
   try{
     const r = await api('/celebs'); CELEBS = r.celebs;
     if (!CELEBS.length) return;  // нет данных — раздел скрыт
     $('celebList').innerHTML = Object.entries(r.cats).map(([k, label]) => {
       const list = CELEBS.filter(c => c.cat === k);
-      return list.length ? `<div class="label" style="margin-top:12px">${esc(label)}</div><div class="legend">${
-        list.map(c => `<span class="chip" data-c="${esc(c.id)}" style="cursor:pointer">${c.open ? '⭐' : '🔒'} ${esc(c.name)}</span>`).join('')}</div>` : '';
+      return list.length ? `<div class="label" style="margin-top:14px">${esc(label)}</div><div class="celebs">${list.map(celebTile).join('')}</div>` : '';
     }).join('');
     $('celebList').querySelectorAll('[data-c]').forEach(b => b.onclick = () => pickCeleb(b.dataset.c));
     $('celebCard').hidden = false;
@@ -1131,7 +1142,8 @@ function pickCeleb(id){
   const c = CELEBS.find(x => x.id === id), box = $('celebResult'); haptic('light');
   if (c.open) return openCeleb(id);
   // Трата — только по явной кнопке, не по случайному тапу в списке
-  box.innerHTML = `<div class="card"><div class="body"><div class="h2">${esc(c.name)}</div>
+  box.innerHTML = `<div class="card"><div class="body"><div class="row" style="justify-content:flex-start;gap:14px">${
+      c.photo ? `<img class="celebHero" src="${esc(c.photo)}" alt="">` : ''}<div class="h2">${esc(c.name)}</div></div>
     <div class="txt muted">${T('Код звезды, сильные стороны и ваша совместимость в любви, дружбе и деле.')}</div>
     <div class="btns"><button class="btn" id="celebBuy">${T('⭐ Открыть · {n} JOY', {n: fmtJoy(JOY?.prices?.celeb ?? 0.2)})}</button></div></div></div>`;
   $('celebBuy').onclick = () => openCeleb(id);
@@ -1143,10 +1155,12 @@ async function openCeleb(id){
   try{
     const r = await api('/joy/celeb/'+encodeURIComponent(id), {method:'POST'}), t = r.card; renderJoy(r.joy);
     const c = CELEBS.find(x => x.id === id);
-    if (c && !c.open){ c.open = true; const chip = $('celebList').querySelector(`[data-c="${CSS.escape(id)}"]`); if (chip) chip.textContent = '⭐ ' + c.name; }
+    if (c && !c.open){ c.open = true; const chip = $('celebList').querySelector(`[data-c="${CSS.escape(id)}"]`); if (chip) chip.outerHTML = celebTile(c);
+      $('celebList').querySelector(`[data-c="${CSS.escape(id)}"]`).onclick = () => pickCeleb(id); }
     const best = Math.max(...r.kinds.map(k => k.score));
     box.innerHTML = `<div class="card"><div class="body">
-        <div class="row"><div><div class="label">${esc(r.cat)} · ${esc(t.date)}</div><div class="h2">${esc(r.name)}</div></div>
+        <div class="row" style="gap:14px">${r.photo ? `<img class="celebHero" src="${esc(r.photo.url)}" alt="${esc(r.name)}">` : ''}
+          <div style="flex:1"><div class="label">${esc(r.cat)} · ${esc(t.date)}</div><div class="h2">${esc(r.name)}</div></div>
           <div class="bignum n${t.chs}">${t.chs}</div></div>
         <div class="txt"><b>${esc(t.title)}</b> — ${esc(t.essence)}.</div>
         <div class="why"><div class="label">${T('Интрига этой даты')}</div>⚡ ${esc(t.hook)}</div>
@@ -1160,11 +1174,13 @@ async function openCeleb(id){
           ${k.pros.map(x => `<div class="txt small">✅ ${esc(x)}</div>`).join('')}
           ${k.cons.map(x => `<div class="txt small">⚠️ ${esc(x)}</div>`).join('')}</div>`).join('')}
         <div class="disclaimer">${T('Цифровая нумерология — игра и повод для рефлексии, а не научный вердикт 🙂')}
-          ${r.wiki ? `<br><a href="#" id="celebWiki">${T('Дата рождения — Википедия')}</a>` : ''}</div>
+          ${r.wiki ? `<br><a href="#" id="celebWiki">${T('Дата рождения — Википедия')}</a>` : ''}
+          ${r.photo ? `<br><a href="#" id="celebPhoto">${T('Фото: {author}, {license}', {author: esc(r.photo.author || 'Wikimedia Commons'), license: esc(r.photo.license)})}</a>` : ''}</div>
       </div>
       <div class="acts"><button class="btn" id="celebShare">${T('↗️ Похвастаться друзьям')}</button></div></div>`;
     if (best >= 75) confetti(innerWidth/2, innerHeight/3);
     $('celebShare').onclick = () => share(r.ref_link, r.share_text);
+    if (r.photo) $('celebPhoto').onclick = ev => { ev.preventDefault(); tg.openLink(r.photo.page); };
     if (r.wiki) $('celebWiki').onclick = ev => { ev.preventDefault(); tg.openLink(r.wiki); };
     box.scrollIntoView({behavior: 'smooth', block: 'start'});
   }catch(e){ box.innerHTML = ''; joyFail(e); }
