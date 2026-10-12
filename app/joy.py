@@ -25,6 +25,7 @@ PASS = 7              # верных ответов из 9 в тесте при�
 SPARK = 100           # «Искра» — 0,1 JOY: усиленный лайк, ты первый в ленте получателя
 BOOST = 300           # буст анкеты — 0,3 JOY на 24 часа
 REPORT = 500          # глубокий разбор пары — 0,5 JOY, один раз на человека
+CELEB = 200           # разбор звезды + совместимость с ней — 0,2 JOY, один раз на звезду
 BOOST_HOURS = 24
 BOOST_RANK = 15       # сколько «процентов созвучия» добавляет буст при ранжировании ленты
 
@@ -568,7 +569,8 @@ def state(uid: int, lang: str = "ru") -> dict:
     out = {"balance": bal / UNIT, "earned": earned / UNIT, "level": T(name, lang), "next": nxt,
            "status": status, "new_award": ONBOARD / UNIT if new else 0, "streak": streak(uid),
            "dating": db.is_dating(user), "boost_until": boost_until(uid),
-           "prices": {"spark": SPARK / UNIT, "boost": BOOST / UNIT, "report": REPORT / UNIT}}
+           "prices": {"spark": SPARK / UNIT, "boost": BOOST / UNIT, "report": REPORT / UNIT,
+                      "celeb": CELEB / UNIT}}
     if status == "pending":
         out["hold_until"] = hold_until(user)
     if not is_member(user):

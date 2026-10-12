@@ -411,6 +411,35 @@ async def joy_report(other_id: int, x_init_data: str | None = Header(default=Non
     return {**await joy.deep_report(uid, other_id, lang), "joy": joy.state(uid, lang)}
 
 
+@app.get("/api/celebs")
+async def celebs_list(x_init_data: str | None = Header(default=None)):
+    """Витрина звёзд: имена бесплатно, разбор — за JOY."""
+    from . import celebs
+    uid, user = _joy_user(x_init_data)
+    with db.connect() as c:
+        opened = {r[0].removeprefix("spend:celeb:") for r in c.execute(
+            "SELECT reason FROM joy_ledger WHERE user_id=? AND reason LIKE 'spend:celeb:%'", (uid,))}
+    return celebs.listing(opened, user_lang(user))
+
+
+@app.post("/api/joy/celeb/{cid}")
+async def joy_celeb(cid: str, x_init_data: str | None = Header(default=None)):
+    """Разбор звезды и совместимость с ней за 0,2 JOY (один раз на звезду, дальше — бесплатно)."""
+    from . import celebs, teaser
+    uid, user = _joy_user(x_init_data)
+    c = celebs.get(cid)
+    if not c:
+        raise HTTPException(404, "Нет такой звезды")
+    try:
+        if joy.spend(uid, joy.CELEB, f"spend:celeb:{cid}"):
+            db.log_event(uid, "joy_celeb", cid)
+    except joy.NotEnough:
+        raise HTTPException(402, "Не хватает JOY")
+    lang = user_lang(user)
+    return {**celebs.profile(c, date.fromisoformat(user["birth_date"]), lang),
+            "ref_link": teaser.ref_link(uid), "joy": joy.state(uid, lang)}
+
+
 def _matched(uid: int, other_id: int) -> bool:
     return any(r["tg_id"] == other_id for r in db.get_matches(uid))
 

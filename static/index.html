@@ -286,6 +286,12 @@
     </div>
   </div></div>
   <div id="checkResult"></div>
+  <div class="card" id="celebCard" hidden><div class="body">
+    <div class="h2">⭐ Ты и звёзды</div>
+    <div class="txt muted">С какой знаменитостью ты созвучен в любви, дружбе и деле? Даты рождения — из Википедии.</div>
+    <div id="celebList"></div>
+  </div></div>
+  <div id="celebResult"></div>
   <div class="card"><div class="body">
     <div class="h2">🔢 Калькулятор энергии</div>
     <div class="txt muted">Имя латиницей, город, номер карты, телефона или авто — у всего есть своя цифра.</div>
@@ -471,6 +477,7 @@ function go(p){
   else { lastTab = p; tg.BackButton?.hide(); }
   if (p==='portrait') loadPortrait();
   if (p==='pairs') loadFeed();
+  if (p==='check' && !$('celebList').children.length) loadCelebs();
 }
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => { haptic('sel'); go(t.dataset.p); });
 // Лента «Люди»: отдельная вкладка на каждую цель из профиля + «Взаимно»
@@ -1104,6 +1111,64 @@ $('compatBtn').onclick = async ev => {
     $('shareCompat').onclick = () => share(t.ref_link, t.share_text);
   }catch(e){ box.innerHTML = `<div class="empty">${T('Не получилось посчитать 🙈')}</div>`; }
 };
+
+// ===== ЗВЁЗДЫ: имена бесплатно, разбор и совместимость — за JOY (один раз на звезду) =====
+let CELEBS = [];
+async function loadCelebs(){
+  try{
+    const r = await api('/celebs'); CELEBS = r.celebs;
+    if (!CELEBS.length) return;  // нет данных — раздел скрыт
+    $('celebList').innerHTML = Object.entries(r.cats).map(([k, label]) => {
+      const list = CELEBS.filter(c => c.cat === k);
+      return list.length ? `<div class="label" style="margin-top:12px">${esc(label)}</div><div class="legend">${
+        list.map(c => `<span class="chip" data-c="${esc(c.id)}" style="cursor:pointer">${c.open ? '⭐' : '🔒'} ${esc(c.name)}</span>`).join('')}</div>` : '';
+    }).join('');
+    $('celebList').querySelectorAll('[data-c]').forEach(b => b.onclick = () => pickCeleb(b.dataset.c));
+    $('celebCard').hidden = false;
+  }catch(e){}  // нет анкеты — раздел просто не показываем
+}
+function pickCeleb(id){
+  const c = CELEBS.find(x => x.id === id), box = $('celebResult'); haptic('light');
+  if (c.open) return openCeleb(id);
+  // Трата — только по явной кнопке, не по случайному тапу в списке
+  box.innerHTML = `<div class="card"><div class="body"><div class="h2">${esc(c.name)}</div>
+    <div class="txt muted">${T('Код звезды, сильные стороны и ваша совместимость в любви, дружбе и деле.')}</div>
+    <div class="btns"><button class="btn" id="celebBuy">${T('⭐ Открыть · {n} JOY', {n: fmtJoy(JOY?.prices?.celeb ?? 0.2)})}</button></div></div></div>`;
+  $('celebBuy').onclick = () => openCeleb(id);
+  box.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+async function openCeleb(id){
+  const box = $('celebResult'); haptic('medium');
+  box.innerHTML = `<div class="loader">${T('Сравниваю ваши коды…')}</div>`;
+  try{
+    const r = await api('/joy/celeb/'+encodeURIComponent(id), {method:'POST'}), t = r.card; renderJoy(r.joy);
+    const c = CELEBS.find(x => x.id === id);
+    if (c && !c.open){ c.open = true; const chip = $('celebList').querySelector(`[data-c="${CSS.escape(id)}"]`); if (chip) chip.textContent = '⭐ ' + c.name; }
+    const best = Math.max(...r.kinds.map(k => k.score));
+    box.innerHTML = `<div class="card"><div class="body">
+        <div class="row"><div><div class="label">${esc(r.cat)} · ${esc(t.date)}</div><div class="h2">${esc(r.name)}</div></div>
+          <div class="bignum n${t.chs}">${t.chs}</div></div>
+        <div class="txt"><b>${esc(t.title)}</b> — ${esc(t.essence)}.</div>
+        <div class="why"><div class="label">${T('Интрига этой даты')}</div>⚡ ${esc(t.hook)}</div>
+        <div class="bal" style="margin-top:12px">
+          ${t.strong.length?`<div>${T('💪 <b>В избытке:</b>')} ${esc(t.strong.join(', '))}</div>`:''}
+          <div>${T('🌱 <b>Наработать:</b>')} ${esc(t.missing.join(', ') || T('все 9 энергий на месте'))}</div>
+        </div>
+        <div class="label" style="margin-top:16px">${T('Ты и {name}', {name: esc(r.name)})}</div>
+        ${r.kinds.map(k => `<div class="jq"><div class="row"><div class="label">${esc(k.kind_label)}</div><b>${k.score}%</b></div>
+          <div class="txt"><b>${esc(k.verdict)}</b></div>
+          ${k.pros.map(x => `<div class="txt small">✅ ${esc(x)}</div>`).join('')}
+          ${k.cons.map(x => `<div class="txt small">⚠️ ${esc(x)}</div>`).join('')}</div>`).join('')}
+        <div class="disclaimer">${T('Цифровая нумерология — игра и повод для рефлексии, а не научный вердикт 🙂')}
+          ${r.wiki ? `<br><a href="#" id="celebWiki">${T('Дата рождения — Википедия')}</a>` : ''}</div>
+      </div>
+      <div class="acts"><button class="btn" id="celebShare">${T('↗️ Похвастаться друзьям')}</button></div></div>`;
+    if (best >= 75) confetti(innerWidth/2, innerHeight/3);
+    $('celebShare').onclick = () => share(r.ref_link, r.share_text);
+    if (r.wiki) $('celebWiki').onclick = ev => { ev.preventDefault(); tg.openLink(r.wiki); };
+    box.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }catch(e){ box.innerHTML = ''; joyFail(e); }
+}
 
 // ===== СОВМЕСТИМОСТЬ ГРУППЫ =====
 let gkind = 'business';

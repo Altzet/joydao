@@ -257,3 +257,27 @@ def test_rating_by_earned_week_and_all_time(monkeypatch):
     assert alltime["me"]["place"] in (2, 3) and alltime["me"]["joy"] == 1
     monkeypatch.setattr(api, "_auth", lambda _: 1)
     assert TestClient(api.app).get("/api/joy/rating?period=all").json()["top"][0]["joy"] == 3
+
+
+def test_celeb_unlock_once_for_joy(monkeypatch, tmp_path):
+    import json
+    from fastapi.testclient import TestClient
+    from app import api, celebs
+    f = tmp_path / "celebs.json"
+    f.write_text(json.dumps([{"id": "Q1", "cat": "mind", "name": {"ru": "Эйнштейн", "en": "Einstein"},
+                              "birth": "1879-03-14", "wiki": {"en": "https://en.wikipedia.org/wiki/Albert_Einstein"}}]))
+    monkeypatch.setattr(celebs, "FILE", f)
+    celebs._all.cache_clear()
+    _dating(1)
+    monkeypatch.setattr(api, "_auth", lambda _: 1)
+    cl = TestClient(api.app)
+    assert cl.get("/api/celebs").json()["celebs"] == [{"id": "Q1", "cat": "mind", "name": "Эйнштейн", "open": False}]
+    assert cl.post("/api/joy/celeb/Q1").status_code == 402          # без JOY не открыть
+    assert cl.post("/api/joy/celeb/nope").status_code == 404
+    joy.pass_test(1, RIGHT); _age(1, 5); joy.state(1)
+    r = cl.post("/api/joy/celeb/Q1").json()
+    assert r["card"]["chs"] == 5 and len(r["kinds"]) == 3 and "Эйнштейн" in r["share_text"]  # 14 → 1+4 = 5
+    cl.post("/api/joy/celeb/Q1")                                   # повторно — бесплатно
+    assert joy.totals(1)[0] == joy.ONBOARD - joy.CELEB
+    assert cl.get("/api/celebs").json()["celebs"][0]["open"]
+    celebs._all.cache_clear()
