@@ -11,6 +11,8 @@
     "business": { "chs_harmony": 0.25, "matrix_complement": 0.40, "mission_resonance": 0.30, "year_sync": 0.05 },
     "friend":   { "chs_harmony": 0.50, "matrix_complement": 0.15, "mission_resonance": 0.20, "year_sync": 0.15 }
   },
+  "_comment_age": "До 33 лет человек живёт Числом Сознания, после 33 включается Миссия: её доля в паре «ЧС + миссия» плавно растёт от mission_share_young до mission_share_mature между start и full годами. Для пары берётся средний «возраст миссии» обоих.",
+  "age_shift": { "start": 33, "full": 42, "mission_share_young": 0.10, "mission_share_mature": 0.75 },
   "planet_of": {
     "1": "Солнце", "2": "Луна", "3": "Юпитер", "4": "Раху", "5": "Меркурий",
     "6": "Венера", "7": "Кету", "8": "Сатурн", "9": "Марс"

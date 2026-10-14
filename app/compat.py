@@ -51,12 +51,33 @@ def _year_sync(y1: int, y2: int) -> int:
     return ys["other"]
 
 
+def _age(birth: date, today: date) -> float:
+    return (today - birth).days / 365.25
+
+
+def mission_phase(birth: date, today: date | None = None) -> float:
+    """0 — живёт Числом Сознания (до 33), 1 — Миссия в полной силе; между — плавный переход."""
+    a = RULES["age_shift"]
+    t = (_age(birth, today or date.today()) - a["start"]) / (a["full"] - a["start"])
+    return min(1.0, max(0.0, t))
+
+
+def _age_weights(w: dict, phase: float) -> dict:
+    """Перераспределяет общий вес «ЧС + миссия» по возрасту пары; остальные веса не трогает."""
+    a = RULES["age_shift"]
+    pool = w["chs_harmony"] + w["mission_resonance"]
+    share = a["mission_share_young"] + (a["mission_share_mature"] - a["mission_share_young"]) * phase
+    return {**w, "chs_harmony": pool * (1 - share), "mission_resonance": pool * share}
+
+
 def compatibility(birth1: date, birth2: date, today: date | None = None, kind: str = "love",
                   lang: str = "ru") -> dict:
     """Полный расчёт совместимости пары. kind: love | business | friend — меняет веса
     компонентов (weights_by_kind в compat_rules.json; любовь — базовые weights)."""
     p1, p2 = suisai.portrait(birth1, today), suisai.portrait(birth2, today)
     w = RULES.get("weights_by_kind", {}).get(kind) or RULES["weights"]
+    phase = (mission_phase(birth1, today) + mission_phase(birth2, today)) / 2
+    w = _age_weights(w, phase)
 
     chs_score = _relation_score(p1["chs"], p2["chs"])
     compl_score = _complement_score(p1["matrix"], p2["matrix"])
@@ -74,7 +95,9 @@ def compatibility(birth1: date, birth2: date, today: date | None = None, kind: s
             "chs": chs_score, "complement": compl_score,
             "mission": mission_score, "year": year_score,
         },
-        "explanation": _explain(p1, p2, chs_score, compl_score, year_score, lang),
+        "mission_phase": round(phase, 2),
+        "explanation": _explain(p1, p2, chs_score, compl_score, year_score, lang)
+        + _explain_mission(p1, p2, mission_score, phase, lang),
     }
 
 
@@ -105,3 +128,15 @@ def _explain(p1: dict, p2: dict, chs_score: int, compl_score: int, year_score: i
         out.append(T("Ваши личные годы идут в такт — жизненные циклы сейчас синхронны, начинания будут общими.", lang))
 
     return out
+
+
+def _explain_mission(p1: dict, p2: dict, mission_score: int, phase: float, lang: str = "ru") -> list[str]:
+    """После 33 лет главное — куда стремится душа: говорим о миссиях, когда они уже ведут."""
+    if phase < 0.5:
+        return []
+    a, b = p1["mission"], p2["mission"]
+    if mission_score >= _S["friend"] - 5:
+        return [T("Ваши Миссии {a} и {b} созвучны: души стремятся в одну сторону — а куда стремится душа, туда идёт и жизнь.", lang, a=a, b=b)]
+    if mission_score <= _S["enemy"] + 10:
+        return [T("Миссии {a} и {b} ведут в разные стороны: союз крепок, когда каждый уважает путь другого.", lang, a=a, b=b)]
+    return [T("Миссии {a} и {b} нейтральны: общий путь вы выбираете сами.", lang, a=a, b=b)]
