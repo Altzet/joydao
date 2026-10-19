@@ -782,5 +782,14 @@
 "🧠 Гении": "🧠 Geniuses",
 "⭐ Я и {name}:": "⭐ Me and {name}:",
 "А с какой звездой созвучен ты? Проверь в JoyDao 👇": "Which star are you in tune with? Check in JoyDao 👇",
-"Фото: {author}, {license}": "Photo: {author}, {license}"
+"Фото: {author}, {license}": "Photo: {author}, {license}",
+"⏱ Время вышло: ответы пришли позже {m} минут — засчитано 0.": "⏱ Time's up: answers came in after {m} minutes — scored 0.",
+"⏱ Осталась минута!": "⏱ One minute left!",
+"⏱ Время вышло — отправляю ответы": "⏱ Time's up — sending your answers",
+"🔗 Моя реф-ссылка": "🔗 My invite link",
+"Нажми — ссылка скопируется. Друг откроет JoyDao, и вы сразу увидите вашу совместимость.": "Tap to copy. When a friend opens JoyDao, you'll both see your compatibility right away.",
+"↗️ Поделиться с другом": "↗️ Share with a friend",
+"✅ Ссылка скопирована": "✅ Link copied",
+"Не получилось скопировать — зажми ссылку и скопируй вручную": "Couldn't copy — long-press the link and copy it",
+"📋 Ссылка скопирована — можно вставить в любой чат": "📋 Link copied — paste it into any chat"
 }

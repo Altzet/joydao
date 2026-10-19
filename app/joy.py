@@ -136,10 +136,9 @@ def boosted() -> set[int]:
 def boost_until(uid: int) -> str | None:
     """До какого времени (UTC, «ГГГГ-ММ-ДД ЧЧ:ММ:СС») действует буст, или None."""
     with db.connect() as c:
-        r = c.execute("SELECT datetime(MAX(created_at), ?) u FROM joy_ledger WHERE user_id=? "
-                      "AND reason LIKE 'spend:boost:%' HAVING u > datetime('now')",
-                      (f"+{BOOST_HOURS} hours", uid)).fetchone()
-    return r[0] if r else None
+        r = c.execute("SELECT datetime(MAX(created_at), ?), datetime('now') FROM joy_ledger WHERE user_id=? "
+                      "AND reason LIKE 'spend:boost:%'", (f"+{BOOST_HOURS} hours", uid)).fetchone()
+    return r[0] if r[0] and r[0] > r[1] else None
 
 
 def boost(uid: int) -> str:
@@ -425,6 +424,7 @@ def streak(uid: int, day: date | None = None) -> int:
 TOUR_ENTRY = 500           # взнос 0,5 JOY
 TOUR_LEN = 9               # 9 цифр — 9 вопросов
 TOUR_MINUTES = 10          # на прохождение после входа
+TOUR_GRACE = 15            # сек запаса на сеть: автоотправка по нулю таймера не должна сгореть
 TOUR_SPLIT = (50, 30, 20)  # % призового фонда за 1–3 место
 TOUR_BURN = 10             # % банка сжигается
 TOUR_MIN = 3               # меньше финишировавших — всем возврат
@@ -481,7 +481,7 @@ def tour_answer(uid: int, answers: list[int], week: str | None = None) -> dict:
         if r["score"] is not None:
             return {"score": r["score"], "again": True}
         sec = int(r["sec"])
-        score = sum(a == q["answer"] for a, q in zip(answers, qs)) if sec <= TOUR_MINUTES * 60 else 0
+        score = sum(a == q["answer"] for a, q in zip(answers, qs)) if sec <= TOUR_MINUTES * 60 + TOUR_GRACE else 0
         c.execute("UPDATE tournament SET score=?, seconds=? WHERE week=? AND user_id=? AND score IS NULL",
                   (score, sec, week, uid))
     return {"score": score, "seconds": sec}
@@ -531,6 +531,7 @@ def tour_state(uid: int, lang: str = "ru") -> dict:
     out = {"week": week, "open": tour_open(week), "closes": tour_closes(week).strftime("%Y-%m-%d %H:%M:%S"),
            "entry": TOUR_ENTRY / UNIT, "len": TOUR_LEN, "minutes": TOUR_MINUTES, **tour_info(week),
            "joined": bool(me), "score": me["score"] if me else None,
+           "late": bool(me and me["seconds"] and me["seconds"] > TOUR_MINUTES * 60 + TOUR_GRACE),
            "place": next((i + 1 for i, r in enumerate(board) if r["user_id"] == uid), None),
            "top": [{"name": r["name"] or "—", "score": r["score"], "seconds": r["seconds"]} for r in board[:5]]}
     if me and me["score"] is None:  # вошёл, но ещё не ответил — продолжить с того же места

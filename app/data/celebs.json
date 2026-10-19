@@ -1,0 +1,1005 @@
+[
+ {
+  "id": "Q317521",
+  "name": {
+   "ru": "Илон Маск",
+   "uk": "Ілон Маск",
+   "en": "Elon Musk"
+  },
+  "birth": "1971-06-28",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9C%D0%B0%D1%81%D0%BA,_%D0%98%D0%BB%D0%BE%D0%BD",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%86%D0%BB%D0%BE%D0%BD_%D0%9C%D0%B0%D1%81%D0%BA",
+   "en": "https://en.wikipedia.org/wiki/Elon_Musk"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/Elon_Musk_%2854816836217%29_%28cropped_2%29_%28b%29.jpg/330px-Elon_Musk_%2854816836217%29_%28cropped_2%29_%28b%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Gage Skidmore",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Elon_Musk_(54816836217)_(cropped_2)_(b).jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q19837",
+  "name": {
+   "ru": "Стив Джобс",
+   "uk": "Стів Джобс",
+   "en": "Steve Jobs"
+  },
+  "birth": "1955-02-24",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%94%D0%B6%D0%BE%D0%B1%D1%81,_%D0%A1%D1%82%D0%B8%D0%B2",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A1%D1%82%D1%96%D0%B2_%D0%94%D0%B6%D0%BE%D0%B1%D1%81",
+   "en": "https://en.wikipedia.org/wiki/Steve_Jobs"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Steve_Jobs_Headshot_2010-CROP2.jpg/330px-Steve_Jobs_Headshot_2010-CROP2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "MetalGearLiquid, based on File:Steve_Jobs_Headshot_2010-CROP.jpg made by Matt Yo",
+   "license": "CC BY-SA 3.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Steve_Jobs_Headshot_2010-CROP2.jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q5284",
+  "name": {
+   "ru": "Билл Гейтс",
+   "uk": "Білл Гейтс",
+   "en": "Bill Gates"
+  },
+  "birth": "1955-10-28",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%93%D0%B5%D0%B9%D1%82%D1%81,_%D0%91%D0%B8%D0%BB%D0%BB",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%91%D1%96%D0%BB%D0%BB_%D0%93%D0%B5%D0%B9%D1%82%D1%81",
+   "en": "https://en.wikipedia.org/wiki/Bill_Gates"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/Bill_Gates_at_the_European_Commission_-_2025_-_P067383-987995_%28cropped%29.jpg/330px-Bill_Gates_at_the_European_Commission_-_2025_-_P067383-987995_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Bogdan Hoyaux / European Union",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Bill_Gates_at_the_European_Commission_-_2025_-_P067383-987995_(cropped).jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q36215",
+  "name": {
+   "ru": "Марк Цукерберг",
+   "uk": "Марк Цукерберг",
+   "en": "Mark Zuckerberg"
+  },
+  "birth": "1984-05-14",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A6%D1%83%D0%BA%D0%B5%D1%80%D0%B1%D0%B5%D1%80%D0%B3,_%D0%9C%D0%B0%D1%80%D0%BA",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9C%D0%B0%D1%80%D0%BA_%D0%A6%D1%83%D0%BA%D0%B5%D1%80%D0%B1%D0%B5%D1%80%D0%B3",
+   "en": "https://en.wikipedia.org/wiki/Mark_Zuckerberg"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/18/Mark_Zuckerberg_F8_2019_Keynote_%2832830578717%29_%28cropped%29.jpg/330px-Mark_Zuckerberg_F8_2019_Keynote_%2832830578717%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Anthony Quintano from Westminster, United States",
+   "license": "CC BY 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Mark_Zuckerberg_F8_2019_Keynote_(32830578717)_(cropped).jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q312556",
+  "name": {
+   "ru": "Джефф Безос",
+   "uk": "Джеффрі Безос",
+   "en": "Jeff Bezos"
+  },
+  "birth": "1964-01-12",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%91%D0%B5%D0%B7%D0%BE%D1%81,_%D0%94%D0%B6%D0%B5%D1%84%D1%84",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%94%D0%B6%D0%B5%D1%84%D1%84_%D0%91%D0%B5%D0%B7%D0%BE%D1%81",
+   "en": "https://en.wikipedia.org/wiki/Jeff_Bezos"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Jeff_Bezos_at_Amazon_Spheres_Grand_Opening_in_Seattle_-_2018_%2839074799225%29_%28cropped%29.jpg/330px-Jeff_Bezos_at_Amazon_Spheres_Grand_Opening_in_Seattle_-_2018_%2839074799225%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Seattle City Council from Seattle",
+   "license": "CC BY 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Jeff_Bezos_at_Amazon_Spheres_Grand_Opening_in_Seattle_-_2018_(39074799225)_(cropped).jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q149067",
+  "name": {
+   "ru": "Павел Дуров",
+   "uk": "Дуров Павло Валерійович",
+   "en": "Pavel Durov"
+  },
+  "birth": "1984-10-10",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%94%D1%83%D1%80%D0%BE%D0%B2,_%D0%9F%D0%B0%D0%B2%D0%B5%D0%BB_%D0%92%D0%B0%D0%BB%D0%B5%D1%80%D1%8C%D0%B5%D0%B2%D0%B8%D1%87",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%94%D1%83%D1%80%D0%BE%D0%B2_%D0%9F%D0%B0%D0%B2%D0%BB%D0%BE_%D0%92%D0%B0%D0%BB%D0%B5%D1%80%D1%96%D0%B9%D0%BE%D0%B2%D0%B8%D1%87",
+   "en": "https://en.wikipedia.org/wiki/Pavel_Durov"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Pavel_Durov_%282012%29.jpg/330px-Pavel_Durov_%282012%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "NickLubushko",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Pavel_Durov_(2012).jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q55800",
+  "name": {
+   "ru": "Опра Уинфри",
+   "uk": "Опра Вінфрі",
+   "en": "Oprah Winfrey"
+  },
+  "birth": "1954-01-29",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A3%D0%B8%D0%BD%D1%84%D1%80%D0%B8,_%D0%9E%D0%BF%D1%80%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9E%D0%BF%D1%80%D0%B0_%D0%92%D1%96%D0%BD%D1%84%D1%80%D1%96",
+   "en": "https://en.wikipedia.org/wiki/Oprah_Winfrey"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/Pre_Inaugural_Reception_%2852639556983%29_%28cropped%29.jpg/330px-Pre_Inaugural_Reception_%2852639556983%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Maryland GovPics",
+   "license": "CC BY 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Pre_Inaugural_Reception_(52639556983)_(cropped).jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q47213",
+  "name": {
+   "ru": "Уоррен Баффетт",
+   "uk": "Воррен Баффетт",
+   "en": "Warren Buffett"
+  },
+  "birth": "1930-08-30",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%91%D0%B0%D1%84%D1%84%D0%B5%D1%82%D1%82,_%D0%A3%D0%BE%D1%80%D1%80%D0%B5%D0%BD",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%92%D0%BE%D1%80%D1%80%D0%B5%D0%BD_%D0%91%D0%B0%D1%84%D1%84%D0%B5%D1%82",
+   "en": "https://en.wikipedia.org/wiki/Warren_Buffett"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Warren_Buffett_KU_Visit.jpg/330px-Warren_Buffett_KU_Visit.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Mark Hirschey",
+   "license": "CC BY-SA 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Warren_Buffett_KU_Visit.jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q45661",
+  "name": {
+   "ru": "Коко Шанель",
+   "uk": "Коко Шанель",
+   "en": "Coco Chanel"
+  },
+  "birth": "1883-08-19",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%BD%D0%B5%D0%BB%D1%8C,_%D0%9A%D0%BE%D0%BA%D0%BE",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9A%D0%BE%D0%BA%D0%BE_%D0%A8%D0%B0%D0%BD%D0%B5%D0%BB%D1%8C",
+   "en": "https://en.wikipedia.org/wiki/Coco_Chanel"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Coco_Chanel_in_Los_Angeles%2C_1931_%28cropped%29.jpg/330px-Coco_Chanel_in_Los_Angeles%2C_1931_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Los Angeles Times",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Coco_Chanel_in_Los_Angeles,_1931_(cropped).jpg"
+  },
+  "cat": "biz"
+ },
+ {
+  "id": "Q26876",
+  "name": {
+   "ru": "Тейлор Свифт",
+   "uk": "Тейлор Свіфт",
+   "en": "Taylor Swift"
+  },
+  "birth": "1989-12-13",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A1%D0%B2%D0%B8%D1%84%D1%82,_%D0%A2%D0%B5%D0%B9%D0%BB%D0%BE%D1%80",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A2%D0%B5%D0%B9%D0%BB%D0%BE%D1%80_%D0%A1%D0%B2%D1%96%D1%84%D1%82",
+   "en": "https://en.wikipedia.org/wiki/Taylor_Swift"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png/330px-Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "iHeartRadioCA",
+   "license": "CC BY 3.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_(3).png"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q36153",
+  "name": {
+   "ru": "Бейонсе",
+   "uk": "Бейонсе",
+   "en": "Beyoncé"
+  },
+  "birth": "1981-09-04",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%91%D0%B5%D0%B9%D0%BE%D0%BD%D1%81%D0%B5",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%91%D0%B5%D0%B9%D0%BE%D0%BD%D1%81%D0%B5",
+   "en": "https://en.wikipedia.org/wiki/Beyonc%C3%A9"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Beyonc%C3%A9_-_Tottenham_Hotspur_Stadium_-_1st_June_2023_%2810_of_118%29_%2852946364598%29_%28best_crop%29.jpg/330px-Beyonc%C3%A9_-_Tottenham_Hotspur_Stadium_-_1st_June_2023_%2810_of_118%29_%2852946364598%29_%28best_crop%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Raph_PH",
+   "license": "CC BY 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Beyonc%C3%A9_-_Tottenham_Hotspur_Stadium_-_1st_June_2023_(10_of_118)_(52946364598)_(best_crop).jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q36844",
+  "name": {
+   "ru": "Рианна",
+   "uk": "Ріанна",
+   "en": "Rihanna"
+  },
+  "birth": "1988-02-20",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A0%D0%B8%D0%B0%D0%BD%D0%BD%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A0%D1%96%D0%B0%D0%BD%D0%BD%D0%B0",
+   "en": "https://en.wikipedia.org/wiki/Rihanna"
+  },
+  "photo": {
+   "url": "https://upload.wikimedia.org/wikipedia/commons/1/16/Rihanna_visits_U.S._Embassy_in_Barbados_2024_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+   "author": "U.S. Embassy Bridgetown",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Rihanna_visits_U.S._Embassy_in_Barbados_2024_(cropped).jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q29564107",
+  "name": {
+   "ru": "Билли Айлиш",
+   "uk": "Біллі Айліш",
+   "en": "Billie Eilish"
+  },
+  "birth": "2001-12-18",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%90%D0%B9%D0%BB%D0%B8%D1%88,_%D0%91%D0%B8%D0%BB%D0%BB%D0%B8",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%91%D1%96%D0%BB%D0%BB%D1%96_%D0%90%D0%B9%D0%BB%D1%96%D1%88",
+   "en": "https://en.wikipedia.org/wiki/Billie_Eilish"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/BillieEilishO2140725-39_-_54665577407_%28cropped%29.jpg/330px-BillieEilishO2140725-39_-_54665577407_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Raph_PH",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:BillieEilishO2140725-39_-_54665577407_(cropped).jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q19848",
+  "name": {
+   "ru": "Леди Гага",
+   "uk": "Леді Гага",
+   "en": "Lady Gaga"
+  },
+  "birth": "1986-03-20",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9B%D0%B5%D0%B4%D0%B8_%D0%93%D0%B0%D0%B3%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9B%D0%B5%D0%B4%D1%96_%D0%93%D0%B0%D0%B3%D0%B0",
+   "en": "https://en.wikipedia.org/wiki/Lady_Gaga"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Lady_Gaga_at_the_White_House_in_2023_%281%29.jpg/330px-Lady_Gaga_at_the_White_House_in_2023_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "The White House",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Lady_Gaga_at_the_White_House_in_2023_(1).jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q47447",
+  "name": {
+   "ru": "Эд Ширан",
+   "uk": "Ед Ширан",
+   "en": "Ed Sheeran"
+  },
+  "birth": "1991-02-17",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A8%D0%B8%D1%80%D0%B0%D0%BD,_%D0%AD%D0%B4",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%95%D0%B4_%D0%A8%D0%B8%D1%80%D0%B0%D0%BD",
+   "en": "https://en.wikipedia.org/wiki/Ed_Sheeran"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Ed_Sheeran-6886_%28cropped%29.jpg/330px-Ed_Sheeran-6886_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Harald Krichel",
+   "license": "CC BY-SA 3.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Ed_Sheeran-6886_(cropped).jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q21914464",
+  "name": {
+   "ru": "Дуа Липа",
+   "uk": "Дуа Ліпа",
+   "en": "Dua Lipa"
+  },
+  "birth": "1995-08-22",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9B%D0%B8%D0%BF%D0%B0,_%D0%94%D1%83%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%94%D1%83%D0%B0_%D0%9B%D1%96%D0%BF%D0%B0",
+   "en": "https://en.wikipedia.org/wiki/Dua_Lipa"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Dua_Lipa-69798_%28cropped%29.jpg/330px-Dua_Lipa-69798_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Harald Krichel",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Dua_Lipa-69798_(cropped).jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q2121062",
+  "name": {
+   "ru": "The Weeknd",
+   "uk": "The Weeknd",
+   "en": "The Weeknd"
+  },
+  "birth": "1990-02-16",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/The_Weeknd",
+   "uk": "https://uk.wikipedia.org/wiki/The_Weeknd",
+   "en": "https://en.wikipedia.org/wiki/The_Weeknd"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/The_Weeknd_Portrait_by_Brian_Ziff.jpg/330px-The_Weeknd_Portrait_by_Brian_Ziff.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Brian Ziff",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:The_Weeknd_Portrait_by_Brian_Ziff.jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q15869",
+  "name": {
+   "ru": "Фредди Меркьюри",
+   "uk": "Фредді Мерк'юрі",
+   "en": "Freddie Mercury"
+  },
+  "birth": "1946-09-05",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A4%D1%80%D0%B5%D0%B4%D0%B4%D0%B8_%D0%9C%D0%B5%D1%80%D0%BA%D1%8C%D1%8E%D1%80%D0%B8",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A4%D1%80%D0%B5%D0%B4%D0%B4%D1%96_%D0%9C%D0%B5%D1%80%D0%BA%27%D1%8E%D1%80%D1%96",
+   "en": "https://en.wikipedia.org/wiki/Freddie_Mercury"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Freddie_Mercury_at_Sheraton_Hotel_Buenos_Aires.jpg/330px-Freddie_Mercury_at_Sheraton_Hotel_Buenos_Aires.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Unknown authorUnknown author",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Freddie_Mercury_at_Sheraton_Hotel_Buenos_Aires.jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q2831",
+  "name": {
+   "ru": "Майкл Джексон",
+   "uk": "Майкл Джексон",
+   "en": "Michael Jackson"
+  },
+  "birth": "1958-08-29",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%94%D0%B6%D0%B5%D0%BA%D1%81%D0%BE%D0%BD,_%D0%9C%D0%B0%D0%B9%D0%BA%D0%BB",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9C%D0%B0%D0%B9%D0%BA%D0%BB_%D0%94%D0%B6%D0%B5%D0%BA%D1%81%D0%BE%D0%BD",
+   "en": "https://en.wikipedia.org/wiki/Michael_Jackson"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/Michael_Jackson_1983_%283x4_cropped%29_%28contrast%29.jpg/330px-Michael_Jackson_1983_%283x4_cropped%29_%28contrast%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Matthew Rolston; Distributed by Epic Records",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Michael_Jackson_1983_(3x4_cropped)_(contrast).jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q2662517",
+  "name": {
+   "ru": "Джамала",
+   "uk": "Джамала",
+   "en": "Jamala"
+  },
+  "birth": "1983-08-27",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%94%D0%B6%D0%B0%D0%BC%D0%B0%D0%BB%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%94%D0%B6%D0%B0%D0%BC%D0%B0%D0%BB%D0%B0",
+   "en": "https://en.wikipedia.org/wiki/Jamala"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/Jamala_Volia_Space_2024_%28cropped%29.png/330px-Jamala_Volia_Space_2024_%28cropped%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Міністерство молоді та спорту України",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Jamala_Volia_Space_2024_(cropped).png"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q229065",
+  "name": {
+   "ru": "Тина Кароль",
+   "uk": "Тіна Кароль",
+   "en": "Tina Karol"
+  },
+  "birth": "1985-01-25",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9A%D0%B0%D1%80%D0%BE%D0%BB%D1%8C,_%D0%A2%D0%B8%D0%BD%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A2%D1%96%D0%BD%D0%B0_%D0%9A%D0%B0%D1%80%D0%BE%D0%BB%D1%8C",
+   "en": "https://en.wikipedia.org/wiki/Tina_Karol"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Fumio_Kishida_and_Tina_Karol_at_the_Japanese_Kantei_in_2022_%283%29_%28cropped%29.jpg/330px-Fumio_Kishida_and_Tina_Karol_at_the_Japanese_Kantei_in_2022_%283%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "内閣官房内閣広報室",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Fumio_Kishida_and_Tina_Karol_at_the_Japanese_Kantei_in_2022_(3)_(cropped).jpg"
+  },
+  "cat": "music"
+ },
+ {
+  "id": "Q41272",
+  "name": {
+   "ru": "Макс Барских",
+   "uk": "Макс Барських",
+   "en": "Max Barskih"
+  },
+  "birth": "1990-03-08",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9C%D0%B0%D0%BA%D1%81_%D0%91%D0%B0%D1%80%D1%81%D0%BA%D0%B8%D1%85",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9C%D0%B0%D0%BA%D1%81_%D0%91%D0%B0%D1%80%D1%81%D1%8C%D0%BA%D0%B8%D1%85",
+   "en": "https://en.wikipedia.org/wiki/Max_Barskih"
+  },
+  "photo": null,
+  "cat": "music"
+ },
+ {
+  "id": "Q38111",
+  "name": {
+   "ru": "Леонардо Ди Каприо",
+   "uk": "Леонардо ДіКапріо",
+   "en": "Leonardo DiCaprio"
+  },
+  "birth": "1974-11-11",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%94%D0%B8_%D0%9A%D0%B0%D0%BF%D1%80%D0%B8%D0%BE,_%D0%9B%D0%B5%D0%BE%D0%BD%D0%B0%D1%80%D0%B4%D0%BE",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9B%D0%B5%D0%BE%D0%BD%D0%B0%D1%80%D0%B4%D0%BE_%D0%94%D1%96_%D0%9A%D0%B0%D0%BF%D1%80%D1%96%D0%BE",
+   "en": "https://en.wikipedia.org/wiki/Leonardo_DiCaprio"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Leonardo_DiCaprio_-_BFI_Southbank_3_%28crop%29.jpg/330px-Leonardo_DiCaprio_-_BFI_Southbank_3_%28crop%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Raph_PH",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Leonardo_DiCaprio_-_BFI_Southbank_3_(crop).jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q35332",
+  "name": {
+   "ru": "Брэд Питт",
+   "uk": "Бред Пітт",
+   "en": "Brad Pitt"
+  },
+  "birth": "1963-12-18",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9F%D0%B8%D1%82%D1%82,_%D0%91%D1%80%D1%8D%D0%B4",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%91%D1%80%D0%B5%D0%B4_%D0%9F%D1%96%D1%82%D1%82",
+   "en": "https://en.wikipedia.org/wiki/Brad_Pitt"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/Brad_Pitt-69858.jpg/330px-Brad_Pitt-69858.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Harald Krichel",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Brad_Pitt-69858.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q13909",
+  "name": {
+   "ru": "Анджелина Джоли",
+   "uk": "Анджеліна Джолі",
+   "en": "Angelina Jolie"
+  },
+  "birth": "1975-06-04",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%94%D0%B6%D0%BE%D0%BB%D0%B8,_%D0%90%D0%BD%D0%B4%D0%B6%D0%B5%D0%BB%D0%B8%D0%BD%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%90%D0%BD%D0%B4%D0%B6%D0%B5%D0%BB%D1%96%D0%BD%D0%B0_%D0%94%D0%B6%D0%BE%D0%BB%D1%96",
+   "en": "https://en.wikipedia.org/wiki/Angelina_Jolie"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Angelina_Jolie-643531_%28cropped%29.jpg/330px-Angelina_Jolie-643531_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Harald Krichel",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Angelina_Jolie-643531_(cropped).jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q37175",
+  "name": {
+   "ru": "Джонни Депп",
+   "uk": "Джонні Депп",
+   "en": "Johnny Depp"
+  },
+  "birth": "1963-06-09",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%94%D0%B5%D0%BF%D0%BF,_%D0%94%D0%B6%D0%BE%D0%BD%D0%BD%D0%B8",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%94%D0%B6%D0%BE%D0%BD%D0%BD%D1%96_%D0%94%D0%B5%D0%BF%D0%BF",
+   "en": "https://en.wikipedia.org/wiki/Johnny_Depp"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/21/Johnny_Depp_2020.jpg/330px-Johnny_Depp_2020.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Harald Krichel",
+   "license": "CC BY-SA 3.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Johnny_Depp_2020.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q43416",
+  "name": {
+   "ru": "Киану Ривз",
+   "uk": "Кіану Рівз",
+   "en": "Keanu Reeves"
+  },
+  "birth": "1964-09-02",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A0%D0%B8%D0%B2%D0%B7,_%D0%9A%D0%B8%D0%B0%D0%BD%D1%83",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9A%D1%96%D0%B0%D0%BD%D1%83_%D0%A0%D1%96%D0%B2%D0%B7",
+   "en": "https://en.wikipedia.org/wiki/Keanu_Reeves"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Keanu_Reeves_%E2%80%93_Dogstar_%E2%80%93_Tons_of_Rock_2026-3.jpg/330px-Keanu_Reeves_%E2%80%93_Dogstar_%E2%80%93_Tons_of_Rock_2026-3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Birgit Fostervold",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Keanu_Reeves_%E2%80%93_Dogstar_%E2%80%93_Tons_of_Rock_2026-3.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q34436",
+  "name": {
+   "ru": "Скарлетт Йоханссон",
+   "uk": "Скарлетт Йоганссон",
+   "en": "Scarlett Johansson"
+  },
+  "birth": "1984-11-22",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%99%D0%BE%D1%85%D0%B0%D0%BD%D1%81%D1%81%D0%BE%D0%BD,_%D0%A1%D0%BA%D0%B0%D1%80%D0%BB%D0%B5%D1%82%D1%82",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A1%D0%BA%D0%B0%D1%80%D0%BB%D0%B5%D1%82%D1%82_%D0%99%D0%BE%D0%B3%D0%B0%D0%BD%D1%81%D1%81%D0%BE%D0%BD",
+   "en": "https://en.wikipedia.org/wiki/Scarlett_Johansson"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Scarlett_Johansson-8588.jpg/330px-Scarlett_Johansson-8588.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Harald Krichel",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Scarlett_Johansson-8588.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q189489",
+  "name": {
+   "ru": "Зендея",
+   "uk": "Зендея",
+   "en": "Zendaya"
+  },
+  "birth": "1996-09-01",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%97%D0%B5%D0%BD%D0%B4%D0%B5%D1%8F",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%97%D0%B5%D0%BD%D0%B4%D0%B5%D1%8F",
+   "en": "https://en.wikipedia.org/wiki/Zendaya"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/Zendaya-byPhilipRomano.jpg/330px-Zendaya-byPhilipRomano.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "PhilipRomano",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Zendaya-byPhilipRomano.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q1924847",
+  "name": {
+   "ru": "Марго Робби",
+   "uk": "Марго Роббі",
+   "en": "Margot Robbie"
+  },
+  "birth": "1990-07-02",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A0%D0%BE%D0%B1%D0%B1%D0%B8,_%D0%9C%D0%B0%D1%80%D0%B3%D0%BE",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9C%D0%B0%D1%80%D0%B3%D0%BE_%D0%A0%D0%BE%D0%B1%D0%B1%D1%96",
+   "en": "https://en.wikipedia.org/wiki/Margot_Robbie"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/70/Margot_Robbie_at_the_Paris_premiere_of_%22Wuthering_Heights%22.jpg/330px-Margot_Robbie_at_the_Paris_premiere_of_%22Wuthering_Heights%22.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Ondine Goat",
+   "license": "CC0",
+   "page": "https://commons.wikimedia.org/wiki/File:Margot_Robbie_at_the_Paris_premiere_of_%22Wuthering_Heights%22.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q193815",
+  "name": {
+   "ru": "Райан Гослинг",
+   "uk": "Раян Ґослінґ",
+   "en": "Ryan Gosling"
+  },
+  "birth": "1980-11-12",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%93%D0%BE%D1%81%D0%BB%D0%B8%D0%BD%D0%B3,_%D0%A0%D0%B0%D0%B9%D0%B0%D0%BD",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A0%D0%B0%D1%8F%D0%BD_%D2%90%D0%BE%D1%81%D0%BB%D1%96%D0%BD%D2%91",
+   "en": "https://en.wikipedia.org/wiki/Ryan_Gosling"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/62/GoslingBFI081223_%2822_of_30%29_%2853388157347%29_%28cropped%29.jpg/330px-GoslingBFI081223_%2822_of_30%29_%2853388157347%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Raph_PH",
+   "license": "CC BY 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:GoslingBFI081223_(22_of_30)_(53388157347)_(cropped).jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q2023710",
+  "name": {
+   "ru": "Том Холланд",
+   "uk": "Том Голланд",
+   "en": "Tom Holland"
+  },
+  "birth": "1996-06-01",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A5%D0%BE%D0%BB%D0%BB%D0%B0%D0%BD%D0%B4,_%D0%A2%D0%BE%D0%BC_(%D0%B0%D0%BA%D1%82%D1%91%D1%80)",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A2%D0%BE%D0%BC_%D0%93%D0%BE%D0%BB%D0%BB%D0%B0%D0%BD%D0%B4",
+   "en": "https://en.wikipedia.org/wiki/Tom_Holland"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/18/TomHolland-byPhilipRomano.jpg/330px-TomHolland-byPhilipRomano.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "PhilipRomano",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:TomHolland-byPhilipRomano.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q19877770",
+  "name": {
+   "ru": "Тимоти Шаламе",
+   "uk": "Тімоті Шаламе",
+   "en": "Timothée Chalamet"
+  },
+  "birth": "1995-12-27",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%BB%D0%B0%D0%BC%D0%B5,_%D0%A2%D0%B8%D0%BC%D0%BE%D1%82%D0%B8",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A2%D1%96%D0%BC%D0%BE%D1%82%D1%96_%D0%A8%D0%B0%D0%BB%D0%B0%D0%BC%D0%B5",
+   "en": "https://en.wikipedia.org/wiki/Timoth%C3%A9e_Chalamet"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Timoth%C3%A9e_Chalamet-63541_%28cropped%29.jpg/330px-Timoth%C3%A9e_Chalamet-63541_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Harald Krichel",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Timoth%C3%A9e_Chalamet-63541_(cropped).jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q37628",
+  "name": {
+   "ru": "Мила Кунис",
+   "uk": "Міла Куніс",
+   "en": "Mila Kunis"
+  },
+  "birth": "1983-08-14",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9A%D1%83%D0%BD%D0%B8%D1%81,_%D0%9C%D0%B8%D0%BB%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9C%D1%96%D0%BB%D0%B0_%D0%9A%D1%83%D0%BD%D1%96%D1%81",
+   "en": "https://en.wikipedia.org/wiki/Mila_Kunis"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Mila_Kunis_TIFF_2025_%28cropped%29.jpg/330px-Mila_Kunis_TIFF_2025_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Max Surprenant",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Mila_Kunis_TIFF_2025_(cropped).jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q170576",
+  "name": {
+   "ru": "Милла Йовович",
+   "uk": "Мілла Йовович",
+   "en": "Milla Jovovich"
+  },
+  "birth": "1975-12-17",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%99%D0%BE%D0%B2%D0%BE%D0%B2%D0%B8%D1%87,_%D0%9C%D0%B8%D0%BB%D0%BB%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9C%D1%96%D0%BB%D0%BB%D0%B0_%D0%99%D0%BE%D0%B2%D0%BE%D0%B2%D0%B8%D1%87",
+   "en": "https://en.wikipedia.org/wiki/Milla_Jovovich"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Milla_Jovovich_-_Protector.jpg/330px-Milla_Jovovich_-_Protector.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Kevin Paul",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Milla_Jovovich_-_Protector.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q32522",
+  "name": {
+   "ru": "Дженнифер Энистон",
+   "uk": "Дженніфер Еністон",
+   "en": "Jennifer Aniston"
+  },
+  "birth": "1969-02-11",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%AD%D0%BD%D0%B8%D1%81%D1%82%D0%BE%D0%BD,_%D0%94%D0%B6%D0%B5%D0%BD%D0%BD%D0%B8%D1%84%D0%B5%D1%80",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%94%D0%B6%D0%B5%D0%BD%D0%BD%D1%96%D1%84%D0%B5%D1%80_%D0%95%D0%BD%D1%96%D1%81%D1%82%D0%BE%D0%BD",
+   "en": "https://en.wikipedia.org/wiki/Jennifer_Aniston"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/JenniferAnistonHWoFFeb2012.jpg/330px-JenniferAnistonHWoFFeb2012.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Angela George",
+   "license": "CC BY-SA 3.0",
+   "page": "https://commons.wikimedia.org/wiki/File:JenniferAnistonHWoFFeb2012.jpg"
+  },
+  "cat": "film"
+ },
+ {
+  "id": "Q11571",
+  "name": {
+   "ru": "Криштиану Роналду",
+   "uk": "Кріштіану Роналду",
+   "en": "Cristiano Ronaldo"
+  },
+  "birth": "1985-02-05",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9A%D1%80%D0%B8%D1%88%D1%82%D0%B8%D0%B0%D0%BD%D1%83_%D0%A0%D0%BE%D0%BD%D0%B0%D0%BB%D0%B4%D1%83",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9A%D1%80%D1%96%D1%88%D1%82%D1%96%D0%B0%D0%BD%D1%83_%D0%A0%D0%BE%D0%BD%D0%B0%D0%BB%D0%B4%D1%83",
+   "en": "https://en.wikipedia.org/wiki/Cristiano_Ronaldo"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Cristiano_Ronaldo_Croatia_v_Portugal_2_July_2026-075_%28cropped%29.jpg/330px-Cristiano_Ronaldo_Croatia_v_Portugal_2_July_2026-075_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Bryan Berlin",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Cristiano_Ronaldo_Croatia_v_Portugal_2_July_2026-075_(cropped).jpg"
+  },
+  "cat": "sport"
+ },
+ {
+  "id": "Q615",
+  "name": {
+   "ru": "Лионель Месси",
+   "uk": "Ліонель Мессі",
+   "en": "Lionel Messi"
+  },
+  "birth": "1987-06-24",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%81%D1%81%D0%B8,_%D0%9B%D0%B8%D0%BE%D0%BD%D0%B5%D0%BB%D1%8C",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9B%D1%96%D0%BE%D0%BD%D0%B5%D0%BB%D1%8C_%D0%9C%D0%B5%D1%81%D1%81%D1%96",
+   "en": "https://en.wikipedia.org/wiki/Lionel_Messi"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/Leo_Messi_Argentina_v_Egypt_7_July_2026-1.jpg/330px-Leo_Messi_Argentina_v_Egypt_7_July_2026-1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Bryan Berlin",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Leo_Messi_Argentina_v_Egypt_7_July_2026-1.jpg"
+  },
+  "cat": "sport"
+ },
+ {
+  "id": "Q11459",
+  "name": {
+   "ru": "Серена Уильямс",
+   "uk": "Серена Вільямс",
+   "en": "Serena Williams"
+  },
+  "birth": "1981-09-26",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A3%D0%B8%D0%BB%D1%8C%D1%8F%D0%BC%D1%81,_%D0%A1%D0%B5%D1%80%D0%B5%D0%BD%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A1%D0%B5%D1%80%D0%B5%D0%BD%D0%B0_%D0%92%D1%96%D0%BB%D1%8C%D1%8F%D0%BC%D1%81",
+   "en": "https://en.wikipedia.org/wiki/Serena_Williams"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Serena_Williams_at_2013_US_Open.jpg/330px-Serena_Williams_at_2013_US_Open.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Edwin Martinez",
+   "license": "CC BY 2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Serena_Williams_at_2013_US_Open.jpg"
+  },
+  "cat": "sport"
+ },
+ {
+  "id": "Q938027",
+  "name": {
+   "ru": "Александр Александрович Усик",
+   "uk": "Усик Олександр Олександрович",
+   "en": "Oleksandr Usyk"
+  },
+  "birth": "1987-01-17",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A3%D1%81%D0%B8%D0%BA,_%D0%90%D0%BB%D0%B5%D0%BA%D1%81%D0%B0%D0%BD%D0%B4%D1%80_%D0%90%D0%BB%D0%B5%D0%BA%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%BE%D0%B2%D0%B8%D1%87",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A3%D1%81%D0%B8%D0%BA_%D0%9E%D0%BB%D0%B5%D0%BA%D1%81%D0%B0%D0%BD%D0%B4%D1%80_%D0%9E%D0%BB%D0%B5%D0%BA%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%BE%D0%B2%D0%B8%D1%87",
+   "en": "https://en.wikipedia.org/wiki/Oleksandr_Usyk"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/48/Oleksandr_Usyk_at_TIFF_2025.jpg/330px-Oleksandr_Usyk_at_TIFF_2025.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Gabriel Hutchinson",
+   "license": "CC BY-SA 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Oleksandr_Usyk_at_TIFF_2025.jpg"
+  },
+  "cat": "sport"
+ },
+ {
+  "id": "Q41244",
+  "name": {
+   "ru": "Андрей Николаевич Шевченко",
+   "uk": "Шевченко Андрій Миколайович",
+   "en": "Andriy Shevchenko"
+  },
+  "birth": "1976-09-29",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A8%D0%B5%D0%B2%D1%87%D0%B5%D0%BD%D0%BA%D0%BE,_%D0%90%D0%BD%D0%B4%D1%80%D0%B5%D0%B9_%D0%9D%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B5%D0%B2%D0%B8%D1%87",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A8%D0%B5%D0%B2%D1%87%D0%B5%D0%BD%D0%BA%D0%BE_%D0%90%D0%BD%D0%B4%D1%80%D1%96%D0%B9_%D0%9C%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B9%D0%BE%D0%B2%D0%B8%D1%87",
+   "en": "https://en.wikipedia.org/wiki/Andriy_Shevchenko"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/%D0%90%D0%BD%D0%B4%D1%80%D1%96%D0%B9_%D0%A8%D0%B5%D0%B2%D1%87%D0%B5%D0%BD%D0%BA%D0%BE_2024_%28cropped%29.png/330px-%D0%90%D0%BD%D0%B4%D1%80%D1%96%D0%B9_%D0%A8%D0%B5%D0%B2%D1%87%D0%B5%D0%BD%D0%BA%D0%BE_2024_%28cropped%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Міністерство молоді та спорту України",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:%D0%90%D0%BD%D0%B4%D1%80%D1%96%D0%B9_%D0%A8%D0%B5%D0%B2%D1%87%D0%B5%D0%BD%D0%BA%D0%BE_2024_(cropped).png"
+  },
+  "cat": "sport"
+ },
+ {
+  "id": "Q270249",
+  "name": {
+   "ru": "Элина Свитолина",
+   "uk": "Світоліна Еліна Михайлівна",
+   "en": "Elina Svitolina"
+  },
+  "birth": "1994-09-12",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A1%D0%B2%D0%B8%D1%82%D0%BE%D0%BB%D0%B8%D0%BD%D0%B0,_%D0%AD%D0%BB%D0%B8%D0%BD%D0%B0_%D0%9C%D0%B8%D1%85%D0%B0%D0%B9%D0%BB%D0%BE%D0%B2%D0%BD%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A1%D0%B2%D1%96%D1%82%D0%BE%D0%BB%D1%96%D0%BD%D0%B0_%D0%95%D0%BB%D1%96%D0%BD%D0%B0_%D0%9C%D0%B8%D1%85%D0%B0%D0%B9%D0%BB%D1%96%D0%B2%D0%BD%D0%B0",
+   "en": "https://en.wikipedia.org/wiki/Elina_Svitolina"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/Ukraine_at_the_2020_Summer_Olympics016.jpg/330px-Ukraine_at_the_2020_Summer_Olympics016.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Власність Міністерства молоді та спорту України",
+   "license": "CC BY 4.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Ukraine_at_the_2020_Summer_Olympics016.jpg"
+  },
+  "cat": "sport"
+ },
+ {
+  "id": "Q1189",
+  "name": {
+   "ru": "Усэйн Болт",
+   "uk": "Усейн Болт",
+   "en": "Usain Bolt"
+  },
+  "birth": "1986-08-21",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%91%D0%BE%D0%BB%D1%82,_%D0%A3%D1%81%D1%8D%D0%B9%D0%BD",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A3%D1%81%D0%B5%D0%B9%D0%BD_%D0%91%D0%BE%D0%BB%D1%82",
+   "en": "https://en.wikipedia.org/wiki/Usain_Bolt"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Usain_Bolt_Rio_100m_final_2016k.jpg/330px-Usain_Bolt_Rio_100m_final_2016k.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Fernando Frazão/Agência Brasil",
+   "license": "CC BY 3.0 br",
+   "page": "https://commons.wikimedia.org/wiki/File:Usain_Bolt_Rio_100m_final_2016k.jpg"
+  },
+  "cat": "sport"
+ },
+ {
+  "id": "Q41421",
+  "name": {
+   "ru": "Майкл Джордан",
+   "uk": "Майкл Джордан",
+   "en": "Michael Jordan"
+  },
+  "birth": "1963-02-17",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%94%D0%B6%D0%BE%D1%80%D0%B4%D0%B0%D0%BD,_%D0%9C%D0%B0%D0%B9%D0%BA%D0%BB",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9C%D0%B0%D0%B9%D0%BA%D0%BB_%D0%94%D0%B6%D0%BE%D1%80%D0%B4%D0%B0%D0%BD",
+   "en": "https://en.wikipedia.org/wiki/Michael_Jordan"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Michael_Jordan_in_2014.jpg/330px-Michael_Jordan_in_2014.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "DOD photo by D. Myles Cullen",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Michael_Jordan_in_2014.jpg"
+  },
+  "cat": "sport"
+ },
+ {
+  "id": "Q937",
+  "name": {
+   "ru": "Альберт Эйнштейн",
+   "uk": "Альберт Айнштайн",
+   "en": "Albert Einstein"
+  },
+  "birth": "1879-03-14",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%AD%D0%B9%D0%BD%D1%88%D1%82%D0%B5%D0%B9%D0%BD,_%D0%90%D0%BB%D1%8C%D0%B1%D0%B5%D1%80%D1%82",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%90%D0%BB%D1%8C%D0%B1%D0%B5%D1%80%D1%82_%D0%90%D0%B9%D0%BD%D1%88%D1%82%D0%B0%D0%B9%D0%BD",
+   "en": "https://en.wikipedia.org/wiki/Albert_Einstein"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Albert_Einstein_Head_cleaned.jpg/330px-Albert_Einstein_Head_cleaned.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Oren Jack Turner",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Albert_Einstein_Head_cleaned.jpg"
+  },
+  "cat": "mind"
+ },
+ {
+  "id": "Q7186",
+  "name": {
+   "ru": "Мария Склодовская-Кюри",
+   "uk": "Марія Склодовська-Кюрі",
+   "en": "Marie Curie"
+  },
+  "birth": "1867-11-07",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A1%D0%BA%D0%BB%D0%BE%D0%B4%D0%BE%D0%B2%D1%81%D0%BA%D0%B0%D1%8F-%D0%9A%D1%8E%D1%80%D0%B8,_%D0%9C%D0%B0%D1%80%D0%B8%D1%8F",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9C%D0%B0%D1%80%D1%96%D1%8F_%D0%A1%D0%BA%D0%BB%D0%BE%D0%B4%D0%BE%D0%B2%D1%81%D1%8C%D0%BA%D0%B0-%D0%9A%D1%8E%D1%80%D1%96",
+   "en": "https://en.wikipedia.org/wiki/Marie_Curie"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/Marie_Curie_%281900%29_%28cropped%29.jpg/330px-Marie_Curie_%281900%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Unknown authorUnknown author",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Marie_Curie_(1900)_(cropped).jpg"
+  },
+  "cat": "mind"
+ },
+ {
+  "id": "Q9036",
+  "name": {
+   "ru": "Никола Тесла",
+   "uk": "Нікола Тесла",
+   "en": "Nikola Tesla"
+  },
+  "birth": "1856-07-10",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%A2%D0%B5%D1%81%D0%BB%D0%B0,_%D0%9D%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%9D%D1%96%D0%BA%D0%BE%D0%BB%D0%B0_%D0%A2%D0%B5%D1%81%D0%BB%D0%B0",
+   "en": "https://en.wikipedia.org/wiki/Nikola_Tesla"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/Tesla_circa_1890.jpeg/330px-Tesla_circa_1890.jpeg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Napoleon Sarony",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Tesla_circa_1890.jpeg"
+  },
+  "cat": "mind"
+ },
+ {
+  "id": "Q5588",
+  "name": {
+   "ru": "Фрида Кало",
+   "uk": "Фріда Кало",
+   "en": "Frida Kahlo"
+  },
+  "birth": "1907-07-06",
+  "wiki": {
+   "ru": "https://ru.wikipedia.org/wiki/%D0%9A%D0%B0%D0%BB%D0%BE,_%D0%A4%D1%80%D0%B8%D0%B4%D0%B0",
+   "uk": "https://uk.wikipedia.org/wiki/%D0%A4%D1%80%D1%96%D0%B4%D0%B0_%D0%9A%D0%B0%D0%BB%D0%BE",
+   "en": "https://en.wikipedia.org/wiki/Frida_Kahlo"
+  },
+  "photo": {
+   "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Frida_Kahlo%2C_by_Guillermo_Kahlo_%28cropped%29.jpg/330px-Frida_Kahlo%2C_by_Guillermo_Kahlo_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "author": "Guillermo Kahlo",
+   "license": "Public domain",
+   "page": "https://commons.wikimedia.org/wiki/File:Frida_Kahlo,_by_Guillermo_Kahlo_(cropped).jpg"
+  },
+  "cat": "mind"
+ }
+]

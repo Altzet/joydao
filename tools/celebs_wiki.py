@@ -62,7 +62,7 @@ def photos(files: list[str]) -> dict[str, dict]:
                 iiprop="url|extmetadata", iiurlwidth=330, titles="|".join("File:" + f for f in files[i:i + 50]))
         for pg in q["query"]["pages"].values():
             ii = (pg.get("imageinfo") or [{}])[0]
-            meta = {k: re.sub(r"<[^>]+>", "", v.get("value", "")).strip() for k, v in ii.get("extmetadata", {}).items()}
+            meta = {k: re.sub(r"<[^>]+>", "", str(v.get("value", ""))).strip() for k, v in ii.get("extmetadata", {}).items()}
             lic = meta.get("LicenseShortName", "")
             if ii.get("thumburl") and lic.startswith(FREE) and "NC" not in lic and "ND" not in lic:
                 out[pg["title"].removeprefix("File:")] = {"url": ii["thumburl"], "author": meta.get("Artist", "")[:80],
