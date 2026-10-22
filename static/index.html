@@ -876,7 +876,7 @@ function candidateCard(c){
       <div class="why"><div class="label">${T('Почему вы подходите')}</div>${c.explanation.map(e=>`<div>${esc(e)}</div>`).join('')}</div>
     </div>
     <div class="acts round"><button class="btn skip" aria-label="${T('Пропустить')}">✕</button>
-      <button class="btn ghost sparkBtn" aria-label="${T('✨ Искра · {n} JOY', {n: fmtJoy(JOY?.prices?.spark ?? 0.1)})}">✨<small>${fmtJoy(JOY?.prices?.spark ?? 0.1)}</small></button>
+      <button class="btn ghost sparkBtn" aria-label="${T('✨ Искра · {n} JOY', {n: fmtJoy(JOY?.prices?.spark ?? 100)})}">✨<small>${fmtJoy(JOY?.prices?.spark ?? 100)}</small></button>
       <button class="btn like" aria-label="${T(GOAL_UI[curGoal]?.like || 'Нравится ♥')}">${GOAL_UI[curGoal]?.emoji || '💖'}</button></div>`;
   if (c.has_photo !== false) fetch('/api/photo/'+c.id, {headers:H}).then(r => r.ok && r.blob())
     .then(b => { if (b) card.querySelector('.photo').src = URL.createObjectURL(b); }).catch(()=>{});
@@ -926,7 +926,7 @@ async function loadMatches(){
       ${m.username ? `<div class="acts"><button class="btn" data-u="${esc(m.username)}">${T('✍️ Написать')}</button></div>`
                    : `<div class="disclaimer">${T('Ссылка для связи — в сообщении от бота о взаимной симпатии')}</div>`}
       <div class="acts" style="padding-top:0"><button class="btn ghost" data-r="${m.id}">${m.report ? T('🔮 Открыть глубокий разбор')
-        : T('🔮 Глубокий разбор · {n} JOY', {n: fmtJoy(JOY?.prices?.report ?? 0.5)})}</button></div><div id="rep${m.id}"></div>
+        : T('🔮 Глубокий разбор · {n} JOY', {n: fmtJoy(JOY?.prices?.report ?? 500)})}</button></div><div id="rep${m.id}"></div>
       <div class="acts" style="padding-top:0"><button class="btn ghost" data-q="${m.id}">${quizLabel(m)}</button></div><div id="pq${m.id}"></div></div>`).join('');
     box.querySelectorAll('[data-r]').forEach(b => b.onclick = () => openReport(+b.dataset.r, b));
     box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => openPairQuiz(+b.dataset.q));
@@ -951,7 +951,7 @@ async function openReport(id, btn){
   }catch(e){ joyFail(e); btn.disabled = false; }
 }
 
-const quizLabel = m => ({none: T('🎲 Квиз пары · +0,2 JOY'), theirs: T('🎲 {name} уже ответил(а) — твоя очередь!', {name: esc(m.name)}),
+const quizLabel = m => ({none: T('🎲 Квиз пары · +200 JOY'), theirs: T('🎲 {name} уже ответил(а) — твоя очередь!', {name: esc(m.name)}),
   mine: T('🎲 Ждём ответа {name}…', {name: esc(m.name)}), done: T('🎲 Результат квиза пары')})[m.quiz];
 // Квиз пары: 5 вопросов «то или это» о себе + догадки о партнёре. Ответы партнёра — только когда ответили оба.
 async function openPairQuiz(id){
@@ -1230,7 +1230,7 @@ function pickCeleb(id){
   box.innerHTML = `<div class="card"><div class="body"><div class="row" style="justify-content:flex-start;gap:14px">${
       c.photo ? `<img class="celebHero" src="${esc(c.photo)}" alt="">` : ''}<div class="h2">${esc(c.name)}</div></div>
     <div class="txt muted">${T('Код звезды, сильные стороны и ваша совместимость в любви, дружбе и деле.')}</div>
-    <div class="btns"><button class="btn" id="celebBuy">${T('⭐ Открыть · {n} JOY', {n: fmtJoy(JOY?.prices?.celeb ?? 0.2)})}</button></div></div></div>`;
+    <div class="btns"><button class="btn" id="celebBuy">${T('⭐ Открыть · {n} JOY', {n: fmtJoy(JOY?.prices?.celeb ?? 200)})}</button></div></div></div>`;
   $('celebBuy').onclick = () => openCeleb(id);
   box.scrollIntoView({behavior: 'smooth', block: 'start'});
 }

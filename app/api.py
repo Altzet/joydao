@@ -356,7 +356,7 @@ def _joy_user(x_init_data: str | None):
 
 @app.post("/api/joy/spark/{to_id}")
 async def joy_spark(to_id: int, x_init_data: str | None = Header(default=None)):
-    """«Искра» — лайк за 0,1 JOY: получатель сразу узнаёт, а ты первый в его ленте."""
+    """«Искра» — лайк за 100 JOY: получатель сразу узнаёт, а ты первый в его ленте."""
     uid, user = _joy_user(x_init_data)
     if uid == to_id or not db.get_user(to_id) or not db.was_shown(uid, to_id):
         raise HTTPException(400, "Некорректный кандидат")
@@ -383,7 +383,7 @@ async def joy_spark(to_id: int, x_init_data: str | None = Header(default=None)):
 
 @app.post("/api/joy/boost")
 async def joy_boost(x_init_data: str | None = Header(default=None)):
-    """Буст анкеты на 24 часа за 0,3 JOY."""
+    """Буст анкеты на 24 часа за 300 JOY."""
     uid, user = _joy_user(x_init_data)
     if not db.is_dating(user) or not user["active"]:
         raise HTTPException(409, "Нужна видимая анкета")
@@ -397,7 +397,7 @@ async def joy_boost(x_init_data: str | None = Header(default=None)):
 
 @app.post("/api/joy/report/{other_id}")
 async def joy_report(other_id: int, x_init_data: str | None = Header(default=None)):
-    """Глубокий разбор пары за 0,5 JOY (один раз на человека, дальше — бесплатно)."""
+    """Глубокий разбор пары за 500 JOY (один раз на человека, дальше — бесплатно)."""
     uid, user = _joy_user(x_init_data)
     allowed = db.was_shown(uid, other_id) or any(r["tg_id"] == other_id for r in db.get_matches(uid))
     if uid == other_id or not db.get_user(other_id) or not allowed:
@@ -424,7 +424,7 @@ async def celebs_list(x_init_data: str | None = Header(default=None)):
 
 @app.post("/api/joy/celeb/{cid}")
 async def joy_celeb(cid: str, x_init_data: str | None = Header(default=None)):
-    """Разбор звезды и совместимость с ней за 0,2 JOY (один раз на звезду, дальше — бесплатно)."""
+    """Разбор звезды и совместимость с ней за 200 JOY (один раз на звезду, дальше — бесплатно)."""
     from . import celebs, teaser
     uid, user = _joy_user(x_init_data)
     c = celebs.get(cid)
@@ -505,7 +505,7 @@ async def tour(x_init_data: str | None = Header(default=None)):
 
 @app.post("/api/tour/join")
 async def tour_join(x_init_data: str | None = Header(default=None)):
-    """Вход в турнир недели за 0,5 JOY. Сразу после входа идёт отсчёт 10 минут."""
+    """Вход в турнир недели за 500 JOY. Сразу после входа идёт отсчёт 10 минут."""
     uid, user = _joy_user(x_init_data)
     if not joy.is_member(user):
         raise HTTPException(409, "Сначала тест принципов")

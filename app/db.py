@@ -148,6 +148,11 @@ def connect() -> sqlite3.Connection:
                 conn.execute(sql)
             except sqlite3.OperationalError:
                 pass  # колонка уже есть
+        if conn.execute("PRAGMA user_version").fetchone()[0] < 1:
+            # ponytail: разовый пересчёт JOY ×1000 под выпуск 9 млрд; user_version не даст умножить дважды
+            with conn:
+                conn.execute("UPDATE joy_ledger SET delta = delta * 1000")
+                conn.execute("PRAGMA user_version = 1")
         _migrated = True
     return conn
 
