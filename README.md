@@ -31,19 +31,42 @@ Telegram-бот [@JOYDAO_bot](https://t.me/JOYDAO_bot) + Mini App · канал 
 
 | Как получить | Сколько |
 |---|---|
-| Заполнить анкету и пройти тест принципов сообщества (7 из 9) | 1 JOY, через 3 дня или после первой взаимной симпатии |
-| Верный ответ на «Число дня» | 0,05 JOY |
-| 7 дней подряд | 0,3 JOY |
-| Квиз пары после взаимной симпатии | 0,2 JOY каждому |
-| Еженедельный турнир (взнос 0,5 JOY) | 50 / 30 / 20 % банка за 1–3 место, 10 % сжигается |
+| Заполнить анкету и пройти тест принципов сообщества (7 из 9) | 1 000 JOY, через 3 дня или после первой взаимной симпатии |
+| Верный ответ на «Число дня» | 50 JOY |
+| 7 дней подряд | 300 JOY |
+| Квиз пары после взаимной симпатии | 200 JOY каждому |
+| Еженедельный турнир (взнос 500 JOY) | 50 / 30 / 20 % банка за 1–3 место, 10 % сжигается |
 
 | На что потратить | Сколько |
 |---|---|
-| «Искра»: усиленный лайк, ты первый в ленте получателя | 0,1 JOY |
-| Буст анкеты на 24 часа | 0,3 JOY |
-| Глубокий разбор пары | 0,5 JOY |
+| «Искра»: усиленный лайк, ты первый в ленте получателя | 100 JOY |
+| Буст анкеты на 24 часа | 300 JOY |
+| Глубокий разбор пары | 500 JOY |
+| Разбор звезды и совместимость с ней | 200 JOY |
 
 Сейчас JOY живёт только внутри приложения. Вывод в джеттон на TON запланирован отдельной фазой.
+
+### Монета на TON
+
+[JOY energy](https://tonviewer.com/EQBd1qH6vQHnjGxRsD-jxg5L9S_zsmjXti2Chnve5p0Md6-s): `EQBd1qH6vQHnjGxRsD-jxg5L9S_zsmjXti2Chnve5p0Md6-s`
+
+- Всего **9 000 000 000 JOY**, больше не будет: право выпуска отозвано (admin = пустой адрес).
+- Сжигать можно: 20 % каждой траты в приложении сгорает.
+- JOY зарабатывают, а не покупают. Проект не продаёт JOY и не обещает рост цены.
+
+9 энергий — 9 кошельков по 1 млрд JOY:
+
+| № | Энергия | Пул | Кошелёк |
+|---|---|---|---|
+| 1 | Власть | Резерв | [UQCVqBzT0w_kV7zzD7dDWx7FMDBE8vdlN51cYTJS-ZEnnIx7](https://tonviewer.com/UQCVqBzT0w_kV7zzD7dDWx7FMDBE8vdlN51cYTJS-ZEnnIx7) |
+| 2 | Творческая психология | Награды · квиз пары | [UQAaPcINZWqaqagK_vX6Nd-3a475gIB9Fzff-WmFMVwcbV8Q](https://tonviewer.com/UQAaPcINZWqaqagK_vX6Nd-3a475gIB9Fzff-WmFMVwcbV8Q) |
+| 3 | Анализ | Награды · «Число дня» и серии | [UQAXYzXlxmJaArS5rrfqvmxT1JLacKCy9AG0UGYovwjH5qap](https://tonviewer.com/UQAXYzXlxmJaArS5rrfqvmxT1JLacKCy9AG0UGYovwjH5qap) |
+| 4 | Передача знаний | Награды · вход в клуб | [UQDKHMtLru22wPSuXE5fkK0s03CxqthUsSSfbWs5o7ZTrgkA](https://tonviewer.com/UQDKHMtLru22wPSuXE5fkK0s03CxqthUsSSfbWs5o7ZTrgkA) |
+| 5 | Борьба | Викторины и турниры | [UQCmZnbBbybu7kyZii1Ie6ZYkNJ0GufyraeU4EafXx9-Abye](https://tonviewer.com/UQCmZnbBbybu7kyZii1Ie6ZYkNJ0GufyraeU4EafXx9-Abye) |
+| 6 | Творчество | Награды · запас на новые механики | [UQCvIR8zIbhF9RMZSahj2BCV3hj8iSGvpZSE8NF_fM8C6qVQ](https://tonviewer.com/UQCvIR8zIbhF9RMZSahj2BCV3hj8iSGvpZSE8NF_fM8C6qVQ) |
+| 7 | Йога | Казна (траты по голосованию) | [UQD2zE8YPxA2mN8G25AAPS1Vhj_Y_FX1Y0ykbuaLKdM819be](https://tonviewer.com/UQD2zE8YPxA2mN8G25AAPS1Vhj_Y_FX1Y0ykbuaLKdM819be) |
+| 8 | Упорный труд | Команда (вестинг 24 мес.) | [UQCqIKv0e8dX1TNEUKEGRfpvofLG_-akz2d0wIJiUzSsq3u5](https://tonviewer.com/UQCqIKv0e8dX1TNEUKEGRfpvofLG_-akz2d0wIJiUzSsq3u5) |
+| 9 | Служение людям | Рефералы | [UQDiIZq96aaHWDCJUp75ylWze8eAm3a5CLXGxM6Z_fuUQSfy](https://tonviewer.com/UQDiIZq96aaHWDCJUp75ylWze8eAm3a5CLXGxM6Z_fuUQSfy) |
 
 ## Запуск
 
