@@ -122,23 +122,26 @@ if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")gu
 if(M!=="guess"){app.insertAdjacentHTML("beforeend",`<button class="n" id="gd" style="align-self:flex-start">Мой сад семян: ${seeds.length}</button>`);$("gd").onclick=garden}}
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
-function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);seeds.push({c:t[0],q:t[1],r:opt(t,st.s[k]),z:zone(st.s[k]),d,life:null})}saveSeeds()}
-function garden(){
+function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);seeds.push({c:t[0],q:t[1],r:opt(t,st.s[k]),z:zone(st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
+let onlyMine=false;
+function garden(){const mineN=seeds.filter(x=>x.mine).length;
 const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length;
 let h=`<h1>Мой сад семян</h1><div class="card"><p style="margin:0">Каждый ответ в игре это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя распустится.</p>
 <div class="isl"><div style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>так и сделал</div>
 <div style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
 <div style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>семян</div></div>
 <p class="note" style="margin:0">Наука: намерение чаще становится делом, если заранее решить «когда будет X, я сделаю Y» (Голлвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
+h+=`<div class="row"><button class="${onlyMine?"n":"p"}" id="fa">Все семена: ${seeds.length}</button><button class="${onlyMine?"p":"n"}" id="fm">Было со мной: ${mineN}</button></div>`;
 if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пуст. Сыграй партию, и твои ответы станут семенами.</p></div>`;
-seeds.map((x,k)=>[x,k]).reverse().forEach(([x,k])=>{const st2=x.life?(x.life.same?"open":"fog"):"";
-h+=`<div class="card" style="gap:8px"><div class="meta"><span>${esc(x.c)} · ${x.d}</span><span>${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>
+seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>!onlyMine||x.mine).sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k])=>{const st2=x.life?(x.life.same?"open":"fog"):"";
+h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${esc(x.c)} · ${x.d}</span><span>${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>
 <div class="s note">${esc(x.q)}</div><div>Я бы: <b style="font-weight:500">${esc(x.r)}</b></div>
 ${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
 `<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">Так и сделал</button><button class="n" data-k="${k}" data-s="0">Сделал иначе</button></div>`}</div>`});
 h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`;
 app.innerHTML=h;
 app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;seeds[k].life={same:b.dataset.s==="1",note:$("nt"+k).value.trim().slice(0,200),d:new Date().toISOString().slice(0,10)};saveSeeds();garden()});
+$("fa").onclick=()=>{onlyMine=false;garden()};$("fm").onclick=()=>{onlyMine=true;garden()};
 $("bk").onclick=()=>st.started?go():home()}
 function home(){
 app.innerHTML=`<h1>Ну-ну</h1><p class="note" style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
@@ -157,7 +160,10 @@ card(`<div class="meta"><span>Ситуация ${i+1} из ${N} · ${s[0]}</span
 const idx=[0,1,2,3,4,5];for(let k=5;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
 const r=document.createElement("div");r.className="row";
 idx.forEach(x=>{const b=document.createElement("button");b.className="n";b.textContent=opt(s,x);
-b.onclick=()=>{if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};r.appendChild(b)});$("o").appendChild(r)}
+b.onclick=()=>{if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};r.appendChild(b)});$("o").appendChild(r);
+if(M!=="guess"&&self){st.mine=st.mine||[];const m=document.createElement("button");const paint=()=>{m.className=st.mine[i]?"p":"n";m.textContent=st.mine[i]?"Это было со мной ✓":"Это было со мной";m.setAttribute("aria-pressed",!!st.mine[i])};
+paint();m.style.alignSelf="flex-start";m.onclick=()=>{st.mine[i]=!st.mine[i];save();paint()};
+$("o").insertAdjacentHTML("beforeend",`<div class="zone">Отметь, если такое правда случалось, чтобы потом быстро найти в дневнике</div>`);$("o").appendChild(m)}}
 function share(){
 const code=enc(),msg=`Сыграй со мной в «Ну-ну»: ${link()}\nМой код: ${code}`;
 card(`<span class="who">Готово</span><h2>Твой код</h2>
