@@ -671,3 +671,9 @@ async def photo(user_id: int, x_init_data: str | None = Header(default=None)):
     buf = await _bot.download_file(file.file_path)
     return Response(content=buf.read(), media_type="image/jpeg",
                     headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/nunu")
+async def nunu():
+    """Игра «Ну-ну»: самостоятельная страница, работает и в Telegram, и в браузере."""
+    return FileResponse(STATIC / "nunu.html")

@@ -1,0 +1,244 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>Ну-ну</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500&family=Golos+Text:wght@400;500&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}*{box-sizing:border-box}
+/* Layout: one narrow card column, like a phone passed hand to hand */
+:root{--bg:#EDF2EE;--card:#FFFFFF;--fg:#1D2A25;--muted:#5D6B65;--line:#D4DDD8;--sand:#F3E8CF;--sand-fg:#6B4A12;
+--sad:#FBEAF0;--sad-fg:#72243E;--sad-b:#D4537E;--les:#E1F5EE;--les-fg:#085041;--les-b:#1D9E75;--sk:#F1EFE8;--sk-fg:#444441;--sk-b:#888780;--acc:#1D7A5C;--acc-fg:#fff;--sea:#CFE6EE;--grass:#DDEBC6;--fog:rgba(255,255,255,.55);
+--disp:"Unbounded",system-ui,sans-serif;--body:"Golos Text",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121A17;--card:#1B2521;--fg:#E6EEEA;--muted:#9DADA6;--line:#2E3B36;--sand:#3A2F1A;--sand-fg:#F2D9A6;
+--sad:#4B1528;--sad-fg:#F4C0D1;--les:#04342C;--les-fg:#9FE1CB;--sk:#2C2C2A;--sk-fg:#D3D1C7;--acc:#5DCAA5;--acc-fg:#04342C;--sea:#0F2A35;--grass:#2C3A1E;--fog:rgba(18,26,23,.55);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121A17;--card:#1B2521;--fg:#E6EEEA;--muted:#9DADA6;--line:#2E3B36;--sand:#3A2F1A;--sand-fg:#F2D9A6;
+--sad:#4B1528;--sad-fg:#F4C0D1;--les:#04342C;--les-fg:#9FE1CB;--sk:#2C2C2A;--sk-fg:#D3D1C7;--acc:#5DCAA5;--acc-fg:#04342C;--sea:#0F2A35;--grass:#2C3A1E;--fog:rgba(18,26,23,.55);color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font:500 22px/1.3 var(--disp);margin:0;text-wrap:balance}
+h2{font:500 18px/1.4 var(--disp);margin:0;text-wrap:balance}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.meta{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.who{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--sand-fg);background:var(--sand);padding:4px 10px;border-radius:99px;align-self:flex-start}
+.q{font-size:18px;font-weight:500;line-height:1.5}
+.zone{font-size:13px;color:var(--muted);margin-top:4px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid;padding:9px 13px;text-align:left;line-height:1.35}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.p{background:var(--sad);color:var(--sad-fg);border-color:var(--sad-b)}
+.t{background:var(--les);color:var(--les-fg);border-color:var(--les-b)}
+.g{background:var(--sk);color:var(--sk-fg);border-color:var(--sk-b)}
+.n{background:var(--card);color:var(--fg);border-color:var(--line)}.n:hover{border-color:var(--muted)}
+.main-btn{background:var(--acc);color:var(--acc-fg);border-color:var(--acc);font-weight:500;align-self:flex-start;padding:11px 18px}
+input{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);flex:1;min-width:0}
+.err{font-size:13px;color:#C0392B;min-height:1em}
+.pass{text-align:center;align-items:center;padding:40px 20px}
+.res{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.res .s{font-size:14px;color:var(--muted)}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;display:inline-block}
+.open{background:var(--les);color:var(--les-fg)}.fog{background:var(--sk);color:var(--sk-fg)}
+.isl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.isl div{border-radius:12px;padding:12px}
+.isl b{font:500 28px var(--disp);display:block;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}}
+</style></head><body>
+<main id="app"></main>
+<script>
+const S=[
+["Свадьба","Свадьба друга, сто гостей. Тамада стучит вилкой по бокалу: «А теперь слово тому, кто испёк этот каравай!» Все оборачиваются на тебя. А у тебя полный рот салата.",["Встану и скажу: «Му-му-му!»","Подниму бокал и улыбнусь всем"],["Покраснею и махну рукой: «Не я»","Сделаю вид, что занят салатом"],["Прожую, встану и скажу тост","Покажу на соседа: «Это он пёк»"]],
+["Дорога","Третий час в пробке, жара, кондиционер сломался. Сзади кто-то сигналит без перерыва, будто от этого поедем быстрее.",["Помашу ему в зеркало","Включу музыку погромче и подпою"],["Закрою глаза и выдохну","Надену наушники"],["Посигналю в ответ","Выйду и спрошу, что случилось"]],
+["Дом","Ты месяц делал ремонт в своей комнате. Возвращаешься, а мама повесила на твою новую стену ковёр с оленями. «Так уютнее!»",["Обниму маму: «Спасибо, но давай без ковра»","Засмеюсь и сфоткаю оленей"],["Вздохну и закрою дверь","Сниму, когда она уйдёт"],["Сразу сниму","«Это моя комната!»"]],
+["Друзья","Ночь, костёр в горах, гитара по кругу. Доходит до тебя: «Давай, твоя очередь!» А ты знаешь только три аккорда.",["Сыграю три аккорда, все подхватят","«Я лучше историю расскажу»"],["Передам гитару дальше","Подкину дров в костёр"],["Сыграю, и пусть кто-нибудь засмеётся","«Не умею и не буду»"]],
+["Незнакомцы","Ты в маршрутке, утро, все сонные. Бабушка рядом достаёт пирожок и протягивает тебе: «На, худой какой!»",["Возьму и поблагодарю","Разговорюсь с ней"],["Вежливо откажусь","Сделаю вид, что сплю"],["«Спасибо, я не голодный»","«Я не худой, это стиль!»"]],
+["Деньги","Ты нашёл на улице кошелёк. Внутри приличная сумма и фото ребёнка. Документов нет. Вокруг никого.",["Выложу пост, чтобы найти хозяина","Отнесу в ближайший магазин"],["Положу обратно, где лежал","Пройду мимо"],["Отнесу в полицию","Оставлю себе, раз нельзя найти"]],
+["Признание","Ты неделю готовил сюрприз на день рождения друга. В разгар праздника он говорит: «Спасибо всем!» и благодарит человека, который просто принёс торт.",["Порадуюсь: главное, что ему хорошо","Подниму тост за всех, кто помогал"],["Промолчу и доем торт","Выйду подышать"],["Скажу ему потом наедине","Пошучу: «А торт, конечно, главное»"]],
+["Природа","Ты на рыбалке, сидишь с утра. Ни одной поклёвки. Рядом мальчишка лет десяти таскает рыбу одну за другой и хихикает.",["Спрошу у него, на что ловит","Похвалю: «Ну ты мастер!»"],["Буду сидеть дальше","Смотаю удочки и уйду"],["Пересяду ближе к нему","«Это рыба меня не уважает»"]],
+["Любовь","Кафе, первое свидание. Ты пролил чай прямо ей на платье. Официант уже бежит с салфетками, а все за соседними столиками смотрят.",["Рассмеюсь вместе с ней","Предложу свою куртку"],["Покраснею и буду извиняться","Молча вытру стол"],["«Зато теперь будет что вспомнить»","Закажу новый чай и продолжу"]],
+["Свобода","Пятница, вечер. Начальник звонит: «Срочно нужно доделать к понедельнику, выходные отменяются». А у тебя на субботу уже куплены билеты на море.",["Предложу сделать часть сегодня","Позову коллегу помочь"],["Не возьму трубку","«Сделаю, если успею»"],["«Нет, у меня билеты»","«Сделаю, но за двойную оплату»"]],
+["Друзья","День рождения друга в караоке. Микрофон суют тебе: «Твоя песня!» На экране уже бегут слова песни, которую ты слышишь впервые.",["Спою как получится, все подхватят","Позову кого-то спеть вдвоём"],["Отдам микрофон соседу","Уйду «за напитками»"],["Включу свою любимую вместо этой","Станцую вместо пения"]],
+["Дом","Воскресенье, ты наконец выспался. В 7 утра у соседа за стеной начинает выть перфоратор. Минута, две, десять.",["Пойду спрошу, долго ли ещё","Предложу помочь, быстрее закончим"],["Накрою голову подушкой","Уйду гулять"],["Постучу в стену","Включу музыку погромче в ответ"]],
+["Незнакомцы","Ты в лифте один. Заходит человек с огромной собакой. Собака садится прямо тебе на ноги и смотрит в глаза.",["Почешу её за ухом","Заговорю с хозяином про собаку"],["Замру и буду ждать своего этажа","Выйду на следующем"],["«Уберите собаку, пожалуйста»","Скажу собаке: «Ну и чего уставилась?»"]],
+["Деньги","На кассе тебе случайно дали сдачу на 500 больше. Кассирша уставшая, очередь длинная, никто не заметил.",["Верну и пошучу","Верну и скажу «хорошего дня»"],["Не замечу, мне не до того","Подумаю об этом уже на улице"],["Оставлю, их ошибка","Верну, но потом, когда очередь схлынет"]],
+["Любовь","Ты на концерте. Девушка рядом поёт громче всех, фальшиво, но так счастливо, что на неё оборачиваются. Ловит твой взгляд.",["Запою с ней вместе","Улыбнусь ей"],["Отвернусь к сцене","Отойду ближе к выходу"],["Покажу большой палец","«Громче, нас не слышно!»"]],
+["Творчество","Ты долго рисовал открытку для мамы. Младший брат пролил на неё сок за пять минут до праздника.",["Дорисую пятно в солнце","Обниму брата: «Ничего, переживём»"],["Молча выброшу и куплю открытку","Подарю без открытки"],["Отругаю брата","Заставлю его рисовать новую вместе со мной"]],
+["Друзья","Поход, третий день. Еда почти кончилась. Друг признаётся, что съел ночью последнюю шоколадку, которую «берегли на вершину».",["Посмеюсь и прощу","«Ладно, на вершине будет что-то другое»"],["Промолчу, но запомню","Отойду, чтобы не сорваться"],["«Ты серьёзно?!»","Заберу его порцию ужина в отместку"]],
+["Дом","Семейный ужин. Тётя на весь стол: «Ну что, когда женишься?» Все замолкают и смотрят на тебя.",["«Как только найду такую, как ты, тётя»","Отвечу честно, как есть"],["Набью рот едой","Сменю тему на погоду"],["«Когда сам решу»","«А вы когда на пенсию?»"]],
+["Незнакомцы","Поздний автобус. Пьяный мужчина садится рядом и начинает рассказывать тебе, как его все предали.",["Выслушаю, ему явно плохо","Спрошу, куда ему ехать"],["Надену наушники","Пересяду"],["«Извините, я устал»","Отвечу ему в тон, с юмором"]],
+["Природа","Ты наконец выбрался на озеро. Только разложил плед, как на соседнее место приезжает компания с колонкой на полную громкость.",["Подойду познакомлюсь","Попрошу сделать потише, с улыбкой"],["Переберусь подальше","Уеду"],["Попрошу выключить","Включу свою музыку"]],
+["Признание","На работе ты придумал, как сэкономить кучу времени. На собрании начальник рассказывает об этом как о своей идее.",["Порадуюсь, что идея пошла","Подхвачу: «Да, мы это обсуждали»"],["Промолчу","Перестану предлагать идеи"],["«Это была моя идея»","Поговорю с ним после собрания"]],
+["Деньги","Друг продаёт тебе свою старую машину «по-дружески». Через неделю она ломается, ремонт дороже половины цены.",["Позвоню ему, разберёмся вместе","Починю, дружба дороже"],["Не скажу ему ничего","Продам дальше и забуду"],["Попрошу вернуть часть денег","«Ты знал и не сказал?»"]],
+["Свобода","Ты на работе. Приходит общее сообщение: «С понедельника камеры в каждом кабинете и отчёт о каждом часе».",["Обсужу с коллегами, что делать","Схожу к начальнику поговорить"],["Начну тихо искать другую работу","Привыкну"],["«Я не буду так работать»","Заклею камеру стикером"]],
+["Любовь","Девушка, которая тебе нравится, просит помочь с переездом. На месте оказывается, что её парень тоже там и командует.",["Помогу, раз обещал","Познакомлюсь с ним по-доброму"],["Помогу и тихо уеду","Скажу, что срочно позвали"],["Уеду сразу","Пошучу: «Я думал, будет пицца»"]],
+["Творчество","Ты выложил видео, где учишь печь хлеб. Первый комментарий: «Руки бы оторвать, кто так месит».",["«Покажи, как ты месишь»","Отвечу с юмором"],["Удалю комментарий","Не буду читать комментарии"],["Отвечу резко","Сниму второе видео назло"]],
+["Дом","Ночь. Ты на кухне делаешь бутерброд. Включается свет, на пороге папа в трусах с тем же намерением.",["Сделаю бутерброд и ему","«Садись, пополуночничаем»"],["Быстро уйду с бутербродом","Сделаю вид, что пью воду"],["«Это мой бутерброд»","«Ну-ну, ночной дожор?»"]],
+["Незнакомцы","Ты в чужом городе, заблудился, телефон сел. Идёт местный дед с тележкой.",["Спрошу дорогу","Предложу помочь с тележкой и спрошу"],["Буду искать сам","Дождусь, пока появится кто-то помоложе"],["Пойду куда глаза глядят","Найду кафе и зарядку"]],
+["Друзья","Ты рассказываешь смешную историю, а друг перебивает и рассказывает её концовку раньше тебя. Все смеются над ним.",["Посмеюсь вместе со всеми","«Ты прям у меня украл!»"],["Махну рукой","Замолчу до конца вечера"],["«Дай я доскажу»","Расскажу историю про него"]],
+["Природа","Ты в лесу за грибами. Час, два — пусто. Выходишь на поляну, а там всё в белых грибах. И соседка с корзиной идёт прямо к ним.",["Позову её: «Давай вместе!»","Покажу ей пару, остальное себе"],["Отойду, пусть она","Пойду дальше искать свои"],["Побегу собирать первым","«Это моя поляна!»"]],
+["Признание","Школьная встреча выпускников. Однокласснику аплодируют за то, что он стал директором. Тебя спрашивают: «А ты чем занимаешься?»",["Расскажу с гордостью про своё дело","Расскажу и спрошу про всех"],["«Да так, всяким»","Отшучусь и уйду к столу"],["«Я сам себе директор»","Покажу фото своей печи"]],
+["Деньги","Ты выиграл в лотерею небольшую сумму, как раз на месячный отдых. Об этом пока никто не знает.",["Порадую семью","Устрою праздник друзьям"],["Положу на счёт и забуду","Никому не скажу"],["Поеду в путешествие сам","Вложу в своё дело"]],
+["Свобода","Ты живёшь с родителями. Друг на встрече громко говорит: «Ну ты когда уже съедешь, взрослый мужик?»",["«Помогай искать квартиру»","Расскажу, почему так"],["Промолчу","Сменю тему"],["«Тебе-то что?»","«Зато ипотеки нет»"]],
+["Любовь","Ты месяц переписывался с девушкой. Первая встреча. Она приходит с подругой «для безопасности», и подруга всё время говорит за неё.",["Подружусь с обеими","Предложу погулять втроём"],["Подыграю и тихо уйду","Буду просто слушать"],["«А можно с тобой отдельно?»","Пошучу: «Я тоже взял бы друга»"]],
+["Творчество","Тебя попросили сделать сайт для местного кафе «за бесплатный кофе». Работы на неделю.",["Сделаю, это будет моё портфолио","Предложу сделать попроще, но быстро"],["«Подумаю»","Не отвечу"],["«Кофе на год, и договорились»","«Бесплатно не работаю»"]],
+["Дом","Ты чинил кран три часа. Мама заходит: «Так надо было мастера вызвать». Кран снова капает.",["«Помоги, подержи ключ»","Посмеюсь: «Мастер устал»"],["Брошу и уйду","Вызову мастера молча"],["«Сам починю, не мешай»","Буду чинить до победы"]],
+["Незнакомцы","В кафе за соседним столиком парочка громко ругается. Девушка плачет. Парень встаёт и уходит, оставив ей счёт.",["Подойду, спрошу, всё ли в порядке","Передам ей салфетку"],["Отведу глаза","Доем и уйду"],["Скажу официанту, что заплачу за неё","Крикну парню вслед"]],
+["Друзья","Друг зовёт тебя «на минутку» помочь с переездом. Приезжаешь, а там пианино на пятый этаж без лифта.",["Возьмусь, раз приехал","Позову ещё пару друзей"],["Найду причину уехать","Буду носить коробки, а не пианино"],["«На минутку, говоришь?»","«Пицца и пиво с тебя»"]],
+["Природа","Ночью ливень, сосед звонит: вода подбирается к его подвалу, а у тебя есть насос.",["Побегу с насосом","Позову ещё кого-то помочь"],["Дам насос, сам не пойду","Скажу, что насос сломан"],["Приду, но утром","«Я же говорил тебе сделать отвод»"]],
+["Признание","Ты подарил другу самодельную вещь, над которой сидел неделю. Он: «О, прикольно» — и кладёт её на подоконник к хламу.",["«Это я сам сделал, смотри»","Порадуюсь, что взял"],["Промолчу","Больше не буду дарить своё"],["Заберу назад","«Аккуратно, это ручная работа»"]],
+["Деньги","Коллега каждый день «забывает» кошелёк и просит заплатить за обед. Сегодня снова.",["Заплачу, он хороший парень","Предложу носить обед из дома вместе"],["Скажу, что сам без денег","Буду обедать в другое время"],["«Сегодня ты угощаешь»","Заведу ему счёт в блокноте"]],
+["Свобода","Ты отпросился на выходные. В субботу утром звонок: «Нам очень нужна твоя помощь, только ты справишься».",["Приеду, раз только я","Помогу по телефону"],["Не возьму трубку","«Перезвоню»"],["«Я в выходном»","Приеду, но за отгул"]],
+["Любовь","Годовщина отношений. Ты приготовил ужин при свечах, а она пришла с работы уставшая и говорит: «Давай просто закажем пиццу».",["«Давай! Свечи оставим»","Обниму и включу кино"],["Молча уберу ужин","Расстроюсь и уйду в телефон"],["«Я весь день готовил»","Съем ужин сам, а она пусть ест пиццу"]],
+["Творчество","Хлеб получился идеальный. Пока ты снимал его для соцсетей, кот откусил горбушку.",["Засниму кота с хлебом, это хит","Отрежу и поделюсь с семьёй"],["Выброшу горбушку и промолчу","Не буду ничего выкладывать"],["Отругаю кота","Испеку новый назло коту"]],
+["Дом","Ты прибрался во дворе. Брат приезжает и паркуется прямо на твоей новой клумбе.",["«Давай я тебе место покажу»","Посмеюсь и попрошу переставить"],["Тихо пересажу цветы","Промолчу"],["«Убери машину. Сейчас.»","Поставлю на клумбу табличку"]],
+["Незнакомцы","Ты стоишь на остановке. Ребёнок лет пяти подходит и спрашивает: «А почему у тебя борода?»",["Отвечу серьёзно, как взрослому","Скорчу смешную рожицу"],["Улыбнусь и промолчу","Посмотрю на его маму"],["«Чтобы зимой не мёрзнуть»","«А почему у тебя нет?»"]],
+["Друзья","Друг выложил ваше общее фото, где он красавец, а ты с закрытыми глазами и с куском хлеба во рту.",["Посмеюсь и поставлю лайк","Сделаю мем из этого фото"],["Промолчу","Попрошу удалить в личке"],["«Удали немедленно»","Выложу его фото похуже"]],
+["Природа","Первый тёплый день весны. Друзья зовут на шашлыки, а у тебя грядки не вскопаны и рассада ждёт.",["Позову друзей помочь, потом шашлык","Поеду, грядки подождут"],["Останусь с грядками","«Может, на выходных»"],["«Шашлыки у меня во дворе»","Вскопаю утром, а вечером к ним"]],
+["Признание","Тебя впервые позвали на радио рассказать о своём деле. За минуту до эфира ведущий путает твоё имя.",["Поправлю с улыбкой","«Можно и так, звучит интересно»"],["Промолчу, не до того","Откажусь от эфира"],["Поправлю серьёзно","Начну эфир со смешной истории про имя"]],
+["Деньги","Ты собирал на мечту полгода. Маме нужен дорогой ремонт зубов, денег у неё нет.",["Отдам на зубы, мечта подождёт","Предложу маме половину"],["Подумаю пару дней","Сделаю вид, что денег нет"],["«Давай найдём другой вариант»","Помогу, но верни, когда сможешь"]],
+["Свобода","Ты купил старый микроавтобус и собираешься путешествовать. Родители за ужином: «Куда ты поедешь, у тебя тут огород!»",["«Поехали со мной!»","Пообещаю звонить каждый день"],["Отложу поездку","Уеду тихо, без разговоров"],["«Огород не тюрьма»","Покажу маршрут на карте"]]
+];
+const N=10,$=id=>document.getElementById(id),app=$("app");
+const LINK=location.origin+location.pathname;const TG=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData?Telegram.WebApp:null;if(TG){TG.ready();TG.expand()}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ls={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+/* ответ = индекс 0..5: 0-1 сад, 2-3 лес, 4-5 скалы */
+const opt=(s,x)=>[...s[2],...s[3],...s[4]][x],zone=x=>Math.floor(x/2);
+let st=ls.get("nunu")||{name:"",s:[],g:[],friend:null},draft=null;
+if(!(st.seed>=0))st.s=st.g=[],st.friend=null;
+/* набор из 10 ситуаций по номеру: у друга тот же номер, значит те же ситуации */
+function pick(seed){let a=seed>>>0||1;const r=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const ix=S.map((_,k)=>k);for(let k=ix.length-1;k>0;k--){const j=Math.floor(r()*(k+1));[ix[k],ix[j]]=[ix[j],ix[k]]}return ix.slice(0,N)}
+const sit=k=>S[pick(st.seed)[k]],newSeed=()=>Math.floor(Math.random()*1679616);
+const hashSeed=()=>{const m=(new URLSearchParams(location.search).get("s")||"").match(/^([0-9a-z]{1,4})$/i);return m?parseInt(m[1],36):null};
+const link=()=>LINK+"?s="+st.seed.toString(36);
+const save=()=>ls.set("nunu",st);
+/* ponytail: код = 20 цифр по основанию 6 в одном числе (6^20 < 2^53), без сервера */
+function enc(p="NN"){let v=0;[...st.s,...st.g].forEach(d=>v=v*6+d);return p+v.toString(36).toUpperCase()+"."+st.seed.toString(36).toUpperCase()+"-"+st.name}
+function dec(c){const m=c.trim().match(/^N([NGF])([0-9A-Z]+)\.([0-9A-Z]{1,4})-(.+)$/i);if(!m)return null;let v=parseInt(m[2],36);if(!(v>=0&&v<6**20))return null;
+const d=[];for(let k=0;k<20;k++){d.unshift(v%6);v=Math.floor(v/6)}return{type:m[1].toUpperCase(),name:m[4].trim().slice(0,30),seed:parseInt(m[3],36),s:d.slice(0,10),g:d.slice(10)}}
+function card(h){app.innerHTML=`<div class="card">${h}</div>`}
+function go(){if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
+if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")guessResult();else if(!st.friend)share();else result();
+if(M!=="guess"){app.insertAdjacentHTML("beforeend",`<button class="n" id="gd" style="align-self:flex-start">Мой сад семян: ${seeds.length}</button>`);$("gd").onclick=garden}}
+/* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
+let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
+function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);seeds.push({c:t[0],q:t[1],r:opt(t,st.s[k]),z:zone(st.s[k]),d,life:null})}saveSeeds()}
+function garden(){
+const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length;
+let h=`<h1>Мой сад семян</h1><div class="card"><p style="margin:0">Каждый ответ в игре это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя распустится.</p>
+<div class="isl"><div style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>так и сделал</div>
+<div style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
+<div style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>семян</div></div>
+<p class="note" style="margin:0">Наука: намерение чаще становится делом, если заранее решить «когда будет X, я сделаю Y» (Голлвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
+if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пуст. Сыграй партию, и твои ответы станут семенами.</p></div>`;
+seeds.map((x,k)=>[x,k]).reverse().forEach(([x,k])=>{const st2=x.life?(x.life.same?"open":"fog"):"";
+h+=`<div class="card" style="gap:8px"><div class="meta"><span>${esc(x.c)} · ${x.d}</span><span>${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>
+<div class="s note">${esc(x.q)}</div><div>Я бы: <b style="font-weight:500">${esc(x.r)}</b></div>
+${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
+`<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">Так и сделал</button><button class="n" data-k="${k}" data-s="0">Сделал иначе</button></div>`}</div>`});
+h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`;
+app.innerHTML=h;
+app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;seeds[k].life={same:b.dataset.s==="1",note:$("nt"+k).value.trim().slice(0,200),d:new Date().toISOString().slice(0,10)};saveSeeds();garden()});
+$("bk").onclick=()=>st.started?go():home()}
+function home(){
+app.innerHTML=`<h1>Ну-ну</h1><p class="note" style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
+<div class="card"><p style="margin:0">Каждый проходит 10 ситуаций у себя: отвечает о себе и угадывает, как ответит друг. Потом вы обмениваетесь кодами и смотрите, кто кого угадал.</p>
+<label class="note" for="nm">Твоё имя</label><input id="nm" placeholder="Например, Антон" maxlength="30" value="${esc(st.name)}"><label class="note" for="fc0">Код друга, если он тебя позвал</label><input id="fc0" placeholder="NN...-Имя (можно оставить пустым)"><div class="err" id="e"></div>
+<div class="row"><button class="main-btn" id="go">Играть с другом</button><button class="n" id="hero">Все угадывают меня</button><button class="n" id="solo">Играть одному</button></div></div><button class="n" id="gd0" style="align-self:flex-start">Мой сад семян: ${seeds.length}</button>
+<p class="note">Компас, а не рентген: игра показывает, как ты видишь себя и как тебя видят другие. Основа: окно Джохари (Лафт и Ингэм, 1955).</p>`;
+["nm","fc0"].forEach(x=>$(x).oninput=()=>$("e").textContent="");
+const begin=mode=>{const v=$("nm").value.trim().replace(/-/g," ");if(!v){$("e").textContent="Впиши имя";return}const c=$("fc0").value.trim();let f=null;if(c){f=dec(c);if(!f){$("e").textContent="Код друга не читается. Скопируй его целиком.";return}if(f.type==="F"){$("e").textContent="Это код ответа. Его вставляет тот, кого угадывали.";return}mode=f.type==="G"?"guess":"duo"}
+const h=hashSeed();st={name:v,seed:f?f.seed:h!==null?h:newSeed(),s:[],g:[],friend:f,started:1,mode,guessers:[]};save();go()};
+$("go").onclick=()=>begin("duo");$("solo").onclick=()=>begin("solo");$("hero").onclick=()=>begin("hero");$("gd0").onclick=garden}
+function play(i){
+st.started=1;const M=st.mode||(st.solo?"solo":"duo"),one=M!=="duo",s=sit(i),self=draft===null;
+card(`<div class="meta"><span>Ситуация ${i+1} из ${N} · ${s[0]}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
+<span class="who">${M==="guess"?"Как ответит "+esc(st.friend.name)+"?":self?"Как ответишь ты?":"Как ответит твой друг?"}</span><div class="q">${s[1]}</div><div id="o"></div>`);
+const idx=[0,1,2,3,4,5];for(let k=5;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
+const r=document.createElement("div");r.className="row";
+idx.forEach(x=>{const b=document.createElement("button");b.className="n";b.textContent=opt(s,x);
+b.onclick=()=>{if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};r.appendChild(b)});$("o").appendChild(r)}
+function share(){
+const code=enc(),msg=`Сыграй со мной в «Ну-ну»: ${link()}\nМой код: ${code}`;
+card(`<span class="who">Готово</span><h2>Твой код</h2>
+<div style="font:500 18px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(code)}</div>
+<div class="row"><button class="main-btn" id="cp">Скопировать</button><a class="n" style="padding:11px 16px;border:1px solid var(--line);border-radius:10px;color:var(--fg);text-decoration:none" href="https://t.me/share/url?url=${encodeURIComponent(link())}&text=${encodeURIComponent("Сыграй со мной в «Ну-ну». Мой код: "+code)}" target="_blank" rel="noopener">Отправить в Telegram</a></div>
+<p class="note" style="margin:0" id="cpn">Отправь код другу. Он вставляет его на старте, проходит те же 10 ситуаций и присылает свой код тебе.</p>
+<div class="zone">Код друга</div><div class="row"><input id="fc" placeholder="NN...-Имя"><button class="n" id="ok">Открыть результаты</button></div><div class="err" id="e"></div>
+<button class="n" id="rs" style="align-self:flex-start">Начать заново</button>`);
+$("cp").onclick=()=>{navigator.clipboard.writeText(msg).then(()=>$("cpn").textContent="Скопировано вместе со ссылкой на игру.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил код, скопируй вручную."})};
+$("fc").oninput=()=>$("e").textContent="";
+$("ok").onclick=()=>{const f=dec($("fc").value);if(!f){$("e").textContent="Код не читается. Скопируй его целиком, вместе с именем.";return}if(f.seed!==st.seed){$("e").textContent="Друг играл в другие ситуации. Пусть начнёт заново с твоим кодом.";return}st.friend=f;save();go()};
+$("rs").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
+const hit=(own,g)=>own===g?2:zone(own)===zone(g)?1:0;
+/* остров: каждый ответ = растение на своём участке; угадал друг -> ярко, нет -> в тумане */
+function island(own,gs,ops){
+const Zx=[[30,105],[118,202],[215,290]],lab=["сад","лес","скалы"],cnt=[0,0,0];const tot=[0,0,0];own.forEach(x=>tot[zone(x)]++);
+let g=`<svg viewBox="0 0 320 190" style="width:100%;max-width:520px;display:block;margin:0 auto" role="img" aria-label="Остров">
+<rect width="320" height="190" rx="14" fill="var(--sea)"/><ellipse cx="160" cy="100" rx="148" ry="74" fill="var(--sand)"/>
+<ellipse cx="160" cy="96" rx="134" ry="62" fill="var(--grass)"/>`;
+own.forEach((x,k)=>{const z=zone(x),n=cnt[z]++,col=n%3,row=Math.floor(n/3),[a,b]=Zx[z];
+const cx=a+12+col*((b-a-24)/2)+(row%2?8:0),cy=96-(Math.ceil(tot[z]/3)-1)*13+row*26,op=ops?ops[k]:z===zone(gs[k])?1:.32,ok=op>=.5;
+g+=`<g opacity="${op}">`;
+if(z===0)g+=`<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy+12}" stroke="#3B6D11" stroke-width="2"/><circle cx="${cx}" cy="${cy}" r="7" fill="#D4537E"/><circle cx="${cx}" cy="${cy}" r="2.6" fill="#FAC775"/>`;
+else if(z===1)g+=`<rect x="${cx-1.5}" y="${cy+6}" width="3" height="7" fill="#7A5230"/><polygon points="${cx},${cy-12} ${cx-10},${cy+7} ${cx+10},${cy+7}" fill="#0F6E56"/>`;
+else g+=`<polygon points="${cx-11},${cy+11} ${cx-5},${cy-6} ${cx+4},${cy-9} ${cx+11},${cy+11}" fill="#8A8880"/><polygon points="${cx-5},${cy-6} ${cx+4},${cy-9} ${cx+1},${cy+1}" fill="#B4B2A9"/>`;
+g+=`</g>`;if(!ok)g+=`<circle cx="${cx}" cy="${cy}" r="13" fill="var(--fog)"/>`});
+lab.forEach((l,z)=>g+=`<text x="${(Zx[z][0]+Zx[z][1])/2}" y="168" text-anchor="middle" font-size="11" fill="var(--sand-fg)" font-family="Golos Text,system-ui">${l} ${cnt[z]}</text>`);
+return g+`</svg>`}
+function soloResult(){
+const c=[0,0,0];st.s.forEach(x=>c[zone(x)]++);const top=["к людям: ты чаще идёшь навстречу","от людей: ты чаще берёшь паузу и отходишь","на своём: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))];
+let h=`<h1>Остров: ${esc(st.name)}</h1><div class="card">${island(st.s,st.s)}<p style="margin:0">Больше всего выросло ${top}.</p>
+<p class="note" style="margin:0">Это твой взгляд на себя. Сыграй те же ситуации с другом и увидишь, совпадает ли его взгляд.</p></div><div class="card"><h2>Твои ответы</h2>`;
+for(let k=0;k<N;k++)h+=`<div class="res"><div class="s">${k+1}. ${sit(k)[1]}</div><div>${esc(opt(sit(k),st.s[k]))}</div></div>`;
+h+=`</div><div class="row"><button class="main-btn" id="nw">Ещё 10 ситуаций</button><button class="n" id="hm">Играть с другом</button></div>`;
+app.innerHTML=h;$("nw").onclick=()=>{st={name:st.name,seed:newSeed(),s:[],g:[],friend:null,started:1,mode:"solo"};save();go()};
+$("hm").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
+function codeBox(code,text,msg){return`<div style="font:500 16px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(code)}</div>
+<div class="row"><button class="main-btn" id="cp">Скопировать</button><a class="n" style="padding:11px 16px;border:1px solid var(--line);border-radius:10px;color:var(--fg);text-decoration:none" href="https://t.me/share/url?url=${encodeURIComponent(link())}&text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">Отправить в Telegram</a></div><p class="note" style="margin:0" id="cpn">${text}</p>`}
+function wireCopy(msg){$("cp").onclick=()=>{navigator.clipboard.writeText(msg).then(()=>$("cpn").textContent="Скопировано вместе со ссылкой на игру.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил код, скопируй вручную."})}}
+/* все угадывают меня: герой отвечает, собирает коды друзей, видит рейтинг */
+function heroShare(){
+const code=enc("NG"),msg=`Угадай, как я поступлю, в игре «Ну-ну»: ${link()}\nМой код: ${code}`,G=st.guessers||[];
+const sc=G.map(f=>({n:f.name,p:f.g.reduce((a,x,k)=>a+hit(st.s[k],x),0)})).sort((a,b)=>b.p-a.p);
+const ops=G.length?st.s.map((x,k)=>.32+.68*G.filter(f=>zone(f.g[k])===zone(x)).length/G.length):null;
+let h=`<h1>Угадайте ${esc(st.name)}</h1><div class="card"><h2>Код для друзей</h2>${codeBox(code,"Разошли друзьям. Каждый вставляет код на старте, угадывает тебя и присылает свой код обратно.",msg)}</div>
+<div class="card"><h2>Кто тебя знает лучше всех</h2>${sc.length?sc.map((r,k)=>`<div class="res" style="flex-direction:row;justify-content:space-between"><span>${k+1}. ${esc(r.n)}</span><b style="font-variant-numeric:tabular-nums">${r.p} из ${N*2}</b></div>`).join(""):`<p class="note" style="margin:0">Пока никого. Вставь код ответа друга.</p>`}
+<div class="row"><input id="fc" placeholder="NF...-Имя"><button class="n" id="ok">Добавить</button></div><div class="err" id="e"></div></div>
+<div class="card"><h2>Твой остров</h2>${island(st.s,st.s,ops)}<p class="note" style="margin:0">${G.length?"Чем ярче растение, тем больше друзей угадали этот ответ.":"Остров проявится, когда придут ответы друзей."}</p></div>
+<button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
+app.innerHTML=h;wireCopy(msg);$("fc").oninput=()=>$("e").textContent="";
+$("ok").onclick=()=>{const f=dec($("fc").value);if(!f||f.type!=="F"){$("e").textContent="Нужен код ответа друга, он начинается на NF.";return}if(f.seed!==st.seed){$("e").textContent="Друг угадывал другие ситуации. Пусть начнёт с твоего кода.";return}
+st.guessers=G.filter(x=>x.name!==f.name).concat(f);save();heroShare()};
+$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
+function guessResult(){
+const H=st.friend,hn=esc(H.name),L=["Не угадал","Почти угадал","Точно в цель"],code=enc("NF"),msg=`Я угадал тебя в «Ну-ну». Мой код: ${code}`;
+let p=0;for(let k=0;k<N;k++)p+=hit(H.s[k],st.g[k]);
+let h=`<h1>Как ты знаешь ${hn}</h1><div class="card"><div class="isl"><div style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Твой счёт</span><b>${p}</b>очков из ${N*2}</div></div>
+<h2>Отправь код ${hn}</h2>${codeBox(code,"Так "+hn+" увидит тебя в рейтинге друзей.",msg)}</div><div class="card"><h2>По ситуациям</h2>`;
+for(let k=0;k<N;k++){const a=hit(H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k)[1]}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[a].toLowerCase()}</span></div></div>`}
+h+=`</div><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
+app.innerHTML=h;wireCopy(msg);$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
+function result(){
+const f=st.friend,fn=esc(f.name),L=["Не угадал","Почти угадал","Точно в цель"];
+let my=0,their=0;for(let k=0;k<N;k++){my+=hit(f.s[k],st.g[k]);their+=hit(st.s[k],f.g[k])}
+let h=`<h1>Ну-ну: ${esc(st.name)} и ${fn}</h1><div class="card"><h2>Кто кого лучше знает</h2><div class="isl">
+<div style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ты угадал</span><b>${my}</b>очков из ${N*2}</div>
+<div style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">${fn} угадал</span><b>${their}</b>очков из ${N*2}</div></div>
+<p class="note" style="margin:0">Участок угадан: 1 очко. Точное слово: 2 очка.</p></div><div class="card"><h2>По ситуациям</h2>`;
+for(let k=0;k<N;k++){const s=sit(k),a=hit(st.s[k],f.g[k]),b=hit(f.s[k],st.g[k]);
+h+=`<div class="res"><div class="s">${k+1}. ${s[1]}</div>
+<div>Ты: ${esc(opt(s,st.s[k]))} <span class="tag ${a?"open":"fog"}">${fn}: ${L[a].toLowerCase()}</span></div>
+<div>${fn}: ${esc(opt(s,f.s[k]))} <span class="tag ${b?"open":"fog"}">ты: ${L[b].toLowerCase()}</span></div></div>`}
+h+=`</div>`;
+[[st.s,f.g,"Твой остров"],[f.s,st.g,"Остров: "+fn]].forEach(([own,gs,title])=>{const c=[0,0,0],v=[0,0,0];let open=0;
+own.forEach((x,k)=>{c[zone(x)]++;v[zone(gs[k])]++;if(zone(x)===zone(gs[k]))open++});
+h+=`<div class="card"><h2>${title}</h2>${island(own,gs)}
+<p class="note" style="margin:0">Сад ${c[0]} · лес ${c[1]} · скалы ${c[2]}. Яркое друг угадал (открытый берег ${open}), бледное в тумане (${N-open}).</p></div>`});
+h+=`<div class="card"><h2>Отправь свой код ${fn}</h2><div style="font:500 16px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all">${esc(enc())}</div><p class="note" style="margin:0">Чтобы у друга открылись такие же результаты.</p></div><p class="note">Туман не ошибка, а повод спросить друг друга: «Почему ты так думал?»</p><div class="row"><button class="main-btn" id="bk">Мой код ещё раз</button><button class="n" id="nw">Сыграть с другим</button></div>`;
+app.innerHTML=h;$("bk").onclick=()=>{st.friend=null;save();go()};$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
+/* внутри Telegram ссылки на t.me открываем средствами Telegram */
+document.addEventListener("click",e=>{const a=e.target.closest("a[href^='https://t.me/']");if(a&&TG){e.preventDefault();TG.openTelegramLink(a.href)}});
+go();
+</script>
+</body></html>
