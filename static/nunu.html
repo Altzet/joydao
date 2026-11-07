@@ -168,18 +168,18 @@ return s&&g?{type:m[1].toUpperCase(),name:m[5].trim().slice(0,30),seed,s,g}:null
 function card(h){app.innerHTML=`<div class="card">${h}</div>`}
 function go(){if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
 if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")guessResult();else if(!st.friend)share();else result();
-app.insertAdjacentHTML("beforeend",`<div class="row"><button class="main-btn" id="sw">Дело на неделю</button>${M!=="guess"?`<button class="n" id="gd">Мой сад семян: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=stepWeek;if(M!=="guess")$("gd").onclick=garden}
+app.insertAdjacentHTML("beforeend",`<div class="row"><button class="main-btn" id="sw">Дело на неделю</button>${M!=="guess"?`<button class="n" id="gd">Мой сад: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=stepWeek;if(M!=="guess")$("gd").onclick=garden}
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
 let onlyMine=false;
 function garden(){const mineN=seeds.filter(x=>x.mine).length;
 const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length;
-let h=`<h1>Мой сад семян</h1><div class="card"><p style="margin:0">Каждый ответ в игре это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя распустится.</p>
+let h=`<h1>Мой сад</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя распустится.</p>
 <div class="isl"><div style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>так и сделал</div>
 <div style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
 <div style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>семян</div></div>
-<p class="note" style="margin:0">Наука: намерение чаще становится делом, если заранее решить «когда будет X, я сделаю Y» (Голлвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
+<p class="note" style="margin:0">По исследованиям, задуманное чаще сбывается, если заранее решить: «когда случится X, я сделаю Y» (Голльвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
 h+=`<div class="row"><button class="${onlyMine?"n":"p"}" id="fa">Все семена: ${seeds.length}</button><button class="${onlyMine?"p":"n"}" id="fm">Было со мной: ${mineN}</button></div>`;
 if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пуст. Сыграй партию, и твои ответы станут семенами.</p></div>`;
 seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>!onlyMine||x.mine).sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k])=>{const st2=x.life?(x.life.same?"open":"fog"):"";
@@ -205,7 +205,7 @@ const chips=(a,id,cur)=>`<div class="row" id="${id}">${a.map((x,k)=>`<button cla
 const draw=()=>{app.innerHTML=`<h1>Дело на неделю</h1>${ins?`<div class="card"><span class="who">Что показала игра</span><p style="margin:0">${ins}</p></div>`:""}
 <div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(SW,"cw",w)}<div class="zone">2. Что может помешать</div>${chips(SO,"co",o)}
 <div class="zone">3. Мой план</div><div class="q" id="pl">${esc(SP[w][o])}</div>
-<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"> Делаем вместе с другом</label>
+<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"> Сделаем вместе с другом</label>
 <div class="row"><button class="main-btn" id="pt">Посадить в сад</button><button class="n" id="bk">Назад</button></div></div>
 <p class="note">Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе». Не вышло — ничего страшного, семя подождёт.</p>`;
 $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw()}};$("co").onclick=e=>{const b=e.target.closest("button");if(b){o=+b.dataset.k;draw()}};
@@ -213,10 +213,10 @@ $("bk").onclick=()=>st.started?go():home();
 $("pt").onclick=()=>{seeds.push({c:"Дело на неделю",q:SW[w]+" · помеха: "+SO[o].toLowerCase()+($("tg").checked?" · вместе с другом":""),r:SP[w][o],z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1});saveSeeds();garden()}};draw()}
 function home(){
 app.innerHTML=`<h1>Ну-ну</h1><p class="note" style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
-<div class="card"><p style="margin:0">Каждый проходит 10 ситуаций у себя: отвечает о себе и угадывает, как ответит друг. Потом вы обмениваетесь кодами и смотрите, кто кого угадал.</p>
+<div class="card"><p style="margin:0">Каждый у себя отвечает на 10 карточек: о себе и о том, как ответит друг. Потом вы обмениваетесь кодами и смотрите, кто кого понял.</p>
 <label class="note" for="nm">Твоё имя</label><input id="nm" placeholder="Например, Антон" maxlength="30" value="${esc(st.name)}"><label class="note" for="fc0">Код друга, если он тебя позвал</label><input id="fc0" placeholder="NN...-Имя (можно оставить пустым)"><div class="err" id="e"></div>
-<div class="row"><button class="main-btn" id="go">Играть с другом</button><button class="n" id="hero">Все угадывают меня</button><button class="n" id="solo">Играть одному</button></div></div><div class="row"><button class="n" id="gd0">Мой сад семян: ${seeds.length}</button><button class="n" id="sw0">Дело на неделю</button></div>
-<p class="note">Компас, а не рентген: игра показывает, как ты видишь себя и как тебя видят другие. Основа: окно Джохари (Лафт и Ингэм, 1955).</p>`;
+<div class="row"><button class="main-btn" id="go">Играть с другом</button><button class="n" id="hero">Все угадывают меня</button><button class="n" id="solo">Играть одному</button></div></div><div class="row"><button class="n" id="gd0">Мой сад: ${seeds.length}</button><button class="n" id="sw0">Дело на неделю</button></div>
+<p class="note">Компас, а не рентген: игра показывает, как ты видишь себя и как тебя видят другие. В основе — окно Джохари (Лафт и Ингэм, 1955).</p>`;
 ["nm","fc0"].forEach(x=>$(x).oninput=()=>$("e").textContent="");
 const begin=mode=>{const v=$("nm").value.trim().replace(/-/g," ");if(!v){$("e").textContent="Впиши имя";return}const c=$("fc0").value.trim();let f=null;if(c){f=dec(c);if(!f){$("e").textContent="Код друга не читается. Скопируй его целиком.";return}if(f.type==="F"){$("e").textContent="Это код ответа. Его вставляет тот, кого угадывали.";return}mode=f.type==="G"?"guess":"duo"}
 const h=hashSeed();st={name:v,seed:f?f.seed:h!==null?h:newSeed(),s:[],g:[],friend:f,started:1,mode,guessers:[]};save();go()};
@@ -233,18 +233,18 @@ idx.forEach(x=>{const b=document.createElement("button");b.className="n";b.textC
 if(s.lv===3){const b=document.createElement("button");b.className="g";b.textContent="Проехали";b.style.alignSelf="flex-start";b.onclick=()=>ans(PASS);$("o").appendChild(b)}
 if(M!=="guess"&&self&&s.z){st.mine=st.mine||[];const m=document.createElement("button");const paint=()=>{m.className=st.mine[i]?"p":"n";m.textContent=st.mine[i]?"Это было со мной ✓":"Это было со мной";m.setAttribute("aria-pressed",!!st.mine[i])};
 paint();m.style.alignSelf="flex-start";m.onclick=()=>{st.mine[i]=!st.mine[i];save();paint()};
-$("o").insertAdjacentHTML("beforeend",`<div class="zone">Отметь, если такое правда случалось, чтобы потом быстро найти в дневнике</div>`);$("o").appendChild(m)}}
+$("o").insertAdjacentHTML("beforeend",`<div class="zone">Отметь, если такое правда было, — потом легко найдёшь в саду</div>`);$("o").appendChild(m)}}
 function share(){
 const code=enc(),msg=`Сыграй со мной в «Ну-ну»: ${link()}\nМой код: ${code}`;
 card(`<span class="who">Готово</span><h2>Твой код</h2>
 <div style="font:500 18px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(code)}</div>
 <div class="row"><button class="main-btn" id="cp">Скопировать</button><a class="n" style="padding:11px 16px;border:1px solid var(--line);border-radius:10px;color:var(--fg);text-decoration:none" href="https://t.me/share/url?url=${encodeURIComponent(link())}&text=${encodeURIComponent("Сыграй со мной в «Ну-ну». Мой код: "+code)}" target="_blank" rel="noopener">Отправить в Telegram</a></div>
-<p class="note" style="margin:0" id="cpn">Отправь код другу. Он вставляет его на старте, проходит те же 10 ситуаций и присылает свой код тебе.</p>
-<div class="zone">Код друга</div><div class="row"><input id="fc" placeholder="NN...-Имя"><button class="n" id="ok">Открыть результаты</button></div><div class="err" id="e"></div>
+<p class="note" style="margin:0" id="cpn">Отправь код другу. Он вставит его на старте, ответит на те же 10 карточек и пришлёт тебе свой код.</p>
+<div class="zone">Код друга</div><div class="row"><input id="fc" placeholder="NN...-Имя"><button class="n" id="ok">Что вышло</button></div><div class="err" id="e"></div>
 <button class="n" id="rs" style="align-self:flex-start">Начать заново</button>`);
 $("cp").onclick=()=>{navigator.clipboard.writeText(msg).then(()=>$("cpn").textContent="Скопировано вместе со ссылкой на игру.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил код, скопируй вручную."})};
 $("fc").oninput=()=>$("e").textContent="";
-$("ok").onclick=()=>{const f=dec($("fc").value);if(!f){$("e").textContent="Код не читается. Скопируй его целиком, вместе с именем.";return}if(f.seed!==st.seed){$("e").textContent="Друг играл в другие ситуации. Пусть начнёт заново с твоим кодом.";return}st.friend=f;save();go()};
+$("ok").onclick=()=>{const f=dec($("fc").value);if(!f){$("e").textContent="Код не читается. Скопируй его целиком, вместе с именем.";return}if(f.seed!==st.seed){$("e").textContent="Друг отвечал на другие карточки. Пусть начнёт заново с твоим кодом.";return}st.friend=f;save();go()};
 $("rs").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 const hit=(s,own,g)=>own===PASS||g===PASS?0:own===g?2:Z(s,own)>=0&&Z(s,own)===Z(s,g)?1:0;
 /* остров: каждый ответ = растение на своём участке; угадал друг -> ярко, нет -> в тумане */
@@ -263,11 +263,11 @@ g+=`</g>`;if(!ok)g+=`<circle cx="${cx}" cy="${cy}" r="13" fill="var(--fog)"/>`})
 lab.forEach((l,z)=>g+=`<text x="${(Zx[z][0]+Zx[z][1])/2}" y="168" text-anchor="middle" font-size="11" fill="var(--sand-fg)" font-family="Golos Text,system-ui">${l} ${cnt[z]}</text>`);
 return g+`</svg>`}
 function soloResult(){
-const c=[0,0,0];st.s.forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});const top=["к людям: ты чаще идёшь навстречу","от людей: ты чаще берёшь паузу и отходишь","на своём: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))];
+const c=[0,0,0];st.s.forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});const top=["в саду: ты чаще идёшь к людям","в лесу: ты чаще берёшь паузу и отходишь","на скалах: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))];
 let h=`<h1>Остров: ${esc(st.name)}</h1><div class="card">${island(st.s,st.s)}<p style="margin:0">Больше всего выросло ${top}.</p>
-<p class="note" style="margin:0">Это твой взгляд на себя. Сыграй те же ситуации с другом и увидишь, совпадает ли его взгляд.</p></div><div class="card"><h2>Твои ответы</h2>`;
+<p class="note" style="margin:0">Это ты своими глазами. Сыграй те же карточки с другом — увидишь, видит ли он тебя так же.</p></div><div class="card"><h2>Твои ответы</h2>`;
 for(let k=0;k<N;k++)h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${esc(opt(sit(k),st.s[k]))}</div></div>`;
-h+=`</div><div class="row"><button class="main-btn" id="nw">Ещё 10 ситуаций</button><button class="n" id="hm">Играть с другом</button></div>`;
+h+=`</div><div class="row"><button class="main-btn" id="nw">Ещё партию</button><button class="n" id="hm">Играть с другом</button></div>`;
 app.innerHTML=h;$("nw").onclick=()=>{st={name:st.name,seed:newSeed(),s:[],g:[],friend:null,started:1,mode:"solo"};save();go()};
 $("hm").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 function codeBox(code,text,msg){return`<div style="font:500 16px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(code)}</div>
@@ -278,20 +278,20 @@ function heroShare(){
 const code=enc("NG"),msg=`Угадай, как я поступлю, в игре «Ну-ну»: ${link()}\nМой код: ${code}`,G=st.guessers||[];
 const sc=G.map(f=>({n:f.name,p:f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length})).sort((a,b)=>b.p-a.p);
 const ops=G.length?st.s.map((x,k)=>.32+.68*G.filter(f=>Z(sit(k),f.g[k])>=0&&Z(sit(k),f.g[k])===Z(sit(k),x)).length/G.length):null;
-let h=`<h1>Угадайте ${esc(st.name)}</h1><div class="card"><h2>Код для друзей</h2>${codeBox(code,"Разошли друзьям. Каждый вставляет код на старте, угадывает тебя и присылает свой код обратно.",msg)}</div>
+let h=`<h1>${esc(st.name)}: угадайте меня</h1><div class="card"><h2>Код для друзей</h2>${codeBox(code,"Разошли друзьям: каждый вставит код на старте, угадает тебя и пришлёт свой код в ответ.",msg)}</div>
 <div class="card"><h2>Мосты к друзьям</h2>${sc.length?sc.map(r=>`<div class="res" style="flex-direction:row;justify-content:space-between"><span>${esc(r.n)}</span><span class="note">досок: ${r.p} из ${N}</span></div>`).join(""):`<p class="note" style="margin:0">Пока никого. Вставь код ответа друга.</p>`}
 <div class="row"><input id="fc" placeholder="NF...-Имя"><button class="n" id="ok">Добавить</button></div><div class="err" id="e"></div></div>
 <div class="card"><h2>Твой остров</h2>${island(st.s,st.s,ops)}<p class="note" style="margin:0">${G.length?"Чем ярче растение, тем больше друзей угадали этот ответ.":"Остров проявится, когда придут ответы друзей."}</p></div>
 <button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
 app.innerHTML=h;wireCopy(msg);$("fc").oninput=()=>$("e").textContent="";
-$("ok").onclick=()=>{const f=dec($("fc").value);if(!f||f.type!=="F"){$("e").textContent="Нужен код ответа друга, он начинается на NF.";return}if(f.seed!==st.seed){$("e").textContent="Друг угадывал другие ситуации. Пусть начнёт с твоего кода.";return}
+$("ok").onclick=()=>{const f=dec($("fc").value);if(!f||f.type!=="F"){$("e").textContent="Нужен код ответа друга, он начинается на NF.";return}if(f.seed!==st.seed){$("e").textContent="Друг угадывал другие карточки. Пусть начнёт с твоего кода.";return}
 st.guessers=G.filter(x=>x.name!==f.name).concat(f);save();heroShare()};
 $("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 function guessResult(){
-const H=st.friend,hn=esc(H.name),L=["Не угадал","Почти угадал","Точно в цель"],code=enc("NF"),msg=`Я угадал тебя в «Ну-ну». Мой код: ${code}`;
+const H=st.friend,hn=esc(H.name),L=["Не угадал","Почти угадал","Точно в цель"],code=enc("NF"),msg=`Я угадывал тебя в «Ну-ну». Мой код: ${code}`;
 const v=[...Array(N)].map((_,k)=>hit(sit(k),H.s[k],st.g[k])),p=v.filter(x=>x>0).length;addBridge(H.name,p);
-let h=`<h1>Как ты знаешь ${hn}</h1><div class="card"><h2>Мост к ${hn}</h2>${bridge(v,2)}<p style="margin:0">Досок: ${p} из ${N}. Мост: ${stage(H.name)}.</p>
-<h2>Отправь код ${hn}</h2>${codeBox(code,"Так "+hn+" увидит ваш мост.",msg)}</div><div class="card"><h2>По ситуациям</h2>`;
+let h=`<h1>Ты и ${hn}</h1><div class="card"><h2>Мост: ты и ${hn}</h2>${bridge(v,2)}<p style="margin:0">Досок: ${p} из ${N}. Сейчас ваш мост — ${stage(H.name)}.</p>
+<h2>Отправь свой код в ответ</h2>${codeBox(code,"Так "+hn+" увидит ваш мост.",msg)}</div><div class="card"><h2>По ситуациям</h2>`;
 for(let k=0;k<N;k++){const a=hit(sit(k),H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[a].toLowerCase()}</span></div></div>`}
 h+=`</div><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
 app.innerHTML=h;wireCopy(msg);$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
@@ -301,14 +301,14 @@ function bridge(v,max){let g=`<svg viewBox="0 0 320 76" style="width:100%;max-wi
 <line x1="40" y1="30" x2="280" y2="30" stroke="#888780"/><line x1="40" y1="56" x2="280" y2="56" stroke="#888780"/>`;
 v.forEach((x,k)=>{const cx=48+k*(224/(N-1))-7;g+=x?`<rect x="${cx}" y="${x>=max?31:35}" width="14" height="${x>=max?24:16}" rx="2" fill="#BA7517" opacity="${x>=max?1:.55}"/>`:`<rect x="${cx}" y="35" width="14" height="16" rx="2" fill="none" stroke="#888780" stroke-dasharray="2 2"/>`});
 return g+`</svg>`}
-/* ponytail: стадии моста по Холлу (тропа → верёвка → доски → камень); пороги в досках условные, подстроить по данным */
+/* ponytail: стадии моста по Холлу (канат → верёвка → доски → камень); пороги в досках условные, подстроить по данным */
 let bridges=ls.get("nunu-bridges")||{};
 function addBridge(name,n){if(st.bridged)return;bridges[name]=(bridges[name]||0)+n;st.bridged=1;save();ls.set("nunu-bridges",bridges)}
-const stage=name=>{const b=bridges[name]||0;return b<10?"тропа":b<30?"верёвочный":b<60?"дощатый":"каменный"};
+const stage=name=>{const b=bridges[name]||0;return b<10?"канат":b<30?"верёвочный":b<60?"дощатый":"каменный"};
 function result(){
 const f=st.friend,fn=esc(f.name),L=["Не угадал","Почти угадал","Точно в цель"];
 const v=[...Array(N)].map((_,k)=>hit(sit(k),f.s[k],st.g[k])+hit(sit(k),st.s[k],f.g[k])),n=v.filter(x=>x>0).length;addBridge(f.name,n);
-let h=`<h1>Ну-ну: ${esc(st.name)} и ${fn}</h1><div class="card"><h2>Ваш мост</h2>${bridge(v,4)}<p style="margin:0">Досок в этой игре: ${n} из ${N}. Мост с ${fn}: ${stage(f.name)}.</p><p class="note" style="margin:0">Доска ложится там, где хотя бы один из вас понял другого. Яркая доска: оба поняли точно.</p></div><div class="card"><h2>По ситуациям</h2>`;
+let h=`<h1>Ну-ну: ${esc(st.name)} и ${fn}</h1><div class="card"><h2>Ваш мост</h2>${bridge(v,4)}<p style="margin:0">Досок в этой игре: ${n} из ${N}. Сейчас ваш мост — ${stage(f.name)}.</p><p class="note" style="margin:0">Доска ложится там, где хотя бы один из вас понял другого. Яркая доска — оба поняли точно.</p></div><div class="card"><h2>По ситуациям</h2>`;
 for(let k=0;k<N;k++){const s=sit(k),a=hit(s,st.s[k],f.g[k]),b=hit(s,f.s[k],st.g[k]);
 h+=`<div class="res"><div class="s">${k+1}. ${s.q}</div>
 <div>Ты: ${esc(opt(s,st.s[k]))} <span class="tag ${a?"open":"fog"}">${fn}: ${L[a].toLowerCase()}</span></div>
@@ -317,8 +317,8 @@ h+=`</div>`;
 [[st.s,f.g,"Твой остров"],[f.s,st.g,"Остров: "+fn]].forEach(([own,gs,title])=>{const c=[0,0,0];let open=0;
 let all=0;own.forEach((x,k)=>{const z=Z(sit(k),x);if(z<0)return;all++;c[z]++;if(z===Z(sit(k),gs[k]))open++});
 h+=`<div class="card"><h2>${title}</h2>${island(own,gs)}
-<p class="note" style="margin:0">Сад ${c[0]} · лес ${c[1]} · скалы ${c[2]}. Яркое друг угадал (открытый берег ${open}), бледное в тумане (${all-open}).</p></div>`});
-h+=`<div class="card"><h2>Отправь свой код ${fn}</h2><div style="font:500 16px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all">${esc(enc())}</div><p class="note" style="margin:0">Чтобы у друга открылись такие же результаты.</p></div><p class="note">Туман не ошибка, а повод спросить друг друга: «Почему ты так думал?»</p><div class="row"><button class="main-btn" id="bk">Мой код ещё раз</button><button class="n" id="nw">Сыграть с другим</button></div>`;
+<p class="note" style="margin:0">Сад ${c[0]} · лес ${c[1]} · скалы ${c[2]}. Яркое друг угадал (${open}), бледное пока в тумане (${all-open}).</p></div>`});
+h+=`<div class="card"><h2>Отправь свой код в ответ</h2><div style="font:500 16px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all">${esc(enc())}</div><p class="note" style="margin:0">Тогда и друг увидит, что вышло.</p></div><p class="note">Туман — не ошибка, а повод спросить: «Почему ты так подумал?»</p><div class="row"><button class="main-btn" id="bk">Показать мой код</button><button class="n" id="nw">Сыграть с кем-то ещё</button></div>`;
 app.innerHTML=h;$("bk").onclick=()=>{st.friend=null;save();go()};$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 /* внутри Telegram ссылки на t.me открываем средствами Telegram */
 document.addEventListener("click",e=>{const a=e.target.closest("a[href^='https://t.me/']");if(a&&TG){e.preventDefault();TG.openTelegramLink(a.href)}});
