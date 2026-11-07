@@ -19,6 +19,11 @@ h1{font:500 22px/1.3 var(--disp);margin:0;text-wrap:balance}
 h2{font:500 18px/1.4 var(--disp);margin:0;text-wrap:balance}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px}
 .meta{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ask{display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:14px;border:2px solid}
+.ask .av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 18px var(--disp);flex:none}
+.ask b{display:block;font-size:17px;font-weight:600}.ask small{font-size:13px}
+.ask.me{background:var(--sand);color:var(--sand-fg);border-color:var(--sand-fg)}.ask.me .av{background:var(--sand-fg);color:var(--sand)}
+.ask.fr{background:var(--les);color:var(--les-fg);border-color:var(--les-b)}.ask.fr .av{background:var(--les-b);color:#fff}
 .who{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--sand-fg);background:var(--sand);padding:4px 10px;border-radius:99px;align-self:flex-start}
 .q{font-size:18px;font-weight:500;line-height:1.5}
 .zone{font-size:13px;color:var(--muted);margin-top:4px}
@@ -185,11 +190,12 @@ if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пу�
 seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>!onlyMine||x.mine).sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k])=>{const st2=x.life?(x.life.same?"open":"fog"):"";
 h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${esc(x.c)} · ${x.d}</span><span>${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>
 <div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${esc(x.r)}</b></div>
-${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
+${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост с ${esc(x.with)}: +3 доски</div>`:""}${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
 `<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">Так и сделал</button><button class="n" data-k="${k}" data-s="0">Сделал иначе</button></div>`}</div>`});
 h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`;
 app.innerHTML=h;
-app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;seeds[k].life={same:b.dataset.s==="1",note:$("nt"+k).value.trim().slice(0,200),d:new Date().toISOString().slice(0,10)};saveSeeds();garden()});
+app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;const x=seeds[k];x.life={same:b.dataset.s==="1",note:$("nt"+k).value.trim().slice(0,200),d:new Date().toISOString().slice(0,10)};
+if(x.with&&x.life.same&&!x.bridged){bridges[x.with]=(bridges[x.with]||0)+3;x.bridged=1;ls.set("nunu-bridges",bridges)}saveSeeds();garden()});
 $("fa").onclick=()=>{onlyMine=false;garden()};$("fm").onclick=()=>{onlyMine=true;garden()};
 $("bk").onclick=()=>st.started?go():home()}
 /* дело на неделю: план «если помеха — то действие» (Gollwitzer & Sheeran 2006) после мысли о помехе (Oettingen, MCII).
@@ -200,17 +206,17 @@ const SP=[["Если застесняюсь, то начну с простого
 ["Если застесняюсь, то напишу сообщение, а не позвоню.","Если в пятницу открою Telegram, то первым делом напишу другу.","Если не придумаю повод, то позову на то, что и так собирался делать."]];
 function insight(){const c=[0,0,0];(st.s||[]).forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});if(!(c[0]+c[1]+c[2]))return"";
 return"В этой игре больше всего выросло "+["в саду: ты чаще идёшь к людям","в лесу: ты чаще берёшь паузу и отходишь","на скалах: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))]+"."}
-function stepWeek(){let w=0,o=0;const ins=st.s&&st.s.length===N?insight():"";
+function stepWeek(fr){fr=typeof fr==="string"?fr:"";let w=0,o=0;const ins=st.s&&st.s.length===N?insight():"";
 const chips=(a,id,cur)=>`<div class="row" id="${id}">${a.map((x,k)=>`<button class="${k===cur?"t":"n"}" data-k="${k}">${esc(x)}</button>`).join("")}</div>`;
 const draw=()=>{app.innerHTML=`<h1>Дело на неделю</h1>${ins?`<div class="card"><span class="who">Что показала игра</span><p style="margin:0">${ins}</p></div>`:""}
 <div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(SW,"cw",w)}<div class="zone">2. Что может помешать</div>${chips(SO,"co",o)}
 <div class="zone">3. Мой план</div><div class="q" id="pl">${esc(SP[w][o])}</div>
-<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"> Сделаем вместе с другом</label>
+<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"${fr?" checked":""}> Сделаем вместе с ${fr?esc(fr):"другом"}${fr?" — когда сделаете, мост получит +3 доски":""}</label>
 <div class="row"><button class="main-btn" id="pt">Посадить в сад</button><button class="n" id="bk">Назад</button></div></div>
 <p class="note">Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе». Не вышло — ничего страшного, семя подождёт.</p>`;
 $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw()}};$("co").onclick=e=>{const b=e.target.closest("button");if(b){o=+b.dataset.k;draw()}};
 $("bk").onclick=()=>st.started?go():home();
-$("pt").onclick=()=>{seeds.push({c:"Дело на неделю",q:SW[w]+" · помеха: "+SO[o].toLowerCase()+($("tg").checked?" · вместе с другом":""),r:SP[w][o],z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1});saveSeeds();garden()}};draw()}
+$("pt").onclick=()=>{seeds.push({c:"Дело на неделю",q:SW[w]+" · помеха: "+SO[o].toLowerCase()+($("tg").checked?" · вместе с "+(fr||"другом"):""),r:SP[w][o],z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1,with:fr&&$("tg").checked?fr:""});saveSeeds();garden()}};draw()}
 function home(){
 app.innerHTML=`<h1>Ну-ну</h1><p class="note" style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
 <div class="card"><p style="margin:0">Каждый у себя отвечает на 10 карточек: о себе и о том, как ответит друг. Потом вы обмениваетесь кодами и смотрите, кто кого понял.</p>
@@ -221,10 +227,13 @@ app.innerHTML=`<h1>Ну-ну</h1><p class="note" style="margin:0">Игра о т
 const begin=mode=>{const v=$("nm").value.trim().replace(/-/g," ");if(!v){$("e").textContent="Впиши имя";return}const c=$("fc0").value.trim();let f=null;if(c){f=dec(c);if(!f){$("e").textContent="Код друга не читается. Скопируй его целиком.";return}if(f.type==="F"){$("e").textContent="Это код ответа. Его вставляет тот, кого угадывали.";return}mode=f.type==="G"?"guess":"duo"}
 const h=hashSeed();st={name:v,seed:f?f.seed:h!==null?h:newSeed(),s:[],g:[],friend:f,started:1,mode,guessers:[]};save();go()};
 $("go").onclick=()=>begin("duo");$("solo").onclick=()=>begin("solo");$("hero").onclick=()=>begin("hero");$("gd0").onclick=garden;$("sw0").onclick=stepWeek}
+/* кто сейчас отвечает: я — тёплый песок, друг — бирюза; разные цвет, буква и слова, чтобы не перепутать шаги */
+const ask=(me,name)=>me?`<div class="ask me"><span class="av">Я</span><div><b>Отвечаю за себя</b><small>Как поступлю я сам?</small></div></div>`
+:`<div class="ask fr"><span class="av">${name?esc(name[0].toUpperCase()):"?"}</span><div><b>${name?"Теперь за друга: "+esc(name):"Теперь за друга"}</b><small>Как ответил бы ${name?esc(name):"твой друг"}? В вопросе «я» и «ты» — это ${name?esc(name):"он"}.</small></div></div>`;
 function play(i){
 st.started=1;const M=st.mode||(st.solo?"solo":"duo"),one=M!=="duo",s=sit(i),self=draft===null;
 card(`<div class="meta"><span>${i+1} из ${N} · уровень ${s.lv} · ${s.c}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
-<span class="who">${M==="guess"?"Как ответит "+esc(st.friend.name)+"?":self?"Как ответишь ты?":"Как ответит твой друг?"}</span><div class="q">${s.q}</div><div id="o"></div>`);
+${M==="guess"?ask(0,st.friend.name):self?ask(1):ask(0,st.friend&&st.friend.name)}<div class="q">${s.q}</div><div id="o"></div>`);
 const idx=s.o.map((_,k)=>k);for(let k=idx.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
 const r=document.createElement("div");r.className="row";
 const ans=x=>{if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};
@@ -289,26 +298,39 @@ st.guessers=G.filter(x=>x.name!==f.name).concat(f);save();heroShare()};
 $("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 function guessResult(){
 const H=st.friend,hn=esc(H.name),L=["Не угадал","Почти угадал","Точно в цель"],code=enc("NF"),msg=`Я угадывал тебя в «Ну-ну». Мой код: ${code}`;
-const v=[...Array(N)].map((_,k)=>hit(sit(k),H.s[k],st.g[k])),p=v.filter(x=>x>0).length;addBridge(H.name,p);
-let h=`<h1>Ты и ${hn}</h1><div class="card"><h2>Мост: ты и ${hn}</h2>${bridge(v,2)}<p style="margin:0">Досок: ${p} из ${N}. Сейчас ваш мост — ${stage(H.name)}.</p>
-<h2>Отправь свой код в ответ</h2>${codeBox(code,"Так "+hn+" увидит ваш мост.",msg)}</div><div class="card"><h2>По ситуациям</h2>`;
+const v=[...Array(N)].map((_,k)=>hit(sit(k),H.s[k],st.g[k]));
+let h=`<h1>Ты и ${hn}</h1>${bridgeCard(v,2,H.name,"Мост: ты и "+hn)}<div class="card"><h2>Отправь свой код в ответ</h2>${codeBox(code,"Так "+hn+" увидит ваш мост.",msg)}</div><div class="card"><h2>По ситуациям</h2>`;
 for(let k=0;k<N;k++){const a=hit(sit(k),H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[a].toLowerCase()}</span></div></div>`}
 h+=`</div><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
-app.innerHTML=h;wireCopy(msg);$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
+app.innerHTML=h;bridgeBtns(H.name);wireCopy(msg);$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 /* мост вместо счёта: кооперация сближает, соревнование отдаляет. Доска = карточка, где вы поняли друг друга */
 function bridge(v,max){let g=`<svg viewBox="0 0 320 76" style="width:100%;max-width:520px;display:block;margin:0 auto" role="img" aria-label="Мост из ${v.filter(x=>x>0).length} досок">
 <rect width="320" height="76" rx="12" fill="var(--sea)"/><ellipse cx="14" cy="44" rx="30" ry="24" fill="var(--grass)"/><ellipse cx="306" cy="44" rx="30" ry="24" fill="var(--grass)"/>
 <line x1="40" y1="30" x2="280" y2="30" stroke="#888780"/><line x1="40" y1="56" x2="280" y2="56" stroke="#888780"/>`;
-v.forEach((x,k)=>{const cx=48+k*(224/(N-1))-7;g+=x?`<rect x="${cx}" y="${x>=max?31:35}" width="14" height="${x>=max?24:16}" rx="2" fill="#BA7517" opacity="${x>=max?1:.55}"/>`:`<rect x="${cx}" y="35" width="14" height="16" rx="2" fill="none" stroke="#888780" stroke-dasharray="2 2"/>`});
+v.forEach((x,k)=>{const cx=48+k*(224/(N-1))-7;g+=x?x>=max?`<rect x="${cx}" y="30" width="14" height="26" rx="2" fill="#BA7517"/>`:`<rect x="${cx+5.5}" y="30" width="3" height="26" rx="1.5" fill="#BA7517" opacity=".85"/>`:`<rect x="${cx}" y="35" width="14" height="16" rx="2" fill="none" stroke="#888780" stroke-dasharray="2 2"/>`});
 return g+`</svg>`}
 /* ponytail: стадии моста по Холлу (канат → верёвка → доски → камень); пороги в досках условные, подстроить по данным */
 let bridges=ls.get("nunu-bridges")||{};
 function addBridge(name,n){if(st.bridged)return;bridges[name]=(bridges[name]||0)+n;st.bridged=1;save();ls.set("nunu-bridges",bridges)}
-const stage=name=>{const b=bridges[name]||0;return b<10?"канат":b<30?"верёвочный":b<60?"дощатый":"каменный"};
+const STG=[[0,"канатный"],[10,"верёвочный"],[30,"дощатый"],[60,"каменный"]],pl=(n,f)=>n%10===1&&n%100!==11?f[0]:n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?f[1]:f[2];
+/* карточка моста: что значит, где вы сейчас, сколько до следующей стадии и как укрепить.
+Близость цели подгоняет (goal-gradient, Kivetz et al. 2006); совместные дела сближают сильнее разговоров (Hall 2019) */
+function bridgeCard(v,max,name,title){const b=v.filter(x=>x>=max).length,r=v.filter(x=>x&&x<max).length;addBridge(name,b+r/2);
+const t=bridges[name]||0,i=STG.filter(s=>t>=s[0]).length-1,nx=STG[i+1],left=nx?Math.ceil(nx[0]-t):0;
+return`<div class="card"><h2>${title}</h2>${bridge(v,max)}
+<p style="margin:0">В этой игре: ${b} ${pl(b,["доска","доски","досок"])} и ${r} ${pl(r,["верёвочка","верёвочки","верёвочек"])}.</p>
+<p class="note" style="margin:0">Доска — вы поняли друг друга точно. Верёвочка — почти угадали или понял только один. Пусто — пока не поняли.</p>
+<div class="zone">Ваш мост сейчас — ${STG[i][1]}</div>
+${nx?`<div style="height:8px;border-radius:99px;background:var(--line)" role="img" aria-label="Прогресс моста"><div style="height:100%;width:${Math.round((t-STG[i][0])/(nx[0]-STG[i][0])*100)}%;background:#BA7517;border-radius:99px"></div></div>
+<p class="note" style="margin:0">До ${nx[1].replace(/ый$/,"ого")} моста ещё ${left} ${pl(left,["доска","доски","досок"])}. Верёвочка — полдоски. Мост копится от игры к игре.</p>`:`<p class="note" style="margin:0">Крепче моста не бывает.</p>`}
+<div class="zone">Как укрепить мост</div>
+<div class="row"><button class="main-btn" id="brd">Сделать дело вместе: +3 доски</button><button class="n" id="brp">Ещё партию</button></div>
+<p class="note" style="margin:0">Общее дело в жизни сближает сильнее разговоров. Выберите его вместе, а когда сделаете — отметь в саду.</p></div>`}
+function bridgeBtns(name){$("brd").onclick=()=>stepWeek(name);$("brp").onclick=()=>{st={name:st.name,seed:newSeed(),s:[],g:[],friend:null,started:1,mode:"duo",guessers:[]};save();go()}}
 function result(){
 const f=st.friend,fn=esc(f.name),L=["Не угадал","Почти угадал","Точно в цель"];
-const v=[...Array(N)].map((_,k)=>hit(sit(k),f.s[k],st.g[k])+hit(sit(k),st.s[k],f.g[k])),n=v.filter(x=>x>0).length;addBridge(f.name,n);
-let h=`<h1>Ну-ну: ${esc(st.name)} и ${fn}</h1><div class="card"><h2>Ваш мост</h2>${bridge(v,4)}<p style="margin:0">Досок в этой игре: ${n} из ${N}. Сейчас ваш мост — ${stage(f.name)}.</p><p class="note" style="margin:0">Доска ложится там, где хотя бы один из вас понял другого. Яркая доска — оба поняли точно.</p></div><div class="card"><h2>По ситуациям</h2>`;
+const v=[...Array(N)].map((_,k)=>hit(sit(k),f.s[k],st.g[k])+hit(sit(k),st.s[k],f.g[k]));
+let h=`<h1>Ну-ну: ${esc(st.name)} и ${fn}</h1>${bridgeCard(v,4,f.name,"Ваш мост")}<div class="card"><h2>По ситуациям</h2>`;
 for(let k=0;k<N;k++){const s=sit(k),a=hit(s,st.s[k],f.g[k]),b=hit(s,f.s[k],st.g[k]);
 h+=`<div class="res"><div class="s">${k+1}. ${s.q}</div>
 <div>Ты: ${esc(opt(s,st.s[k]))} <span class="tag ${a?"open":"fog"}">${fn}: ${L[a].toLowerCase()}</span></div>
@@ -319,7 +341,7 @@ let all=0;own.forEach((x,k)=>{const z=Z(sit(k),x);if(z<0)return;all++;c[z]++;if(
 h+=`<div class="card"><h2>${title}</h2>${island(own,gs)}
 <p class="note" style="margin:0">Сад ${c[0]} · лес ${c[1]} · скалы ${c[2]}. Яркое друг угадал (${open}), бледное пока в тумане (${all-open}).</p></div>`});
 h+=`<div class="card"><h2>Отправь свой код в ответ</h2><div style="font:500 16px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all">${esc(enc())}</div><p class="note" style="margin:0">Тогда и друг увидит, что вышло.</p></div><p class="note">Туман — не ошибка, а повод спросить: «Почему ты так подумал?»</p><div class="row"><button class="main-btn" id="bk">Показать мой код</button><button class="n" id="nw">Сыграть с кем-то ещё</button></div>`;
-app.innerHTML=h;$("bk").onclick=()=>{st.friend=null;save();go()};$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
+app.innerHTML=h;bridgeBtns(f.name);$("bk").onclick=()=>{st.friend=null;save();go()};$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 /* внутри Telegram ссылки на t.me открываем средствами Telegram */
 document.addEventListener("click",e=>{const a=e.target.closest("a[href^='https://t.me/']");if(a&&TG){e.preventDefault();TG.openTelegramLink(a.href)}});
 go();
