@@ -168,7 +168,7 @@ return s&&g?{type:m[1].toUpperCase(),name:m[5].trim().slice(0,30),seed,s,g}:null
 function card(h){app.innerHTML=`<div class="card">${h}</div>`}
 function go(){if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
 if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")guessResult();else if(!st.friend)share();else result();
-app.insertAdjacentHTML("beforeend",`<div class="row"><button class="main-btn" id="sw">Шаг недели</button>${M!=="guess"?`<button class="n" id="gd">Мой сад семян: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=stepWeek;if(M!=="guess")$("gd").onclick=garden}
+app.insertAdjacentHTML("beforeend",`<div class="row"><button class="main-btn" id="sw">Дело на неделю</button>${M!=="guess"?`<button class="n" id="gd">Мой сад семян: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=stepWeek;if(M!=="guess")$("gd").onclick=garden}
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
@@ -192,7 +192,7 @@ app.innerHTML=h;
 app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;seeds[k].life={same:b.dataset.s==="1",note:$("nt"+k).value.trim().slice(0,200),d:new Date().toISOString().slice(0,10)};saveSeeds();garden()});
 $("fa").onclick=()=>{onlyMine=false;garden()};$("fm").onclick=()=>{onlyMine=true;garden()};
 $("bk").onclick=()=>st.started?go():home()}
-/* шаг недели: план «если помеха — то действие» (Gollwitzer & Sheeran 2006) после мысли о помехе (Oettingen, MCII).
+/* дело на неделю: план «если помеха — то действие» (Gollwitzer & Sheeran 2006) после мысли о помехе (Oettingen, MCII).
 Шаг выбирает сам игрок: план работает только для ценной ему цели. После «то» всегда действие, не «вспомню» */
 const SW=["Первым заговорить с незнакомым","Сказать вслух «мне это важно»","Позвать друга сделать что-то вместе"],SO=["Застесняюсь","Забуду","Не будет повода"];
 const SP=[["Если застесняюсь, то начну с простого вопроса: «Не подскажете, который час?»","Если буду стоять на кассе, то спрошу продавца, как у него день.","Если окажусь в очереди или в транспорте, то спрошу соседа о чём-нибудь вокруг."],
@@ -202,20 +202,20 @@ function insight(){const c=[0,0,0];(st.s||[]).forEach((x,k)=>{const z=Z(sit(k),x
 return"В этой игре больше всего выросло "+["в саду: ты чаще идёшь к людям","в лесу: ты чаще берёшь паузу и отходишь","на скалах: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))]+"."}
 function stepWeek(){let w=0,o=0;const ins=st.s&&st.s.length===N?insight():"";
 const chips=(a,id,cur)=>`<div class="row" id="${id}">${a.map((x,k)=>`<button class="${k===cur?"t":"n"}" data-k="${k}">${esc(x)}</button>`).join("")}</div>`;
-const draw=()=>{app.innerHTML=`<h1>Шаг недели</h1>${ins?`<div class="card"><span class="who">Что показала игра</span><p style="margin:0">${ins}</p></div>`:""}
-<div class="card"><div class="zone">1. Хочу на этой неделе</div>${chips(SW,"cw",w)}<div class="zone">2. Что может помешать</div>${chips(SO,"co",o)}
+const draw=()=>{app.innerHTML=`<h1>Дело на неделю</h1>${ins?`<div class="card"><span class="who">Что показала игра</span><p style="margin:0">${ins}</p></div>`:""}
+<div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(SW,"cw",w)}<div class="zone">2. Что может помешать</div>${chips(SO,"co",o)}
 <div class="zone">3. Мой план</div><div class="q" id="pl">${esc(SP[w][o])}</div>
 <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"> Делаем вместе с другом</label>
-<div class="row"><button class="main-btn" id="pt">Посадить семя шага</button><button class="n" id="bk">Назад</button></div></div>
+<div class="row"><button class="main-btn" id="pt">Посадить семя дела</button><button class="n" id="bk">Назад</button></div></div>
 <p class="note">Через неделю отметь в саду: «так и сделал», «сделал иначе» или оставь семя ждать. Наказаний нет.</p>`;
 $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw()}};$("co").onclick=e=>{const b=e.target.closest("button");if(b){o=+b.dataset.k;draw()}};
 $("bk").onclick=()=>st.started?go():home();
-$("pt").onclick=()=>{seeds.push({c:"Шаг недели",q:SW[w]+" · помеха: "+SO[o].toLowerCase()+($("tg").checked?" · вместе с другом":""),r:SP[w][o],z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1});saveSeeds();garden()}};draw()}
+$("pt").onclick=()=>{seeds.push({c:"Дело на неделю",q:SW[w]+" · помеха: "+SO[o].toLowerCase()+($("tg").checked?" · вместе с другом":""),r:SP[w][o],z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1});saveSeeds();garden()}};draw()}
 function home(){
 app.innerHTML=`<h1>Ну-ну</h1><p class="note" style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
 <div class="card"><p style="margin:0">Каждый проходит 10 ситуаций у себя: отвечает о себе и угадывает, как ответит друг. Потом вы обмениваетесь кодами и смотрите, кто кого угадал.</p>
 <label class="note" for="nm">Твоё имя</label><input id="nm" placeholder="Например, Антон" maxlength="30" value="${esc(st.name)}"><label class="note" for="fc0">Код друга, если он тебя позвал</label><input id="fc0" placeholder="NN...-Имя (можно оставить пустым)"><div class="err" id="e"></div>
-<div class="row"><button class="main-btn" id="go">Играть с другом</button><button class="n" id="hero">Все угадывают меня</button><button class="n" id="solo">Играть одному</button></div></div><div class="row"><button class="n" id="gd0">Мой сад семян: ${seeds.length}</button><button class="n" id="sw0">Шаг недели</button></div>
+<div class="row"><button class="main-btn" id="go">Играть с другом</button><button class="n" id="hero">Все угадывают меня</button><button class="n" id="solo">Играть одному</button></div></div><div class="row"><button class="n" id="gd0">Мой сад семян: ${seeds.length}</button><button class="n" id="sw0">Дело на неделю</button></div>
 <p class="note">Компас, а не рентген: игра показывает, как ты видишь себя и как тебя видят другие. Основа: окно Джохари (Лафт и Ингэм, 1955).</p>`;
 ["nm","fc0"].forEach(x=>$(x).oninput=()=>$("e").textContent="");
 const begin=mode=>{const v=$("nm").value.trim().replace(/-/g," ");if(!v){$("e").textContent="Впиши имя";return}const c=$("fc0").value.trim();let f=null;if(c){f=dec(c);if(!f){$("e").textContent="Код друга не читается. Скопируй его целиком.";return}if(f.type==="F"){$("e").textContent="Это код ответа. Его вставляет тот, кого угадывали.";return}mode=f.type==="G"?"guess":"duo"}
