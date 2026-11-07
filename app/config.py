@@ -28,5 +28,8 @@ MAILING_HOUR = int(os.environ.get("MAILING_HOUR", "6"))  # час рассылк
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "JOYDAO_bot")
 COMMUNITY_CHAT_URL = os.environ.get("COMMUNITY_CHAT_URL", "https://t.me/joydao_club")  # общий чат сообщества
 
+PAUSE = os.environ.get("PAUSE", "") == "1"  # режим паузы: только анонс, см. app/pause.py
+
 if not BOT_TOKEN:
     raise RuntimeError("Укажите BOT_TOKEN в файле .env (см. .env.example)")
+AUTO_PUBLISH = os.environ.get("AUTO_PUBLISH", "") == "1"  # 1 — утренний пост сразу в канал, без черновика

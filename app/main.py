@@ -109,6 +109,11 @@ async def setup_menu(bot: Bot) -> None:
 
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    if config.PAUSE:
+        from . import pause
+        log.info("PAUSE=1: бот на паузе, только анонс")
+        await pause.main()
+        return
     bot = Bot(token=config.BOT_TOKEN)
     dp = Dispatcher()
     dp.include_router(router)
