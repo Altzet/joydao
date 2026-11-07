@@ -206,8 +206,8 @@ const draw=()=>{app.innerHTML=`<h1>Дело на неделю</h1>${ins?`<div cl
 <div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(SW,"cw",w)}<div class="zone">2. Что может помешать</div>${chips(SO,"co",o)}
 <div class="zone">3. Мой план</div><div class="q" id="pl">${esc(SP[w][o])}</div>
 <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"> Делаем вместе с другом</label>
-<div class="row"><button class="main-btn" id="pt">Посадить семя дела</button><button class="n" id="bk">Назад</button></div></div>
-<p class="note">Через неделю отметь в саду: «так и сделал», «сделал иначе» или оставь семя ждать. Наказаний нет.</p>`;
+<div class="row"><button class="main-btn" id="pt">Посадить в сад</button><button class="n" id="bk">Назад</button></div></div>
+<p class="note">Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе». Не вышло — ничего страшного, семя подождёт.</p>`;
 $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw()}};$("co").onclick=e=>{const b=e.target.closest("button");if(b){o=+b.dataset.k;draw()}};
 $("bk").onclick=()=>st.started?go():home();
 $("pt").onclick=()=>{seeds.push({c:"Дело на неделю",q:SW[w]+" · помеха: "+SO[o].toLowerCase()+($("tg").checked?" · вместе с другом":""),r:SP[w][o],z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1});saveSeeds();garden()}};draw()}
