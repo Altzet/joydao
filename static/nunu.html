@@ -323,19 +323,23 @@ return g+`</svg>`}
 /* ponytail: стадии моста по Холлу (канат → верёвка → доски → камень); пороги в досках условные, подстроить по данным */
 let bridges=ls.get("nunu-bridges")||{};
 const bkey=name=>API&&st.friend&&st.friend.id?"id:"+st.friend.id:name;
-function addBridge(name,n){if(st.bridged===1||(st.bb=st.bb||{})[name])return;const k=bkey(name),f=st.friend;bridges[k]=(bridges[k]||0)+n;st.bb[name]=1;save();
-if(API&&f&&f.id&&(st.gid||st.join))API("/game/"+(st.gid||st.join)+"/boards","POST",{friend:f.id,n}).catch(()=>{});ls.set("nunu-bridges",bridges)}
+function addBridge(name,n){const k=bkey(name),f=st.friend,srv=API&&f&&f.id&&(st.gid||st.join);
+if(srv)return API("/game/"+(st.gid||st.join)+"/boards","POST",{friend:f.id,n}).then(r=>{bridges[k]=r.total;ls.set("nunu-bridges",bridges);paintBridge(r.total)}).catch(()=>{});
+if(st.bridged===1||(st.bb=st.bb||{})[name])return;bridges[k]=(bridges[k]||0)+n;st.bb[name]=1;save();ls.set("nunu-bridges",bridges)}
+/* стадия моста и сколько до следующей; перерисовывается, когда сервер вернул точное число досок */
+function bridgeState(t){const i=STG.filter(s=>t>=s[0]).length-1,nx=STG[i+1],left=nx?Math.round((nx[0]-t)*2)/2:0;
+return`<div class="zone">Ваш мост сейчас — ${STG[i][1]}</div>${nx?`<div style="height:8px;border-radius:99px;background:var(--line)" role="img" aria-label="Прогресс моста"><div style="height:100%;width:${Math.round((t-STG[i][0])/(nx[0]-STG[i][0])*100)}%;background:#BA7517;border-radius:99px"></div></div>
+<p class="note" style="margin:0">Всего ${half(t)} ${pl(Math.floor(t),["доска","доски","досок"])}. До ${nx[1].replace(/ый$/,"ого")} моста ещё ${half(left)}. Верёвочка — полдоски. Мост копится от игры к игре.</p>`:`<p class="note" style="margin:0">Крепче моста не бывает.</p>`}`}
+function paintBridge(t){const e=$("bst");if(e)e.innerHTML=bridgeState(t)}
 const STG=[[0,"канатный"],[10,"верёвочный"],[30,"дощатый"],[60,"каменный"]],pl=(n,f)=>n%10===1&&n%100!==11?f[0]:n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?f[1]:f[2];
 /* карточка моста: что значит, где вы сейчас, сколько до следующей стадии и как укрепить.
 Близость цели подгоняет (goal-gradient, Kivetz et al. 2006); совместные дела сближают сильнее разговоров (Hall 2019) */
 function bridgeCard(v,max,name,title){const b=v.filter(x=>x>=max).length,r=v.filter(x=>x&&x<max).length;addBridge(name,b+r/2);
-curFid=st.friend&&st.friend.id||null;const t=bridges[bkey(name)]||0,i=STG.filter(s=>t>=s[0]).length-1,nx=STG[i+1],left=nx?Math.ceil(nx[0]-t):0;
+curFid=st.friend&&st.friend.id||null;const t=bridges[bkey(name)]||0;
 return`<div class="card"><h2>${title}</h2>${bridge(v,max)}
 <p style="margin:0">В этой игре: ${b} ${pl(b,["доска","доски","досок"])} и ${r} ${pl(r,["верёвочка","верёвочки","верёвочек"])}.</p>
 <p class="note" style="margin:0">Доска — вы поняли друг друга точно. Верёвочка — почти угадали или понял только один. Пусто — пока не поняли.</p>
-<div class="zone">Ваш мост сейчас — ${STG[i][1]}</div>
-${nx?`<div style="height:8px;border-radius:99px;background:var(--line)" role="img" aria-label="Прогресс моста"><div style="height:100%;width:${Math.round((t-STG[i][0])/(nx[0]-STG[i][0])*100)}%;background:#BA7517;border-radius:99px"></div></div>
-<p class="note" style="margin:0">До ${nx[1].replace(/ый$/,"ого")} моста ещё ${left} ${pl(left,["доска","доски","досок"])}. Верёвочка — полдоски. Мост копится от игры к игре.</p>`:`<p class="note" style="margin:0">Крепче моста не бывает.</p>`}
+<div id="bst" style="display:flex;flex-direction:column;gap:12px">${bridgeState(t)}</div>
 <div class="zone">Как укрепить мост</div>
 <div class="row"><button class="main-btn" id="brd">Сделать дело вместе: +3 доски</button><button class="n" id="brp">Ещё партию</button></div>
 <p class="note" style="margin:0">Общее дело в жизни сближает сильнее разговоров. Выберите его вместе, а когда сделаете — отметь в саду.</p></div>`}
@@ -390,7 +394,9 @@ return g}
 function artBridge(a,b,boards){const i=STG.filter(s=>boards>=s[0]).length-1,dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,
 x1=a[0]+ux*a[2]*.9,y1=a[1]+uy*a[2]*.66,x2=b[0]-ux*b[2]*.9,y2=b[1]-uy*b[2]*.66,sl=Math.hypot(x2-x1,y2-y1),nx=(y1-y2)/sl,ny=(x2-x1)/sl,
 line=(o,c,w,da="")=>`<line x1="${f1(x1+nx*o)}" y1="${f1(y1+ny*o)}" x2="${f1(x2+nx*o)}" y2="${f1(y2+ny*o)}" stroke="${c}" stroke-width="${w}" ${da||'stroke-linecap="round"'}/>`;
-if(i===0){const mx=(x1+x2)/2,my=(y1+y2)/2+8;return`<path d="M${f1(x1)} ${f1(y1)}Q${f1(mx)} ${f1(my)} ${f1(x2)} ${f1(y2)}" stroke="#8B6B3E" stroke-width="1.6" fill="none"/>`}
+if(i===0){const mx=(x1+x2)/2,my=(y1+y2)/2+8,k=Math.floor(boards),q=u=>[(1-u)*(1-u)*x1+2*(1-u)*u*mx+u*u*x2,(1-u)*(1-u)*y1+2*(1-u)*u*my+u*u*y2];
+let g=`<path d="M${f1(x1)} ${f1(y1)}Q${f1(mx)} ${f1(my)} ${f1(x2)} ${f1(y2)}" stroke="#8B6B3E" stroke-width="1.6" fill="none"/>`;
+for(let j=1;j<=k;j++){const[px,py]=q(j/(k+1));g+=`<line x1="${f1(px-nx*4)}" y1="${f1(py-ny*4)}" x2="${f1(px+nx*4)}" y2="${f1(py+ny*4)}" stroke="#B98544" stroke-width="3" stroke-linecap="round"/>`}return g}
 if(i===1)return line(0,"#B98544",8,'stroke-dasharray="3.5 9" stroke-linecap="butt"')+line(-4,"#8B6B3E",1.2)+line(4,"#8B6B3E",1.2);
 if(i===2)return line(0,"#6E5230",11)+line(0,"#C9904A",9,'stroke-dasharray="4 1.6" stroke-linecap="butt"')+line(-5.5,"#5B4225",1.4)+line(5.5,"#5B4225",1.4);
 return line(0,"#8E8A80",14)+line(0,"#B4B0A6",10,'stroke-dasharray="7 2" stroke-linecap="butt"')+line(-7,"#6F6B62",1.5)+line(7,"#6F6B62",1.5)}
@@ -434,7 +440,8 @@ function invite(){busy("Готовлю приглашение…");API("/invite"
 card(`<span class="who">Приглашение</span><h2>Позови друга</h2>${linkBox("Когда друг откроет ссылку, его остров появится рядом с твоим, а бот пришлёт тебе сообщение. Тогда и сыграете. Ссылка подходит для многих: можно кинуть в общий чат.",r.link)}
 <button class="n" id="mp" style="align-self:flex-start">На карту</button>`);wireLink(msg,r.link);$("mp").onclick=world},()=>oops(invite))}
 const fresh=(mode,o={})=>{st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(),s:[],g:[],friend:null,started:1,mode,guessers:[],...o};save();go()};
-const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${Math.round(b)} ${pl(Math.round(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/ый$/,"ого")} ещё ${Math.ceil(nx[0]-b)}.`:"")};
+const half=x=>String(Math.round(x*2)/2).replace(".",",");
+const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${half(b)} ${pl(Math.floor(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/ый$/,"ого")} ещё ${half(nx[0]-b)}.`:"")};
 function world(){busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);const fi=focus?W.friends.findIndex(f=>f.id===focus):-1;focus=null;drawW((fi>=0?fi:W.friends.findIndex(f=>f.turn==="me"||f.mark))+1)},()=>oops(world))}
 function drawW(sel){const z=W.me.island;
 app.innerHTML=`<h1>Ну-ну</h1><div>${artWorld(W,sel)}</div><div class="card" id="pn"></div>

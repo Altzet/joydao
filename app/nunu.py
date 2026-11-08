@@ -282,7 +282,20 @@ def boards(gid: str, body: BoardsIn, x_init_data: str | None = Header(default=No
         player = body.friend if r["owner"] == u.id else u.id
         c.execute("UPDATE plays SET boards=? WHERE game_id=? AND player=? AND boards IS NULL",
                   (body.n, gid, player))
-    return {"ok": True}
+        return {"ok": True, "total": _pair_boards(c, u.id, body.friend)}
+
+
+def _pair_boards(c: sqlite3.Connection, a: int, b: int) -> float:
+    """Весь мост пары: доски всех партий (кроме бутылок), своих ситуаций и дел вместе.
+    Экран итога берёт число отсюда, а не складывает сам: иначе одна партия считалась дважды."""
+    s = 0.0
+    for r in c.execute("""SELECT p.boards, p.mark FROM plays p JOIN games g ON g.id = p.game_id
+            WHERE g.bottle IS NULL AND ((g.owner = ? AND p.player = ?) OR (g.owner = ? AND p.player = ?))""",
+                       (a, b, b, a)):
+        s += (r["boards"] or 0) + STORY_BOARDS.get(r["mark"], 0)
+    x, y = sorted((a, b))
+    d = c.execute("SELECT n FROM deeds WHERE a=? AND b=?", (x, y)).fetchone()
+    return s + 3 * (d["n"] if d else 0)
 
 
 @router.post("/friend/{fid}/deed")

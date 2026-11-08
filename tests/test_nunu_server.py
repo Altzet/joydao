@@ -65,8 +65,9 @@ def test_world_map(tmp_path, monkeypatch):
     assert w["friends"][0] | {} == {"id": 1, "name": "Антон", "boards": 0, "turn": "me", "gid": g["id"],
                                     "last": None, "mark": None, "island": [0, 0, 0]}
     c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Евген", "s": [2] * 10, "g": [0] * 10}, headers=evgen)
-    c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 1, "n": 5.5}, headers=evgen)
-    c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 2, "n": 9}, headers=anton)  # второе не пишется
+    assert c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 1, "n": 5.5}, headers=evgen).json()["total"] == 5.5
+    r = c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 2, "n": 9}, headers=anton)
+    assert r.json()["total"] == 5.5  # второе не пишется, и партия не считается дважды
     c.post("/nunu/api/friend/2/deed", headers=anton)
     f = c.get("/nunu/api/world", headers=anton).json()["friends"][0]
     assert (f["name"], f["boards"], f["turn"], f["last"], f["island"]) == ("Евген", 8.5, None, g["id"], [2, 0, 1])
