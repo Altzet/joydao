@@ -16,14 +16,17 @@ from fastapi.responses import FileResponse, HTMLResponse
 from . import config, db, nunu
 
 TEXT = (
-    "🚀 <b>JoyDAO готовит грандиозное обновление</b>\n\n"
-    "Мы ненадолго поставили бот на паузу и перестраиваем всё вокруг главного — живой игры.\n\n"
-    "Подпишитесь на канал — там первыми узнают о запуске 👇"
+    "🏝 <b>Ну-ну</b> — игра о том, насколько хорошо вы знаете друг друга.\n\n"
+    "Твой остров растёт из ответов, а мост к другу крепнет, когда вы точно понимаете друг друга: "
+    "от канатного до каменного.\n\n"
+    "Жми «Играть» и позови первого друга 👇"
 )
+GAME_URL = f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"  # Direct Link: игра откроется с аккаунтом
 CHANNEL_URL = f"https://t.me/{config.CHANNEL_ID.lstrip('@')}" if config.CHANNEL_ID.startswith("@") else "https://t.me/joydao"
 
 KB = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_URL)],
+    [InlineKeyboardButton(text="🏝 Играть", url=GAME_URL)],
+    [InlineKeyboardButton(text="📢 Канал", url=CHANNEL_URL)],
     [InlineKeyboardButton(text="💬 Общий чат", url=config.COMMUNITY_CHAT_URL)],
 ])
 
@@ -117,8 +120,21 @@ async def page(path: str = ""):
     return HTMLResponse(PAGE)
 
 
+async def clear_old_descriptions(bot: Bot) -> None:
+    """Старые описания знакомств на uk/en/… перекрывали бы новое из @BotFather у людей с этими языками.
+    Пустая строка снимает языковое описание — все видят то, что задано в @BotFather."""
+    from .i18n import REMOVED, SUPPORTED
+    for lang in (*SUPPORTED, *REMOVED):
+        try:
+            await bot.set_my_description("", language_code=lang)
+            await bot.set_my_short_description("", language_code=lang)
+        except Exception:
+            pass  # не мешаем запуску
+
+
 async def main() -> None:
     bot = Bot(token=config.BOT_TOKEN)
+    await clear_old_descriptions(bot)
     dp = Dispatcher()
     dp.include_router(router)
     server = uvicorn.Server(uvicorn.Config(app, host=config.HOST, port=config.PORT, log_level="info"))
