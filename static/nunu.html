@@ -289,7 +289,7 @@ function heroShare(){
 const G=st.guessers||[];
 const sc=G.map(f=>({n:f.name,p:f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length})).sort((a,b)=>b.p-a.p);
 const ops=G.length?st.s.map((x,k)=>.32+.68*G.filter(f=>Z(sit(k),f.g[k])>=0&&Z(sit(k),f.g[k])===Z(sit(k),x)).length/G.length):null;
-let h=`<h1>${esc(st.name)}: угадайте меня</h1><div class="card"><h2>Ссылка для друзей</h2>${linkBox("Разошли друзьям: каждый откроет ссылку в Telegram и угадает тебя. Когда кто-то ответит, бот пришлёт сообщение.")}</div>
+let h=`<h1>${esc(st.name)}: угадайте меня</h1><div class="card"><h2>Ссылка для компании</h2>${linkBox("Режим компании: одна ссылка на всех. Кинь её в общий чат или покажи QR-код — каждый угадает тебя у себя в телефоне, а их острова появятся на твоей карте.")}</div>
 <div class="card"><h2>Мосты к друзьям</h2>${sc.length?sc.map(r=>`<div class="res" style="flex-direction:row;justify-content:space-between"><span>${esc(r.n)}</span><span class="note">досок: ${r.p} из ${N}</span></div>`).join(""):`<p class="note" style="margin:0">Пока никого.</p>`}
 <button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>
 <div class="card"><h2>Твой остров</h2>${island(st.s,st.s,ops)}<p class="note" style="margin:0">${G.length?"Чем ярче растение, тем больше друзей угадали этот ответ.":"Остров проявится, когда придут ответы друзей."}</p></div>
@@ -402,10 +402,9 @@ return g+`</svg>`}
 /* ===== механика карты ===== */
 let W=null,curFid=null,focus=null;
 /* позвать: ссылка сразу в выбор чата Telegram, карточки — потом, когда друг на карте */
-function invite(){busy("Готовлю приглашение…");API("/invite","POST").then(r=>{
-TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(r.link)+"&text="+encodeURIComponent("Заходи ко мне на остров в «Ну-ну» — игре о том, знаем ли мы друг друга"));
-card(`<span class="who">Приглашение</span><h2>Ссылка ушла</h2><p style="margin:0">Когда друг откроет её, его остров появится рядом с твоим, а бот пришлёт тебе сообщение. Тогда и сыграете.</p>
-<div class="row"><button class="main-btn" id="mp">На карту</button><button class="n" id="ag">Отправить ещё кому-то</button></div>`);$("mp").onclick=world;$("ag").onclick=invite},()=>oops(invite))}
+function invite(){busy("Готовлю приглашение…");API("/invite","POST").then(r=>{const msg="Заходи ко мне на остров в «Ну-ну» — игре о том, знаем ли мы друг друга";
+card(`<span class="who">Приглашение</span><h2>Позови друга</h2>${linkBox("Когда друг откроет ссылку, его остров появится рядом с твоим, а бот пришлёт тебе сообщение. Тогда и сыграете. Ссылка подходит для многих: можно кинуть в общий чат.",r.link)}
+<button class="n" id="mp" style="align-self:flex-start">На карту</button>`);wireLink(msg,r.link);$("mp").onclick=world},()=>oops(invite))}
 const fresh=(mode,o={})=>{st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(),s:[],g:[],friend:null,started:1,mode,guessers:[],...o};save();go()};
 const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${Math.round(b)} ${pl(Math.round(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/ый$/,"ого")} ещё ${Math.ceil(nx[0]-b)}.`:"")};
 function world(){busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);const fi=focus?W.friends.findIndex(f=>f.id===focus):-1;focus=null;drawW((fi>=0?fi:W.friends.findIndex(f=>f.turn==="me"))+1)},()=>oops(world))}
@@ -414,10 +413,10 @@ app.innerHTML=`<h1>Ну-ну</h1><div>${artWorld(W,sel)}</div><div class="card" 
 <p class="note">Море — общее и нейтральное. Остров растёт из твоих ответов: цветы — когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>`;
 app.querySelector("svg").onclick=e=>{const g=e.target.closest("[data-i]");if(g)drawW(g.dataset.i==="inv"?"inv":+g.dataset.i)};
 const pn=$("pn"),btn=(id,t,main)=>`<button class="${main?"main-btn":"n"}" id="${id}">${t}</button>`,f=sel>0?W.friends[sel-1]:null;
-if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">«Все угадывают меня»: сначала ты отвечаешь о себе, потом рассылаешь ссылку, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Пусть все угадывают меня")}</div>`;
+if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");return}
 if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Сад ${z[0]} · лес ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
-<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Все угадывают меня")}${btn("so","Играть одному")}${btn("gd","Мой сад: "+seeds.length)}${btn("sw","Дело на неделю")}</div>`;
+<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("so","Играть одному")}${btn("gd","Мой сад: "+seeds.length)}${btn("sw","Дело на неделю")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");$("gd").onclick=garden;$("sw").onclick=()=>{curFid=null;stepWeek()};return}
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
@@ -428,10 +427,15 @@ if($("ls"))$("ls").onclick=()=>{busy("Открываю партию…");join(f.
 $("dd").onclick=()=>{curFid=f.id;stepWeek(f.name)}}
 function busy(t){card(`<p style="margin:0">${t}</p>`)}
 function oops(f){card(`<p style="margin:0">Не получилось связаться с сервером. Проверь интернет.</p><button class="main-btn" id="rt">Ещё раз</button>`);$("rt").onclick=f}
-const linkBox=t=>`<div style="font:500 15px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(st.glink)}</div>
-<div class="row"><button class="main-btn" id="snd">Отправить другу</button><button class="n" id="cp">Скопировать</button></div><p class="note" style="margin:0" id="cpn">${t}</p>`;
-function wireLink(msg){$("snd").onclick=()=>TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(st.glink)+"&text="+encodeURIComponent(msg));
-$("cp").onclick=()=>navigator.clipboard.writeText(st.glink).then(()=>$("cpn").textContent="Ссылка скопирована.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил ссылку, скопируй вручную."})}
+/* ссылка: в чат Telegram, скопировать или QR-код — когда все рядом (режим компании) */
+const linkBox=(t,l=st.glink)=>`<div style="font:500 15px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(l)}</div>
+<div class="row"><button class="main-btn" id="snd">Отправить в Telegram</button><button class="n" id="qr">QR-код</button><button class="n" id="cp">Скопировать</button></div><div id="qrb" style="display:flex;flex-direction:column;gap:8px"></div><p class="note" style="margin:0" id="cpn">${t}</p>`;
+function qrShow(l){const box=$("qrb");if(box.innerHTML){box.innerHTML="";return}
+const draw=()=>{const q=qrcode(0,"M");q.addData(l);q.make();box.innerHTML=`<div style="background:#fff;padding:8px;border-radius:12px;align-self:center;width:min(100%,280px)">${q.createSvgTag({cellSize:6,margin:3,scalable:true})}</div><p class="note" style="margin:0;text-align:center">Наведи камеру телефона — откроется игра в Telegram</p>`};
+if(window.qrcode)return draw();box.innerHTML=`<p class="note" style="margin:0">Рисую QR-код…</p>`;
+const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";s.onload=()=>{box.innerHTML="";draw()};s.onerror=()=>box.innerHTML=`<p class="err" style="margin:0">QR-код не загрузился. Проверь интернет.</p>`;document.head.appendChild(s)}
+function wireLink(msg,l=st.glink){$("snd").onclick=()=>TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(l)+"&text="+encodeURIComponent(msg));$("qr").onclick=()=>qrShow(l);
+$("cp").onclick=()=>navigator.clipboard.writeText(l).then(()=>$("cpn").textContent="Ссылка скопирована.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил ссылку, скопируй вручную."})}
 /* хозяин: игра ложится на сервер один раз, дальше только ссылка; кто ответил — видно здесь */
 function shareTG(M){busy("Готовлю ссылку…");
 (st.gid?Promise.resolve():API("/game","POST",{name:st.name,seed:st.seed,mode:M,s:st.s,g:M==="hero"?[]:st.g,to:st.to||null}).then(r=>{st.gid=r.id;st.glink=r.link;save()}))
