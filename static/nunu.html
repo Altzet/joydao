@@ -15,6 +15,12 @@ html{-webkit-text-size-adjust:100%}*{box-sizing:border-box}
 --sad:#4B1528;--sad-fg:#F4C0D1;--les:#04342C;--les-fg:#9FE1CB;--sk:#2C2C2A;--sk-fg:#D3D1C7;--acc:#5DCAA5;--acc-fg:#04342C;--sea:#0F2A35;--grass:#2C3A1E;--fog:rgba(18,26,23,.55);color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+/* постоянное меню внизу, как в приложениях: карта, сад, удиви себя, бутылка */
+body.has-nav{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+#nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+#nav div{display:flex;width:100%;max-width:560px;justify-content:space-around}
+#nav button{border:0;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;padding:6px 10px;min-width:64px;text-align:center}
+#nav button[aria-current="page"]{color:var(--acc)}#nav svg{width:24px;height:24px}
 h1{font:500 22px/1.3 var(--disp);margin:0;text-wrap:balance}
 h2{font:500 18px/1.4 var(--disp);margin:0;text-wrap:balance}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px}
@@ -172,7 +178,7 @@ return picked[seed]=[...sh(C1.length).slice(0,3).map(k=>crd(C1[k],1,ab)),...sh(P
 const sit=k=>pick(st.seed)[k],newSeed=()=>Math.floor(Math.random()*1679616);
 const save=()=>ls.set("nunu2",st);
 function card(h){app.innerHTML=`<div class="card">${h}</div>`}
-function go(){if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
+function go(){setNav(null);if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
 if(st.join&&st.friend&&st.friend.pending)return st.story&&st.sg===undefined?storyGuess():sendPlay();
 if(API&&(M==="hero"||M==="duo"&&!st.friend))return shareTG(M);
 if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")guessResult();else result();tail(M)}
@@ -181,7 +187,7 @@ function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<bu
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
 let onlyMine=false;
-function garden(){const mineN=seeds.filter(x=>x.mine).length;
+function garden(){setNav("garden");const mineN=seeds.filter(x=>x.mine).length;
 const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length;
 let h=`<h1>Мой сад</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя распустится.</p>
 <div class="isl"><div style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>так и сделал</div>
@@ -210,7 +216,7 @@ const SP=[["Если застесняюсь, то начну с простого
 function insight(){const c=[0,0,0];(st.s||[]).forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});if(!(c[0]+c[1]+c[2]))return"";
 return"В этой игре больше всего выросло "+["в саду: ты чаще идёшь к людям","в лесу: ты чаще берёшь паузу и отходишь","на скалах: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))]+"."}
 /* своё дело: план пишет сам игрок (свои цели выполняются охотнее), но по той же форме — что, когда и где, «если помеха — то действие» */
-function stepWeek(fr){fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr;const own={what:"",when:"",act:"",who:"",obs:""},ins=st.s&&st.s.length===N?insight():"",W=[...SW,"Своё дело…"],O=[...SO,"Свой вариант…"];
+function stepWeek(fr){setNav("week");fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr;const own={what:"",when:"",act:"",who:"",obs:""},ins=st.s&&st.s.length===N?insight():"",W=[...SW,"Своё дело…"],O=[...SO,"Свой вариант…"];
 /* своя помеха: план «если — то» работает и на неё, если «то» — действие (Gollwitzer & Sheeran 2006) */
 const obs=()=>{const x=o<3?SO[o]:own.obs.trim()||"…";return x[0].toLowerCase()+x.slice(1)},ownAct=()=>w===3||o===3;
 const plan=()=>w<3&&o<3?SP[w][o]:`${w<3?W[w]:`«${own.what||"…"}» — ${own.when||"когда и где?"}`}. Если ${obs()}, то ${own.act||"…"}.`,mate=()=>fr||own.who.trim();
@@ -422,6 +428,17 @@ g+=`<g data-i="bottle" style="cursor:pointer"><g class="bob">${artBottle(bot[0],
 return g+`</svg>`}
 /* ===== механика карты ===== */
 let W=null,curFid=null,focus=null;
+/* меню: всегда под рукой; «Назад» в шапке Telegram ведёт на карту; новый экран — сверху */
+const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],
+["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],["bottle","Бутылка","M10 2h4v3l1.5 2.5V20a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V7.5L10 5z",()=>W?drawW("bottle"):world("bottle")]];
+const nav={cur:undefined};
+function setNav(s){if(!API)return;if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
+if(!el){el=document.createElement("nav");el.id="nav";el.setAttribute("aria-label","Меню");document.body.appendChild(el);document.body.classList.add("has-nav");
+el.innerHTML=`<div>${NAV.map(([k,l,d])=>`<button data-n="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${d}"/></svg>${l}</button>`).join("")}</div>`;
+el.onclick=e=>{const b=e.target.closest("button");if(b)NAV.find(x=>x[0]===b.dataset.n)[3]()};
+try{TG.BackButton.onClick(()=>world())}catch(e){}}
+el.querySelectorAll("button").forEach(b=>b.dataset.n===s?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+try{s==="map"?TG.BackButton.hide():TG.BackButton.show()}catch(e){}}
 /* бутылка: случайная чужая, не друга, ещё не выловленная мной */
 function catchBottle(){busy("Закидываю сеть…");API("/bottle").then(r=>{if(r.gid)return join(r.gid).then(go);
 card(`<h2>Море пока пустое</h2><p style="margin:0">Все бутылки уже выловлены. Брось свою — её выловит кто-нибудь, кого ты ещё не знаешь.</p><div class="row"><button class="main-btn" id="bt">Бросить свою</button><button class="n" id="mp">На карту</button></div>`);
@@ -442,8 +459,8 @@ card(`<span class="who">Приглашение</span><h2>Позови друга
 const fresh=(mode,o={})=>{st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(),s:[],g:[],friend:null,started:1,mode,guessers:[],...o};save();go()};
 const half=x=>String(Math.round(x*2)/2).replace(".",",");
 const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${half(b)} ${pl(Math.floor(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/ый$/,"ого")} ещё ${half(nx[0]-b)}.`:"")};
-function world(){busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);const fi=focus?W.friends.findIndex(f=>f.id===focus):-1;focus=null;drawW((fi>=0?fi:W.friends.findIndex(f=>f.turn==="me"||f.mark))+1)},()=>oops(world))}
-function drawW(sel){const z=W.me.island;
+function world(pick){pick=typeof pick==="string"?pick:null;busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);const fi=focus?W.friends.findIndex(f=>f.id===focus):-1;focus=null;if(pick)return drawW(pick);drawW((fi>=0?fi:W.friends.findIndex(f=>f.turn==="me"||f.mark))+1)},()=>oops(world))}
+function drawW(sel){setNav(sel==="bottle"?"bottle":"map");const z=W.me.island;
 app.innerHTML=`<h1>Ну-ну</h1><div>${artWorld(W,sel)}</div><div class="card" id="pn"></div>
 <p class="note">Море — общее и нейтральное. Остров растёт из твоих ответов: цветы — когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>`;
 app.querySelector("svg").onclick=e=>{const g=e.target.closest("[data-i]");if(g)drawW(g.dataset.i==="inv"||g.dataset.i==="bottle"?g.dataset.i:+g.dataset.i)};
@@ -454,8 +471,8 @@ $("bc").onclick=catchBottle;$("bt").onclick=()=>fresh("hero",{bottle:1});return}
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");return}
 if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Сад ${z[0]} · лес ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
-<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("so","Играть одному")}${btn("gd","Мой сад: "+seeds.length)}${btn("sw","Удиви себя")}</div>`;
-$("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");$("gd").onclick=garden;$("sw").onclick=()=>{curFid=null;stepWeek()};return}
+<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("so","Играть одному")}</div>`;
+$("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");return}
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
 const mk=f.mark?`<p style="margin:0">${fn} угадывал твою ситуацию — отметь, угадал ли.</p>`:"";
