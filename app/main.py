@@ -109,9 +109,9 @@ async def setup_menu(bot: Bot) -> None:
 
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
-    if config.PAUSE:
+    if not config.LEGACY:
         from . import pause
-        log.info("PAUSE=1: бот на паузе, только анонс")
+        log.info("Бот «Ну-ну» (старый JoyDao: LEGACY=1)")
         await pause.main()
         return
     bot = Bot(token=config.BOT_TOKEN)

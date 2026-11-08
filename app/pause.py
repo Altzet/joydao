@@ -1,15 +1,20 @@
-"""Режим паузы (PAUSE=1 в .env): бот и Mini App показывают анонс обновления,
-рассылки, агент канала и турниры не запускаются. Снять: убрать PAUSE и перезапустить."""
+"""Бот «Ну-ну» — обычный режим JoyDAO: в личке зовёт в игру, сам ставит себе имя, «О боте»,
+описание и кнопку меню «Играть»; игра — /nunu, её сервер — app/nunu.py.
+Старый JoyDao (знакомства, нумерология, рассылки, агент канала, турниры) — LEGACY=1 в .env.
+ponytail: файл называется pause.py по истории — переименовать, когда LEGACY уйдёт совсем."""
 from __future__ import annotations
 
 import asyncio
 import html
+import logging
+from urllib.parse import urlsplit
 from pathlib import Path
 
 import uvicorn
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, MenuButtonWebApp, Message,
+                           WebAppInfo)
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 
@@ -120,6 +125,41 @@ async def page(path: str = ""):
     return HTMLResponse(PAGE)
 
 
+log = logging.getLogger("joydao")
+# Профиль бота. Картинки (аватарка, обложка описания) API не ставит — только @BotFather.
+NAME = "Ну-ну · JoyDao"
+ABOUT = "Игра об островах и мостах: проверь, насколько хорошо вы с друзьями знаете друг друга 🌉"
+DESCRIPTION = (
+    "🏝 Ну-ну — игра о том, насколько хорошо вы знаете друг друга.\n\n"
+    "• Отвечаешь на карточки о себе и о друге\n"
+    "• Твой остров растёт из ответов: цветы, деревья, камни\n"
+    "• Поняли друг друга — мост крепнет: от канатного до каменного\n"
+    "• Своя ситуация: расскажи случай, а друг угадает, как ты поступил\n"
+    "• Режим компании: одна ссылка или QR-код на всех\n\n"
+    "Жми «Играть» 👇"
+)
+
+
+async def setup_profile(bot: Bot) -> None:
+    """Имя, «О боте», описание и кнопка меню — из кода. Меняем, только если отличается:
+    у setMyName жёсткий лимит частоты."""
+    try:
+        if (await bot.get_my_name()).name != NAME:
+            await bot.set_my_name(NAME)
+        if (await bot.get_my_short_description()).short_description != ABOUT:
+            await bot.set_my_short_description(ABOUT)
+        if (await bot.get_my_description()).description != DESCRIPTION:
+            await bot.set_my_description(DESCRIPTION)
+        await bot.delete_my_commands()
+        if config.WEBAPP_URL:  # кнопка слева от поля ввода: игра с аккаунтом в один тап
+            u = urlsplit(config.WEBAPP_URL)
+            await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(
+                text="Играть", web_app=WebAppInfo(url=f"{u.scheme}://{u.netloc}/nunu")))
+    except Exception:
+        log.exception("Не удалось обновить профиль бота")  # не мешаем запуску
+    await clear_old_descriptions(bot)
+
+
 async def clear_old_descriptions(bot: Bot) -> None:
     """Старые описания знакомств на uk/en/… перекрывали бы новое из @BotFather у людей с этими языками.
     Пустая строка снимает языковое описание — все видят то, что задано в @BotFather."""
@@ -134,7 +174,7 @@ async def clear_old_descriptions(bot: Bot) -> None:
 
 async def main() -> None:
     bot = Bot(token=config.BOT_TOKEN)
-    await clear_old_descriptions(bot)
+    await setup_profile(bot)
     dp = Dispatcher()
     dp.include_router(router)
     server = uvicorn.Server(uvicorn.Config(app, host=config.HOST, port=config.PORT, log_level="info"))

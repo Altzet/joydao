@@ -29,7 +29,7 @@ BOT_USERNAME = os.environ.get("BOT_USERNAME", "JOYDAO_bot")
 COMMUNITY_CHAT_URL = os.environ.get("COMMUNITY_CHAT_URL", "https://t.me/joydao_club")  # общий чат сообщества
 
 NUNU_APP = os.environ.get("NUNU_APP", "nunu")  # короткое имя Mini App «Ну-ну» в @BotFather (/newapp)
-PAUSE = os.environ.get("PAUSE", "") == "1"  # режим паузы: только анонс, см. app/pause.py
+LEGACY = os.environ.get("LEGACY", "") == "1"  # 1 — старый JoyDao (знакомства, нумерология, рассылки); иначе бот «Ну-ну», см. app/pause.py
 
 if not BOT_TOKEN:
     raise RuntimeError("Укажите BOT_TOKEN в файле .env (см. .env.example)")
