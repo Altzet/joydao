@@ -417,14 +417,16 @@ async def report(gid: str, x_init_data: str | None = Header(default=None)):
     return {"ok": True}
 
 
-def _island(c: sqlite3.Connection, uid: int) -> list[int]:
-    """Сад, лес, скалы: сколько семян в каждой зоне (из сада игрока)."""
+def _island(c: sqlite3.Connection, uid: int) -> dict:
+    """Сад, лес, скалы: сколько семян в каждой зоне и сколько из них распустилось в жизни («так и сделал»)."""
     r = c.execute("SELECT data FROM state WHERE tg_id=?", (uid,)).fetchone()
-    z = [0, 0, 0]
+    z, b = [0, 0, 0], [0, 0, 0]
     for s in (json.loads(r["data"]).get("nunu-seeds") or [] if r else []):
         if isinstance(s, dict) and s.get("z") in (0, 1, 2):
             z[s["z"]] += 1
-    return z
+            if isinstance(s.get("life"), dict) and s["life"].get("same"):
+                b[s["z"]] += 1
+    return {"island": z, "bloom": b}
 
 
 @router.get("/world")
@@ -465,9 +467,9 @@ def world(x_init_data: str | None = Header(default=None)):
             f["boards"] += 3 * (d["n"] if d else 0)
             n = c.execute("SELECT name FROM users WHERE tg_id=?", (f["id"],)).fetchone()
             f["name"] = n["name"] if n else "Друг"
-            f["island"] = _island(c, f["id"])
+            f |= _island(c, f["id"])
             del f["t"]
-        return {"me": {"id": u.id, "name": u.first_name, "island": _island(c, u.id)},
+        return {"me": {"id": u.id, "name": u.first_name, **_island(c, u.id)},
                 "friends": sorted(fr.values(), key=lambda f: -f["boards"])}
 
 

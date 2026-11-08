@@ -61,7 +61,7 @@ input,textarea{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid
 .tag{font-size:0.75rem;padding:2px 8px;border-radius:99px;display:inline-block}
 .open{background:var(--les);color:var(--les-fg)}.fog{background:var(--sk);color:var(--sk-fg)}
 .isl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.isl div{border-radius:12px;padding:12px}
+.isl div{border-radius:12px;padding:12px}.isl div[data-v]{cursor:pointer}.isl div[aria-pressed="true"]{box-shadow:0 0 0 2px currentColor}
 .isl b{font:500 1.75rem var(--disp);display:block;font-variant-numeric:tabular-nums}
 .note{font-size:0.8125rem;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}
@@ -221,16 +221,19 @@ function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<bu
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
 let onlyMine=false;
-function garden(){setNav("garden");const mineN=seeds.filter(x=>x.mine).length;
-const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length;
+/* сад: по умолчанию — что ждёт в земле; распустившееся и проросшее иначе — по нажатию на квадрат */
+let gview="wait";const inView=x=>gview==="wait"?!x.life:gview==="bloom"?x.life&&x.life.same:x.life&&!x.life.same;
+function garden(){setNav("garden");const mineN=seeds.filter(x=>x.mine&&inView(x)).length,inN=seeds.filter(inView).length;
+const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length,tile=v=>`data-v="${v}" role="button" tabindex="0" aria-pressed="${gview===v}"`;
 let h=`<h1>Мой сад</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя распустится.</p>
-<div class="isl"><div style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>так и сделал</div>
-<div style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
-<div style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>семян</div></div>
+<div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>так и сделал</div>
+<div ${tile("other")} style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
+<div ${tile("wait")} style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>семян</div></div>
 <p class="note" style="margin:0">По исследованиям, задуманное чаще сбывается, если заранее решить: «когда случится X, я сделаю Y» (Голльвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
-h+=`<div class="row"><button class="${onlyMine?"n":"p"}" id="fa">Все семена: ${seeds.length}</button><button class="${onlyMine?"p":"n"}" id="fm">Было со мной: ${mineN}</button></div>`;
+h+=`<h2 id="gv" style="scroll-margin-top:12px">${{wait:"Ждут в земле",bloom:"Распустилось",other:"Проросло иначе"}[gview]}</h2><div class="row"><button class="${onlyMine?"n":"p"}" id="fa">Все: ${inN}</button><button class="${onlyMine?"p":"n"}" id="fm">Было со мной: ${mineN}</button></div>`;
 if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пуст. Сыграй партию, и твои ответы станут семенами.</p></div>`;
-seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>!onlyMine||x.mine).sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k])=>{const st2=x.life?(x.life.same?"open":"fog"):"";
+else if(!inN)h+=`<p class="note" style="margin:0">${{wait:"Все семена уже проросли. Сыграй ещё партию — появятся новые.",bloom:"Пока ничего не распустилось. Когда в жизни поступишь так, как ответил в игре, отметь «Так и сделал».",other:"Пока ничего. Здесь будет то, что в жизни вышло по-другому."}[gview]}</p>`;
+seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>inView(x)&&(!onlyMine||x.mine)).sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k])=>{const st2=x.life?(x.life.same?"open":"fog"):"";
 h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${esc(x.c)} · ${x.d}</span><span>${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>
 <div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${esc(x.r)}</b></div>
 ${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты и ${esc(x.with)} — +3 доски</div>`:""}${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
@@ -239,6 +242,7 @@ h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`
 app.innerHTML=h;
 app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;const x=seeds[k];x.life={same:b.dataset.s==="1",note:$("nt"+k).value.trim().slice(0,200),d:new Date().toISOString().slice(0,10)};
 if(x.with&&x.life.same&&!x.bridged){const k=x.fid?"id:"+x.fid:x.with;bridges[k]=(bridges[k]||0)+3;if(x.fid&&API)API("/friend/"+x.fid+"/deed","POST").catch(()=>{});x.bridged=1;ls.set("nunu-bridges",bridges)}saveSeeds();garden()});
+app.querySelectorAll("[data-v]").forEach(d=>d.onclick=d.onkeydown=e=>{if(e.type==="keydown"&&e.key!=="Enter"&&e.key!==" ")return;gview=gview===d.dataset.v?"wait":d.dataset.v;garden();const v=$("gv");v&&v.scrollIntoView&&v.scrollIntoView({block:"start",behavior:"smooth"})});
 $("fa").onclick=()=>{onlyMine=false;garden()};$("fm").onclick=()=>{onlyMine=true;garden()};
 $("bk").onclick=()=>st.started?go():home()}
 /* дело на неделю: план «если помеха — то действие» (Gollwitzer & Sheeran 2006) после мысли о помехе (Oettingen, MCII).
@@ -416,17 +420,21 @@ d+=`C${f1(b[0]+(c[0]-a[0])/6)} ${f1(b[1]+(c[1]-a[1])/6)} ${f1(c[0]-(e[0]-b[0])/6
 const artFlower=(x,y,s)=>`<line x1="${f1(x)}" y1="${f1(y)}" x2="${f1(x)}" y2="${f1(y+6*s)}" stroke="#4E8A2E" stroke-width="${f1(1.4*s)}"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(3.4*s)}" fill="#E0709A"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(1.4*s)}" fill="#FAD27A"/>`;
 const artTree=(x,y,s)=>`<ellipse cx="${f1(x+2*s)}" cy="${f1(y+7*s)}" rx="${f1(5*s)}" ry="${f1(1.8*s)}" fill="#5E8F45" opacity=".5"/><rect x="${f1(x-1*s)}" y="${f1(y+3*s)}" width="${f1(2*s)}" height="${f1(4*s)}" fill="#7A5230"/><polygon points="${f1(x)},${f1(y-9*s)} ${f1(x-6*s)},${f1(y+4*s)} ${f1(x+6*s)},${f1(y+4*s)}" fill="#2E7D5B"/><polygon points="${f1(x)},${f1(y-9*s)} ${f1(x-3.5*s)},${f1(y-1*s)} ${f1(x+1*s)},${f1(y-1*s)}" fill="#47A077"/>`;
 const artRock=(x,y,s)=>`<polygon points="${f1(x-7*s)},${f1(y+5*s)} ${f1(x-3*s)},${f1(y-4*s)} ${f1(x+2*s)},${f1(y-6*s)} ${f1(x+7*s)},${f1(y+5*s)}" fill="#9A978E"/><polygon points="${f1(x-3*s)},${f1(y-4*s)} ${f1(x+2*s)},${f1(y-6*s)} ${f1(x)},${f1(y+1*s)}" fill="#C8C5BC"/>`;
+const artFlowerB=(x,y,s)=>`<line x1="${f1(x)}" y1="${f1(y)}" x2="${f1(x)}" y2="${f1(y+7*s)}" stroke="#4E8A2E" stroke-width="${f1(1.5*s)}"/>${[0,1,2,3,4].map(k=>{const a=k*1.2566-1.57;return`<circle cx="${f1(x+3.2*s*Math.cos(a))}" cy="${f1(y+3.2*s*Math.sin(a))}" r="${f1(2.6*s)}" fill="#E0709A"/>`}).join("")}<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(2.1*s)}" fill="#FAD27A"/>`;
+const artTreeB=(x,y,s)=>artTree(x,y,s)+[[-2.6,0],[2.4,-1.4],[0,-4.6]].map(([dx,dy])=>`<circle cx="${f1(x+dx*s)}" cy="${f1(y+dy*s)}" r="${f1(1.4*s)}" fill="#F08A3C"/>`).join("");
+const artRockB=(x,y,s)=>artRock(x,y,s)+`<line x1="${f1(x+1*s)}" y1="${f1(y-6*s)}" x2="${f1(x+1*s)}" y2="${f1(y-3*s)}" stroke="#4E8A2E" stroke-width="${f1(1*s)}"/><circle cx="${f1(x+1*s)}" cy="${f1(y-7*s)}" r="${f1(2*s)}" fill="#E0709A"/><circle cx="${f1(x+1*s)}" cy="${f1(y-7*s)}" r="${f1(.8*s)}" fill="#FAD27A"/>`;
 const artTuft=(x,y,s)=>`<path d="M${f1(x-3*s)} ${f1(y+2*s)}q${f1(1*s)} ${f1(-4*s)} ${f1(2*s)} ${f1(-5*s)}M${f1(x)} ${f1(y+2*s)}v${f1(-6*s)}M${f1(x+3*s)} ${f1(y+2*s)}q${f1(-1*s)} ${f1(-4*s)} ${f1(-2*s)} ${f1(-5*s)}" stroke="#6FA34A" stroke-width="${f1(1.2*s)}" fill="none" stroke-linecap="round"/>`;
 /* растения из ответов: сад — цветы (к людям), лес — деревья (пауза), скалы — камни (на своём) */
-function artIsland(cx,cy,R,id,z,name,badge,on){const r=rnd(id*7919+13),ph=[r()*6,r()*6,r()*6],B=(k,dy=0)=>blob(cx,cy+dy,R,ph,k),s=R/40;
+function artIsland(cx,cy,R,id,z,name,badge,on,bl=[0,0,0]){const r=rnd(id*7919+13),ph=[r()*6,r()*6,r()*6],B=(k,dy=0)=>blob(cx,cy+dy,R,ph,k),s=R/40;
 if(on==="halo")return`<path d="${B(1.34)}" fill="#BCE4EC"/>`;
 let g=`<path d="${B(1.04,4)}" fill="#4F8FA3" opacity=".35"/><path d="${B(1.08)}" fill="none" stroke="#fff" stroke-width="1.6" opacity=".75"/>
 <path d="${B(1)}" fill="#EFDDB0"/><path d="${B(.84,-1)}" fill="#A8CF7C"/><path d="${blob(cx,cy-R*.1,R,ph,.5)}" fill="#97C46D"/>`;
-const cap=k=>Math.min(z[k],6),kinds=[...Array(cap(0)).fill(0),...Array(cap(1)).fill(1),...Array(cap(2)).fill(2)],pts=[];
+/* первые bl[k] растений каждого вида — распустившиеся в жизни («так и сделал») */
+const cap=k=>Math.min(z[k],6),kinds=[0,1,2].flatMap(k=>Array.from({length:cap(k)},(_,j)=>j<Math.min(bl[k]||0,cap(k))?k+4:k)),pts=[];
 if(!kinds.length)for(let i=0;i<3;i++)kinds.push(3);
 kinds.forEach(k=>{for(let t=0;t<40;t++){const a=r()*2*Math.PI,q=Math.sqrt(r())*.68,x=cx+q*R*Math.cos(a),y=cy+q*R*.5*Math.sin(a);
 if(pts.every(p=>Math.hypot(p[0]-x,(p[1]-y)*1.4)>10*s)){pts.push([x,y,k]);break}}});
-pts.sort((a,b)=>a[1]-b[1]).forEach(([x,y,k])=>g+=[artFlower,artTree,artRock,artTuft][k](x,y,s));
+pts.sort((a,b)=>a[1]-b[1]).forEach(([x,y,k])=>g+=[artFlower,artTree,artRock,artTuft,artFlowerB,artTreeB,artRockB][k](x,y,s));
 const w=name.length*7+16,ty=cy+R*.72+14;
 g+=`<rect x="${f1(cx-w/2)}" y="${f1(ty-10)}" width="${w}" height="20" rx="10" fill="#FFF8E7" stroke="${on?"#1D7A5C":"#D9C9A3"}" stroke-width="${on?2:1}"/><text x="${f1(cx)}" y="${f1(ty+4)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">${esc(name)}</text>`;
 if(badge==="me")g+=`<g class="pulse"><circle cx="${f1(cx+R*.85)}" cy="${f1(cy-R*.55)}" r="9" fill="#D85A30" stroke="#fff" stroke-width="2"/><text x="${f1(cx+R*.85)}" y="${f1(cy-R*.55+4)}" text-anchor="middle" font-size="12" fill="#fff" font-family="Golos Text,system-ui">!</text></g>`;
@@ -456,8 +464,8 @@ let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" preserveAspe
 <rect x="${f1(x0-1500)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3000)}" height="${f1(y1-y0+3000)}" fill="#86C3D4"/><rect class="wv" x="${f1(x0-1546)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3046)}" height="${f1(y1-y0+3000)}" fill="url(#wv)"/>`;
 [me,...pos].forEach((p,i)=>g+=artIsland(p[0],p[1],p[2],i?F[i-1].id:w.me.id,[0,0,0],"",null,"halo"));
 F.forEach((f,i)=>g+=artBridge(me,pos[i],f.boards));
-g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0)}</g>`;
-F.forEach((f,i)=>g+=`<g data-i="${i+1}" style="cursor:pointer">${artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,f.island,f.name,f.turn,sel===i+1)}</g>`);
+g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0,w.me.bloom)}</g>`;
+F.forEach((f,i)=>g+=`<g data-i="${i+1}" style="cursor:pointer">${artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,f.island,f.name,f.turn,sel===i+1,f.bloom)}</g>`);
 g+=`<g data-i="bottle" style="cursor:pointer"><g class="bob">${artBottle(bot[0],bot[1])}</g><rect x="${f1(bot[0]-36)}" y="${f1(bot[1]+28)}" width="72" height="20" rx="10" fill="#FFF8E7" stroke="${sel==="bottle"?"#1D7A5C":"#D9C9A3"}" stroke-width="${sel==="bottle"?2:1}"/><text x="${f1(bot[0])}" y="${f1(bot[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">бутылка</text></g>
 <g data-i="inv" style="cursor:pointer"><circle cx="${f1(inv[0])}" cy="${f1(inv[1])}" r="22" fill="#A9D7E3" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><text x="${f1(inv[0])}" y="${f1(inv[1]+8)}" text-anchor="middle" font-size="24" fill="#fff" font-family="Golos Text,system-ui">+</text>
 <rect x="${f1(inv[0]-34)}" y="${f1(inv[1]+28)}" width="68" height="20" rx="10" fill="#FFF8E7" stroke="#D9C9A3"/><text x="${f1(inv[0])}" y="${f1(inv[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">позвать</text></g>`;
