@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS invites (id TEXT PRIMARY KEY, owner INTEGER NOT NULL,
     created_at TEXT DEFAULT (datetime('now')));
 CREATE TABLE IF NOT EXISTS friends (a INTEGER NOT NULL, b INTEGER NOT NULL, created_at TEXT DEFAULT (datetime('now')),
     PRIMARY KEY (a, b));
+CREATE TABLE IF NOT EXISTS wishes (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY (a, b));
 CREATE TABLE IF NOT EXISTS deeds (a INTEGER NOT NULL, b INTEGER NOT NULL, n INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (a, b));
 """
@@ -46,7 +47,10 @@ MIGRATE = ("ALTER TABLE games ADD COLUMN to_id INTEGER",  # партия кон�
            "ALTER TABLE plays ADD COLUMN boards REAL",    # доски моста за эту партию
            "ALTER TABLE games ADD COLUMN story TEXT",     # своя ситуация автора: {q, a, real}
            "ALTER TABLE plays ADD COLUMN guess TEXT",     # догадка друга своими словами
-           "ALTER TABLE plays ADD COLUMN mark INTEGER")   # автор отметил: 2 угадал, 1 почти, 0 нет
+           "ALTER TABLE plays ADD COLUMN mark INTEGER",   # автор отметил: 2 угадал, 1 почти, 0 нет
+           "ALTER TABLE games ADD COLUMN bottle INTEGER",  # бутылка в море: угадывают незнакомцы
+           "ALTER TABLE games ADD COLUMN reported INTEGER")  # жалоба: бутылка больше не ловится
+BOTTLE_CATCHES = 5  # ponytail: столько незнакомцев могут выловить одну бутылку; подстроить по данным
 STORY_BOARDS = {2: 1.0, 1: 0.5}  # своя ситуация: угадал — доска, почти — верёвочка
 
 
@@ -115,6 +119,7 @@ class GameIn(BaseModel):
     g: list[int | list[int]] = []
     to: int | None = None  # tg id друга: партия с карты, ему сразу сообщение от бота
     story: Story | None = None  # своя ситуация: друг угадывает своими словами
+    bottle: bool = False  # бутылка в море (только hero): ловят незнакомцы
 
 
 
@@ -155,7 +160,7 @@ def put_state(body: StateIn, x_init_data: str | None = Header(default=None)):
 @router.post("/game")
 async def new_game(body: GameIn, x_init_data: str | None = Header(default=None)):
     u = _user(x_init_data)
-    if body.mode not in ("duo", "hero") or not 0 <= body.seed < 36 ** 4:
+    if body.mode not in ("duo", "hero") or not 0 <= body.seed < 36 ** 4 or (body.bottle and body.mode != "hero"):
         raise HTTPException(422, "Неизвестная игра")
     s, g = _answers(body.s), _answers(body.g, empty_ok=body.mode == "hero")
     gid = secrets.token_hex(4)
@@ -165,8 +170,8 @@ async def new_game(body: GameIn, x_init_data: str | None = Header(default=None))
         story = json.dumps({"q": body.story.q.strip()[:400], "a": body.story.a.strip()[:250], "real": body.story.real},
                            ensure_ascii=False)
     with closing(_db()) as c, c:
-        c.execute("INSERT INTO games(id, owner, name, seed, mode, s, g, to_id, story) VALUES(?,?,?,?,?,?,?,?,?)",
-                  (gid, u.id, name, body.seed, body.mode, s, g, body.to, story))
+        c.execute("INSERT INTO games(id, owner, name, seed, mode, s, g, to_id, story, bottle) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                  (gid, u.id, name, body.seed, body.mode, s, g, body.to, story, 1 if body.bottle else None))
         _seen(c, u)
     if body.to:
         _bg(_notify(body.to, f"{name} прислал тебе партию в «Ну-ну». Твой ход 🏝", link(gid)))
@@ -183,7 +188,7 @@ def _view(c: sqlite3.Connection, gid: str, uid: int) -> dict:
                       (gid,)).fetchall()
     played = any(p["player"] == uid for p in plays)
     out = {"id": gid, "link": link(gid), "mode": r["mode"], "seed": r["seed"], "name": r["name"], "owner": r["owner"],
-           "mine": mine, "played": played, "plays": []}
+           "mine": mine, "played": played, "plays": [], "bottle": bool(r["bottle"])}
     if mine or played:
         out |= {"s": json.loads(r["s"]), "g": json.loads(r["g"])}
     if r["story"]:  # как поступил автор — только тем, кто уже угадал
@@ -193,9 +198,12 @@ def _view(c: sqlite3.Connection, gid: str, uid: int) -> dict:
         me = next(p for p in plays if p["player"] == uid)
         out["my"] = {"name": me["name"], "s": json.loads(me["s"]), "g": json.loads(me["g"]),
                      "guess": me["guess"], "mark": me["mark"]}
+        if r["bottle"]:
+            out["my"]["wish"] = _wish(c, uid, r["owner"])
     if mine:
         out["plays"] = [{"id": p["player"], "name": p["name"], "s": json.loads(p["s"]), "g": json.loads(p["g"]),
-                         "guess": p["guess"], "mark": p["mark"]} for p in plays]
+                         "guess": p["guess"], "mark": p["mark"],
+                         **({"wish": _wish(c, uid, p["player"])} if r["bottle"] else {})} for p in plays]
     return out
 
 
@@ -210,7 +218,7 @@ def get_game(gid: str, x_init_data: str | None = Header(default=None)):
 async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=None)):
     u = _user(x_init_data)
     with closing(_db()) as c:
-        r = c.execute("SELECT owner, mode, story FROM games WHERE id=?", (gid,)).fetchone()
+        r = c.execute("SELECT owner, mode, story, bottle FROM games WHERE id=?", (gid,)).fetchone()
         if not r:
             raise HTTPException(404, "Игра не найдена")
         if r["owner"] == u.id:
@@ -222,7 +230,8 @@ async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=
                       (gid, u.id, name, _answers(body.s, empty_ok=r["mode"] == "hero"), _answers(body.g), guess or None))
         view = _view(c, gid, u.id)
         _seen(c, u)
-    text = (f"{name} ответил в «Ну-ну» и угадывал твою ситуацию. Отметь, угадал ли ✍️" if guess
+    text = (f"Твою бутылку выловил {name} и угадывал тебя 🍾 Посмотри, как он тебя понял" if r["bottle"]
+            else f"{name} ответил в «Ну-ну» и угадывал твою ситуацию. Отметь, угадал ли ✍️" if guess
             else f"{name} ответил в «Ну-ну». Посмотри ваш мост 🌉")
     _bg(_notify(r["owner"], text, link(gid)))
     return view
@@ -319,6 +328,82 @@ async def accept(iid: str, x_init_data: str | None = Header(default=None)):
     return {"friend": {"id": r["owner"], "name": n["name"] if n else "Друг"}}
 
 
+def _friends(c: sqlite3.Connection, a: int, b: int) -> bool:
+    a, b = sorted((a, b))
+    return c.execute("SELECT 1 FROM friends WHERE a=? AND b=?", (a, b)).fetchone() is not None
+
+
+def _wish(c: sqlite3.Connection, me: int, other: int) -> dict:
+    """Взаимная бутылка: мост, только если оба захотели."""
+    q = "SELECT 1 FROM wishes WHERE a=? AND b=?"
+    return {"me": bool(c.execute(q, (me, other)).fetchone()), "them": bool(c.execute(q, (other, me)).fetchone()),
+            "friends": _friends(c, me, other)}
+
+
+@router.get("/bottle")
+def catch(x_init_data: str | None = Header(default=None)):
+    """Выловить бутылку: чужая, не друга, ещё не выловленная мной, без жалоб; реже ловленные — раньше."""
+    u = _user(x_init_data)
+    with closing(_db()) as c:
+        _seen(c, u)
+        r = c.execute("""SELECT g.id FROM games g
+            WHERE g.bottle = 1 AND g.reported IS NULL AND g.owner != :me
+              AND NOT EXISTS (SELECT 1 FROM plays p WHERE p.game_id = g.id AND p.player = :me)
+              AND NOT EXISTS (SELECT 1 FROM friends f WHERE (f.a = :me AND f.b = g.owner) OR (f.b = :me AND f.a = g.owner))
+              AND (SELECT COUNT(*) FROM plays p WHERE p.game_id = g.id) < :cap
+            ORDER BY (SELECT COUNT(*) FROM plays p WHERE p.game_id = g.id), RANDOM() LIMIT 1""",
+                      {"me": u.id, "cap": BOTTLE_CATCHES}).fetchone()
+    return {"gid": r["id"] if r else None}
+
+
+class WishIn(BaseModel):
+    other: int
+
+
+@router.post("/bottle/{gid}/wish")
+async def wish(gid: str, body: WishIn, x_init_data: str | None = Header(default=None)):
+    """«Построить мост» с незнакомцем из бутылки. Оба захотели — острова на карте друг у друга."""
+    u = _user(x_init_data)
+    with closing(_db()) as c:
+        r = c.execute("SELECT owner, bottle FROM games WHERE id=?", (gid,)).fetchone()
+        player = body.other if r and r["owner"] == u.id else u.id
+        ok = r and r["bottle"] and body.other != u.id and r["owner"] in (u.id, body.other) and c.execute(
+            "SELECT 1 FROM plays WHERE game_id=? AND player=?", (gid, player)).fetchone()
+        if not ok:
+            raise HTTPException(404, "Бутылка не найдена")
+        with c:
+            c.execute("INSERT OR IGNORE INTO wishes(a, b) VALUES(?, ?)", (u.id, body.other))
+            w = _wish(c, u.id, body.other)
+            if w["them"] and not w["friends"]:
+                a, b = sorted((u.id, body.other))
+                c.execute("INSERT OR IGNORE INTO friends(a, b) VALUES(?, ?)", (a, b))
+                w["friends"] = True
+        _seen(c, u)
+    if w["friends"]:
+        _bg(_notify(body.other, f"Взаимная бутылка 🍾 {u.first_name} тоже захотел мост. Ваши острова теперь рядом",
+                    f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"))
+    else:
+        _bg(_notify(body.other, f"{u.first_name} хочет построить с тобой мост 🍾 Захочешь тоже — острова окажутся рядом",
+                    link(gid)))
+    return w
+
+
+@router.post("/bottle/{gid}/report")
+async def report(gid: str, x_init_data: str | None = Header(default=None)):
+    """Жалоба: бутылка сразу перестаёт ловиться, админ-чату — сообщение."""
+    u = _user(x_init_data)
+    with closing(_db()) as c, c:
+        r = c.execute("SELECT owner, name, story FROM games WHERE id=? AND bottle=1", (gid,)).fetchone()
+        if not r:
+            raise HTTPException(404, "Бутылка не найдена")
+        c.execute("UPDATE games SET reported=1 WHERE id=?", (gid,))
+    if config.ADMIN_CHAT_ID:
+        story = json.loads(r["story"])["q"] if r["story"] else "—"
+        _bg(_notify(int(config.ADMIN_CHAT_ID), f"Жалоба на бутылку {gid} от {u.id}. Автор: {r['name']} ({r['owner']}).\n"
+                                               f"Ситуация: {story}", link(gid)))
+    return {"ok": True}
+
+
 def _island(c: sqlite3.Connection, uid: int) -> list[int]:
     """Сад, лес, скалы: сколько семян в каждой зоне (из сада игрока)."""
     r = c.execute("SELECT data FROM state WHERE tg_id=?", (uid,)).fetchone()
@@ -339,7 +424,7 @@ def world(x_init_data: str | None = Header(default=None)):
         rows = c.execute("""SELECT g.id, g.owner, g.to_id, g.created_at, p.player, p.boards, p.created_at AS pt,
             p.guess, p.mark
             FROM games g LEFT JOIN plays p ON p.game_id = g.id
-            WHERE g.owner = :me OR g.to_id = :me OR p.player = :me""", {"me": u.id}).fetchall()
+            WHERE (g.owner = :me OR g.to_id = :me OR p.player = :me) AND g.bottle IS NULL""", {"me": u.id}).fetchall()
         fr: dict[int, dict] = {}
         for r in rows:
             other = r["player"] if r["owner"] == u.id else r["owner"]

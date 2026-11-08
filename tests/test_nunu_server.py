@@ -129,3 +129,32 @@ def test_own_story(tmp_path, monkeypatch):
     w = c.get("/nunu/api/world", headers=anton).json()["friends"][0]
     assert (w["mark"], w["boards"]) == (None, 1.0)
     assert c.get(f"/nunu/api/game/{g['id']}", headers=evgen).json()["my"]["mark"] == 2
+
+
+def test_bottle(tmp_path, monkeypatch):
+    """Бутылка: ловит незнакомец, на карте его нет, пока оба не захотели мост; жалоба прячет бутылку."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    sent = []
+
+    async def quiet(*a):
+        sent.append(a)
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c, anton, olya, boris = TestClient(pause.app), init_data(1, "Антон"), init_data(5, "Оля"), init_data(6, "Боря")
+    assert c.post("/nunu/api/game", json={"name": "А", "seed": 1, "mode": "duo", "s": [0] * 10, "g": [0] * 10,
+                                          "bottle": True}, headers=anton).status_code == 422
+    g = c.post("/nunu/api/game", json={"name": "Антон", "seed": 9, "mode": "hero", "s": [1] * 10, "bottle": True},
+               headers=anton).json()
+    assert c.get("/nunu/api/bottle", headers=anton).json() == {"gid": None}  # свою не ловим
+    assert c.get("/nunu/api/bottle", headers=olya).json() == {"gid": g["id"]}
+    v = c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Оля", "g": [1] * 10}, headers=olya).json()
+    assert v["bottle"] and v["my"]["wish"] == {"me": False, "them": False, "friends": False}
+    assert "бутылку выловил Оля" in sent[-1][1]
+    assert c.get("/nunu/api/bottle", headers=olya).json() == {"gid": None}  # второй раз ту же — нет
+    assert c.get("/nunu/api/world", headers=anton).json()["friends"] == []  # незнакомка не на карте
+    assert c.post(f"/nunu/api/bottle/{g['id']}/wish", json={"other": 1}, headers=olya).json()["friends"] is False
+    assert c.get(f"/nunu/api/game/{g['id']}", headers=anton).json()["plays"][0]["wish"]["them"] is True
+    assert c.post(f"/nunu/api/bottle/{g['id']}/wish", json={"other": 6}, headers=anton).status_code == 404
+    assert c.post(f"/nunu/api/bottle/{g['id']}/wish", json={"other": 5}, headers=anton).json()["friends"] is True
+    assert [f["name"] for f in c.get("/nunu/api/world", headers=olya).json()["friends"]] == ["Антон"]
+    c.post(f"/nunu/api/bottle/{g['id']}/report", headers=boris)
+    assert c.get("/nunu/api/bottle", headers=boris).json() == {"gid": None}

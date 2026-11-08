@@ -289,20 +289,27 @@ function heroShare(){
 const G=st.guessers||[];
 const sc=G.map(f=>({n:f.name,p:f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length})).sort((a,b)=>b.p-a.p);
 const ops=G.length?st.s.map((x,k)=>.32+.68*G.filter(f=>Z(sit(k),f.g[k])>=0&&Z(sit(k),f.g[k])===Z(sit(k),x)).length/G.length):null;
-let h=`<h1>${esc(st.name)}: угадайте меня</h1><div class="card"><h2>Ссылка для компании</h2>${linkBox("Режим компании: одна ссылка на всех. Кинь её в общий чат или покажи QR-код — каждый угадает тебя у себя в телефоне, а их острова появятся на твоей карте.")}</div>
+const B=st.bottle;
+let h=B?`<h1>Твоя бутылка в море</h1><div class="card"><p style="margin:0">Бутылка плавает. Когда её выловит незнакомец, бот пришлёт сообщение. Выловить могут до пяти человек.</p></div>
+<div class="card"><h2>Кто выловил</h2>${G.length?G.map(f=>`<div class="res"><div style="display:flex;justify-content:space-between;gap:8px"><span>${esc(f.name)}</span><span class="note">понял тебя: ${f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length} из ${N}</span></div>${wishBox(f.wish,f.name,f.id)}</div>`).join(""):`<p class="note" style="margin:0">Пока никто.</p>`}<button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>`
+:`<h1>${esc(st.name)}: угадайте меня</h1><div class="card"><h2>Ссылка для компании</h2>${linkBox("Режим компании: одна ссылка на всех. Кинь её в общий чат или покажи QR-код — каждый угадает тебя у себя в телефоне, а их острова появятся на твоей карте.")}</div>
 <div class="card"><h2>Мосты к друзьям</h2>${sc.length?sc.map(r=>`<div class="res" style="flex-direction:row;justify-content:space-between"><span>${esc(r.n)}</span><span class="note">досок: ${r.p} из ${N}</span></div>`).join(""):`<p class="note" style="margin:0">Пока никого.</p>`}
-<button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>
-${storyHero(G)}<div class="card"><h2>Твой остров</h2>${island(st.s,st.s,ops)}<p class="note" style="margin:0">${G.length?"Чем ярче растение, тем больше друзей угадали этот ответ.":"Остров проявится, когда придут ответы друзей."}</p></div>
+<button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>`;
+h+=`${storyHero(G)}<div class="card"><h2>Твой остров</h2>${island(st.s,st.s,ops)}<p class="note" style="margin:0">${G.length?"Чем ярче растение, тем больше друзей угадали этот ответ.":"Остров проявится, когда придут ответы друзей."}</p></div>
 <button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
-app.innerHTML=h;$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()};wireLink("Угадай, как я поступлю, в игре «Ну-ну»");$("rf").onclick=go;
+app.innerHTML=h;$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()};if(!B)wireLink("Угадай, как я поступлю, в игре «Ну-ну»");$("rf").onclick=go;
+wireWish(st.gid,w=>go());
 app.querySelectorAll("button[data-p]").forEach(b=>b.onclick=()=>{const f=G.find(x=>x.id===+b.dataset.p),m=+b.dataset.m;API("/game/"+st.gid+"/mark","POST",{player:f.id,mark:m}).then(()=>{f.mark=m;save();heroShare()},()=>oops(go))})}
 function guessResult(){
 const H=st.friend,hn=esc(H.name),L=["Не угадал","Почти угадал","Точно в цель"];
 const v=[...Array(N)].map((_,k)=>hit(sit(k),H.s[k],st.g[k]));
-let h=`<h1>Ты и ${hn}</h1>${bridgeCard(v,2,H.name,"Мост: ты и "+hn)}${storyBlock()}${`<p class="note">${hn} увидит ваш мост у себя: бот уже прислал сообщение.</p>`}<div class="card"><h2>По ситуациям</h2>`;
+const B=st.bottle,u=v.filter(x=>x>0).length;
+let h=B?`<h1>Бутылка от: ${hn}</h1><div class="card">${bridge(v,2)}<p style="margin:0">Ты понял незнакомца в ${u} ${pl(u,["карточке","карточках","карточках"])} из ${N}.</p>${wishBox(st.wish,H.name,H.id)}</div>${storyBlock()}`
+:`<h1>Ты и ${hn}</h1>${bridgeCard(v,2,H.name,"Мост: ты и "+hn)}${storyBlock()}${`<p class="note">${hn} увидит ваш мост у себя: бот уже прислал сообщение.</p>`}<div class="card"><h2>По ситуациям</h2>`;
 for(let k=0;k<N;k++){const a=hit(sit(k),H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[a].toLowerCase()}</span></div></div>`}
 h+=`</div><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
-app.innerHTML=h;bridgeBtns(H.name);wireMark();$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
+if(B)h+=`<div class="row"><button class="n" id="cb">Выловить ещё</button><button class="g" id="rp">Пожаловаться</button></div>`;
+app.innerHTML=h;if(B){wireWish(st.join,w=>{st.wish=w;save();go()});wireReport(st.join);$("cb").onclick=catchBottle}else bridgeBtns(H.name);wireMark();$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 /* мост вместо счёта: кооперация сближает, соревнование отдаляет. Доска = карточка, где вы поняли друг друга */
 function bridge(v,max){let g=`<svg viewBox="0 0 320 76" style="width:100%;max-width:520px;display:block;margin:0 auto" role="img" aria-label="Мост из ${v.filter(x=>x>0).length} досок">
 <rect width="320" height="76" rx="12" fill="var(--sea)"/><ellipse cx="14" cy="44" rx="30" ry="24" fill="var(--grass)"/><ellipse cx="306" cy="44" rx="30" ry="24" fill="var(--grass)"/>
@@ -383,12 +390,14 @@ if(i===0){const mx=(x1+x2)/2,my=(y1+y2)/2+8;return`<path d="M${f1(x1)} ${f1(y1)}
 if(i===1)return line(0,"#B98544",8,'stroke-dasharray="3.5 9" stroke-linecap="butt"')+line(-4,"#8B6B3E",1.2)+line(4,"#8B6B3E",1.2);
 if(i===2)return line(0,"#6E5230",11)+line(0,"#C9904A",9,'stroke-dasharray="4 1.6" stroke-linecap="butt"')+line(-5.5,"#5B4225",1.4)+line(5.5,"#5B4225",1.4);
 return line(0,"#8E8A80",14)+line(0,"#B4B0A6",10,'stroke-dasharray="7 2" stroke-linecap="butt"')+line(-7,"#6F6B62",1.5)+line(7,"#6F6B62",1.5)}
+/* бутылка в море: стекло, пробка, записка внутри; качается на волне */
+const artBottle=(x,y)=>`<g transform="rotate(-25 ${f1(x)} ${f1(y)})"><ellipse cx="${f1(x)}" cy="${f1(y+17)}" rx="26" ry="5" fill="#fff" opacity=".35"/><rect x="${f1(x-10)}" y="${f1(y-14)}" width="20" height="31" rx="8" fill="#CFE9D8" stroke="#fff" stroke-width="1.5"/><rect x="${f1(x-4.5)}" y="${f1(y-25)}" width="9" height="13" rx="2" fill="#CFE9D8" stroke="#fff" stroke-width="1.5"/><rect x="${f1(x-5)}" y="${f1(y-30)}" width="10" height="6" rx="1.5" fill="#A0703F"/><rect x="${f1(x-5.5)}" y="${f1(y-8)}" width="11" height="17" rx="1.5" fill="#FFF3D6"/><path d="M${f1(x-3)} ${f1(y-4)}h6M${f1(x-3)} ${f1(y)}h6M${f1(x-3)} ${f1(y+4)}h4" stroke="#B9A57A" stroke-width="1"/></g>`;
 /* раскладка: я в центре, друзья по кругу; чем крепче мост, тем ближе (круги близости Данбара) */
-function artWorld(w,sel){const F=w.friends,n=F.length,slots=n+1,pos=[],me=[200,190,Math.min(46+F.length,60)];
-F.forEach((f,i)=>{const ring=i<9?0:1,k=ring?i-9:i,m=ring?n-9:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,60)*.9,t=f.island[0]+f.island[1]+f.island[2];
+function artWorld(w,sel){const F=w.friends,n=F.length,slots=n+2,pos=[],me=[200,190,Math.min(46+F.length,60)];
+F.forEach((f,i)=>{const ring=i<8?0:1,k=ring?i-8:i,m=ring?n-8:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,60)*.9,t=f.island[0]+f.island[1]+f.island[2];
 const R=28+Math.min(t,24)*.5,D=me[2]+R+(ring?110:0)+110-Math.min(f.boards,60)*.8;pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
-const ai=-Math.PI/2+Math.min(n,9)/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)];
-const all=[me,...pos,[...inv,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
+const at=k=>-Math.PI/2+k/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,ai=at(Math.min(n,8)),inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)],bi=at(Math.min(n,8)+1),bot=[200+DI*Math.cos(bi),190+DI*.82*Math.sin(bi)];
+const all=[me,...pos,[...inv,30],[...bot,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
 const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
 let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" style="width:100%;display:block;border-radius:16px" role="img" aria-label="Карта: твой остров и острова друзей">
 <defs><pattern id="wv" width="46" height="26" patternUnits="userSpaceOnUse"><path d="M4 14q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".35"/><path d="M27 4q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".25"/></pattern></defs>
@@ -397,11 +406,25 @@ let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" style="width
 F.forEach((f,i)=>g+=artBridge(me,pos[i],f.boards));
 g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0)}</g>`;
 F.forEach((f,i)=>g+=`<g data-i="${i+1}" style="cursor:pointer">${artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,f.island,f.name,f.turn,sel===i+1)}</g>`);
-g+=`<g data-i="inv" style="cursor:pointer"><circle cx="${f1(inv[0])}" cy="${f1(inv[1])}" r="22" fill="#A9D7E3" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><text x="${f1(inv[0])}" y="${f1(inv[1]+8)}" text-anchor="middle" font-size="24" fill="#fff" font-family="Golos Text,system-ui">+</text>
+g+=`<g data-i="bottle" style="cursor:pointer">${artBottle(bot[0],bot[1])}<rect x="${f1(bot[0]-36)}" y="${f1(bot[1]+28)}" width="72" height="20" rx="10" fill="#FFF8E7" stroke="${sel==="bottle"?"#1D7A5C":"#D9C9A3"}" stroke-width="${sel==="bottle"?2:1}"/><text x="${f1(bot[0])}" y="${f1(bot[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">бутылка</text></g>
+<g data-i="inv" style="cursor:pointer"><circle cx="${f1(inv[0])}" cy="${f1(inv[1])}" r="22" fill="#A9D7E3" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><text x="${f1(inv[0])}" y="${f1(inv[1]+8)}" text-anchor="middle" font-size="24" fill="#fff" font-family="Golos Text,system-ui">+</text>
 <rect x="${f1(inv[0]-34)}" y="${f1(inv[1]+28)}" width="68" height="20" rx="10" fill="#FFF8E7" stroke="#D9C9A3"/><text x="${f1(inv[0])}" y="${f1(inv[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">позвать</text></g>`;
 return g+`</svg>`}
 /* ===== механика карты ===== */
 let W=null,curFid=null,focus=null;
+/* бутылка: случайная чужая, не друга, ещё не выловленная мной */
+function catchBottle(){busy("Закидываю сеть…");API("/bottle").then(r=>{if(r.gid)return join(r.gid).then(go);
+card(`<h2>Море пока пустое</h2><p style="margin:0">Все бутылки уже выловлены. Брось свою — её выловит кто-нибудь, кого ты ещё не знаешь.</p><div class="row"><button class="main-btn" id="bt">Бросить свою</button><button class="n" id="mp">На карту</button></div>`);
+$("bt").onclick=()=>fresh("hero",{bottle:1});$("mp").onclick=world},()=>oops(catchBottle))}
+/* взаимная бутылка: мост, только если оба захотели (договорённость 07.11) */
+function wishBox(w,name,id){const n=esc(name);if(!w)return"";
+if(w.friends)return`<p style="margin:0"><b style="font-weight:500">Взаимная бутылка!</b> Ваши острова теперь рядом — загляни на карту.</p>`;
+if(w.me)return`<p class="note" style="margin:0">Ты хочешь мост. Ждём, захочет ли ${n}.</p>`;
+return`${w.them?`<p style="margin:0">${n} хочет построить с тобой мост.</p>`:`<p class="note" style="margin:0">Мост появится, только если вы оба захотите.</p>`}<button class="main-btn" data-w="${id}" style="align-self:flex-start">Построить мост</button>`}
+function wireWish(gid,after){app.querySelectorAll("button[data-w]").forEach(b=>b.onclick=()=>{b.disabled=true;API("/bottle/"+gid+"/wish","POST",{other:+b.dataset.w}).then(after,()=>oops(go))})}
+/* жалоба: два нажатия, без всплывающих окон */
+function wireReport(gid){const b=$("rp");if(!b)return;b.onclick=()=>{if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Точно пожаловаться?";return}
+API("/bottle/"+gid+"/report","POST").then(()=>card(`<h2>Спасибо</h2><p style="margin:0">Бутылка больше не ловится, мы её посмотрим.</p><button class="main-btn" id="mp">На карту</button>`)||($("mp").onclick=world),()=>oops(go))}}
 /* позвать: ссылка сразу в выбор чата Telegram, карточки — потом, когда друг на карте */
 function invite(){busy("Готовлю приглашение…");API("/invite","POST").then(r=>{const msg="Проверим, насколько хорошо мы знаем друг друга 😉";
 card(`<span class="who">Приглашение</span><h2>Позови друга</h2>${linkBox("Когда друг откроет ссылку, его остров появится рядом с твоим, а бот пришлёт тебе сообщение. Тогда и сыграете. Ссылка подходит для многих: можно кинуть в общий чат.",r.link)}
@@ -412,8 +435,11 @@ function world(){busy("Плыву к твоему острову…");API("/worl
 function drawW(sel){const z=W.me.island;
 app.innerHTML=`<h1>Ну-ну</h1><div>${artWorld(W,sel)}</div><div class="card" id="pn"></div>
 <p class="note">Море — общее и нейтральное. Остров растёт из твоих ответов: цветы — когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>`;
-app.querySelector("svg").onclick=e=>{const g=e.target.closest("[data-i]");if(g)drawW(g.dataset.i==="inv"?"inv":+g.dataset.i)};
+app.querySelector("svg").onclick=e=>{const g=e.target.closest("[data-i]");if(g)drawW(g.dataset.i==="inv"||g.dataset.i==="bottle"?g.dataset.i:+g.dataset.i)};
 const pn=$("pn"),btn=(id,t,main)=>`<button class="${main?"main-btn":"n"}" id="${id}">${t}</button>`,f=sel>0?W.friends[sel-1]:null;
+if(sel==="bottle"){pn.innerHTML=`<h2>Бутылка в море</h2><p style="margin:0">Незнакомцы бросают в море бутылки с ответами о себе. Выловишь — угадаешь, как поступает человек, которого ты никогда не видел.</p>
+<p class="note" style="margin:0">Мост строится, только если вы оба захотите. Поболтать можно в клубе <a href="https://t.me/joydao_club">@joydao_club</a>.</p><div class="row">${btn("bc","Выловить бутылку",1)}${btn("bt","Бросить свою")}</div>`;
+$("bc").onclick=catchBottle;$("bt").onclick=()=>fresh("hero",{bottle:1});return}
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");return}
 if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Сад ${z[0]} · лес ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
@@ -447,7 +473,7 @@ function storyGuess(){const s=st.story,fn=esc(st.friend.name),v=s.real?"пост
 card(`<div class="meta"><span>${N+1} из ${N+1} · своя ситуация</span></div><span class="who">Ситуация от: ${fn}</span><div class="q">${esc(s.q)}</div>
 <p class="note" style="margin:0">${s.real?"Это было на самом деле.":"Такого пока не было — это о том, как поступил бы."}</p>
 <div class="zone">Как, по-твоему, ${v} ${fn}? Своими словами</div><textarea id="sg" maxlength="250" rows="3" placeholder="Думаю, …"></textarea><div class="err" id="er"></div>
-<div class="row"><button class="main-btn" id="ok">Ответить</button><button class="g" id="ps">Проехали</button></div>`);
+<div class="row"><button class="main-btn" id="ok">Ответить</button><button class="g" id="ps">Проехали</button>${st.bottle?`<button class="g" id="rp">Пожаловаться</button>`:""}</div>`);wireReport(st.join);
 $("sg").oninput=()=>$("er").textContent="";$("ok").onclick=()=>{const x=$("sg").value.trim();if(!x){$("er").textContent="Напиши хоть пару слов — или нажми «Проехали»";return}st.sg=x;save();go()};
 $("ps").onclick=()=>{st.sg="";save();go()}}
 function storyBlock(){const s=st.story;if(!s||!s.a)return"";const own=!st.join,f=st.friend,fn=esc(f.name),gs=own?f.guess:st.sg,mk=own?f.mark:st.smark;
@@ -474,11 +500,11 @@ function wireLink(msg,l=st.glink){$("snd").onclick=()=>TG.openTelegramLink("http
 $("cp").onclick=()=>navigator.clipboard.writeText(l).then(()=>$("cpn").textContent="Ссылка скопирована.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил ссылку, скопируй вручную."})}
 /* хозяин: игра ложится на сервер один раз, дальше только ссылка; кто ответил — видно здесь */
 function shareTG(M){if(!st.gid&&!st.storyAsk)return storyWrite(M);busy("Готовлю ссылку…");
-(st.gid?Promise.resolve():API("/game","POST",{name:st.name,seed:st.seed,mode:M,s:st.s,g:M==="hero"?[]:st.g,to:st.to||null,story:st.story||null}).then(r=>{st.gid=r.id;st.glink=r.link;save()}))
+(st.gid?Promise.resolve():API("/game","POST",{name:st.name,seed:st.seed,mode:M,s:st.s,g:M==="hero"?[]:st.g,to:st.to||null,story:st.story||null,bottle:!!st.bottle}).then(r=>{st.gid=r.id;st.glink=r.link;save()}))
 .then(()=>API("/game/"+st.gid)).then(v=>{const P=v.plays;
 if(st.to&&!P.length){card(`<span class="who">Отправлено</span><h2>Партия ушла: ${esc(st.toName)}</h2><p style="margin:0">Бот уже прислал сообщение. Когда ${esc(st.toName)} ответит, мост на карте подрастёт.</p><button class="n" id="rf" style="align-self:flex-start">Ответил? Проверить</button>`);$("rf").onclick=go;return tail(M)}
 if(st.to&&P.length===1){st.friend=fp(P[0],st.seed);save();return go()}
-if(M==="hero"){st.guessers=P.map(p=>({id:p.id,name:p.name,g:p.g,guess:p.guess,mark:p.mark}));save();heroShare();return tail(M)}
+if(M==="hero"){st.guessers=P.map(p=>({id:p.id,name:p.name,g:p.g,guess:p.guess,mark:p.mark,wish:p.wish}));save();heroShare();return tail(M)}
 card(`<span class="who">Готово</span><h2>Позови друга</h2><p style="margin:0">Друг откроет ссылку в Telegram, ответит на те же 10 карточек, и вы оба увидите мост.</p>
 ${linkBox("Когда друг ответит, бот пришлёт тебе сообщение.")}
 <div class="zone">Уже ответили</div>${P.length?`<div class="row">${P.map((p,k)=>`<button class="t" data-k="${k}">${esc(p.name)}</button>`).join("")}</div>`:`<p class="note" style="margin:0">Пока никто.</p>`}
@@ -487,20 +513,21 @@ wireLink("Сыграй со мной в «Ну-ну»");$("rf").onclick=go;$("rs
 app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{st.friend=fp(P[+b.dataset.k],st.seed);save();go()});tail(M)},()=>oops(go))}
 /* друг пришёл по ссылке: его ответы уходят на сервер, в ответ приходят ответы хозяина */
 function sendPlay(){busy("Отправляю ответы…");API("/game/"+st.join+"/play","POST",{name:st.name,s:st.mode==="guess"?[]:st.s,g:st.g,guess:st.sg||null})
-.then(v=>{st.friend={id:v.owner,name:v.name,s:v.s,g:v.g,seed:v.seed};st.story=v.story||null;st.smark=null;save();go()},()=>oops(sendPlay))}
+.then(v=>{st.friend={id:v.owner,name:v.name,s:v.s,g:v.g,seed:v.seed};st.story=v.story||null;st.smark=null;st.wish=v.my&&v.my.wish;save();go()},()=>oops(sendPlay))}
 const fp=(p,seed)=>({id:p.id,name:p.name,s:p.s,g:p.g,seed,guess:p.guess,mark:p.mark});
 async function join(sp,fid){const v=await API("/game/"+sp),md=v.mode==="hero"?"guess":"duo";
 if(v.mine){const p=fid&&v.mode==="duo"&&v.plays.find(p=>p.id===fid);st={name:v.name,seed:v.seed,s:v.s,g:v.mode==="hero"?v.s:v.g,mode:v.mode,started:1,planted:1,gid:v.id,glink:v.link,guessers:[],
-friend:p?fp(p,v.seed):null,story:v.story||null,storyAsk:1};save();return}
-st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,s:v.s,g:v.g,seed:v.seed},story:v.story||null,sg:v.my.guess||"",smark:v.my.mark}
-:{name:st.name||tgName||"Друг",seed:v.seed,s:[],g:[],mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,pending:1},story:v.story||null};save()}
+friend:p?fp(p,v.seed):null,story:v.story||null,storyAsk:1,bottle:v.bottle};save();return}
+st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,s:v.s,g:v.g,seed:v.seed},story:v.story||null,sg:v.my.guess||"",smark:v.my.mark,bottle:v.bottle,wish:v.my.wish}
+:{name:st.name||tgName||"Друг",seed:v.seed,s:[],g:[],mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,pending:1},story:v.story||null,bottle:v.bottle};save()}
 async function boot(){if(!API)return home();busy("Загружаю твой остров…");
 try{const r=await API("/state"),d=r.data;tgName=r.name||"";
 if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-bridges"])bridges=d["nunu-bridges"]}else push();
 const sp=(TG.initDataUnsafe||{}).start_param;
 if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.friend)focus=r.friend.id;return world()}
-if(sp&&sp!==st.gid&&sp!==st.join)await join(sp)
-/* в Telegram дом — карта; недоигранная партия продолжается с того же места */
+/* открыли по ссылке на партию — сразу в неё (даже если это текущая); иначе дом — карта,
+а недоигранная партия продолжается с того же места */
+if(sp){if(sp!==st.gid&&sp!==st.join)await join(sp)}
 else if(!(st.started&&st.g&&st.g.length>0&&st.g.length<N))return world()}catch(e){}
 go()}
 boot();
