@@ -46,7 +46,11 @@ input,textarea{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid
 .isl div{border-radius:12px;padding:12px}
 .isl b{font:500 28px var(--disp);display:block;font-variant-numeric:tabular-nums}
 .note{font-size:13px;color:var(--muted)}
-@media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}
+/* карта живёт: волны плывут, бутылка качается, «твой ход» пульсирует; кто просил меньше движения — всё стоит */
+.wv{animation:wv 7s linear infinite}@keyframes wv{to{transform:translateX(46px)}}
+.bob{animation:bob 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes bob{50%{transform:translateY(-4px) rotate(5deg)}}
+.pulse{animation:pulse 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes pulse{50%{transform:scale(1.2)}}}
 </style></head><body>
 <main id="app"></main>
 <script>
@@ -379,7 +383,7 @@ if(pts.every(p=>Math.hypot(p[0]-x,(p[1]-y)*1.4)>10*s)){pts.push([x,y,k]);break}}
 pts.sort((a,b)=>a[1]-b[1]).forEach(([x,y,k])=>g+=[artFlower,artTree,artRock,artTuft][k](x,y,s));
 const w=name.length*7+16,ty=cy+R*.72+14;
 g+=`<rect x="${f1(cx-w/2)}" y="${f1(ty-10)}" width="${w}" height="20" rx="10" fill="#FFF8E7" stroke="${on?"#1D7A5C":"#D9C9A3"}" stroke-width="${on?2:1}"/><text x="${f1(cx)}" y="${f1(ty+4)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">${esc(name)}</text>`;
-if(badge==="me")g+=`<circle cx="${f1(cx+R*.85)}" cy="${f1(cy-R*.55)}" r="9" fill="#D85A30" stroke="#fff" stroke-width="2"/><text x="${f1(cx+R*.85)}" y="${f1(cy-R*.55+4)}" text-anchor="middle" font-size="12" fill="#fff" font-family="Golos Text,system-ui">!</text>`;
+if(badge==="me")g+=`<g class="pulse"><circle cx="${f1(cx+R*.85)}" cy="${f1(cy-R*.55)}" r="9" fill="#D85A30" stroke="#fff" stroke-width="2"/><text x="${f1(cx+R*.85)}" y="${f1(cy-R*.55+4)}" text-anchor="middle" font-size="12" fill="#fff" font-family="Golos Text,system-ui">!</text></g>`;
 if(badge==="them")g+=`<circle cx="${f1(cx+R*.85)}" cy="${f1(cy-R*.55)}" r="9" fill="#fff" stroke="#9DADA6"/><text x="${f1(cx+R*.85)}" y="${f1(cy-R*.55+3)}" text-anchor="middle" font-size="12" fill="#5D6B65">…</text>`;
 return g}
 /* мост по стадиям Холла: канатный → верёвочный → дощатый → каменный */
@@ -401,12 +405,12 @@ const all=[me,...pos,[...inv,30],[...bot,30]];let x0=Math.min(...all.map(p=>p[0]
 const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
 let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" style="width:100%;display:block;border-radius:16px" role="img" aria-label="Карта: твой остров и острова друзей">
 <defs><pattern id="wv" width="46" height="26" patternUnits="userSpaceOnUse"><path d="M4 14q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".35"/><path d="M27 4q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".25"/></pattern></defs>
-<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1-x0)}" height="${f1(y1-y0)}" fill="#86C3D4"/><rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1-x0)}" height="${f1(y1-y0)}" fill="url(#wv)"/>`;
+<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1-x0)}" height="${f1(y1-y0)}" fill="#86C3D4"/><rect class="wv" x="${f1(x0-46)}" y="${f1(y0)}" width="${f1(x1-x0+46)}" height="${f1(y1-y0)}" fill="url(#wv)"/>`;
 [me,...pos].forEach((p,i)=>g+=artIsland(p[0],p[1],p[2],i?F[i-1].id:w.me.id,[0,0,0],"",null,"halo"));
 F.forEach((f,i)=>g+=artBridge(me,pos[i],f.boards));
 g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0)}</g>`;
 F.forEach((f,i)=>g+=`<g data-i="${i+1}" style="cursor:pointer">${artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,f.island,f.name,f.turn,sel===i+1)}</g>`);
-g+=`<g data-i="bottle" style="cursor:pointer">${artBottle(bot[0],bot[1])}<rect x="${f1(bot[0]-36)}" y="${f1(bot[1]+28)}" width="72" height="20" rx="10" fill="#FFF8E7" stroke="${sel==="bottle"?"#1D7A5C":"#D9C9A3"}" stroke-width="${sel==="bottle"?2:1}"/><text x="${f1(bot[0])}" y="${f1(bot[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">бутылка</text></g>
+g+=`<g data-i="bottle" style="cursor:pointer"><g class="bob">${artBottle(bot[0],bot[1])}</g><rect x="${f1(bot[0]-36)}" y="${f1(bot[1]+28)}" width="72" height="20" rx="10" fill="#FFF8E7" stroke="${sel==="bottle"?"#1D7A5C":"#D9C9A3"}" stroke-width="${sel==="bottle"?2:1}"/><text x="${f1(bot[0])}" y="${f1(bot[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">бутылка</text></g>
 <g data-i="inv" style="cursor:pointer"><circle cx="${f1(inv[0])}" cy="${f1(inv[1])}" r="22" fill="#A9D7E3" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><text x="${f1(inv[0])}" y="${f1(inv[1]+8)}" text-anchor="middle" font-size="24" fill="#fff" font-family="Golos Text,system-ui">+</text>
 <rect x="${f1(inv[0]-34)}" y="${f1(inv[1]+28)}" width="68" height="20" rx="10" fill="#FFF8E7" stroke="#D9C9A3"/><text x="${f1(inv[0])}" y="${f1(inv[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">позвать</text></g>`;
 return g+`</svg>`}
