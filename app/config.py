@@ -28,6 +28,7 @@ MAILING_HOUR = int(os.environ.get("MAILING_HOUR", "6"))  # час рассылк
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "JOYDAO_bot")
 COMMUNITY_CHAT_URL = os.environ.get("COMMUNITY_CHAT_URL", "https://t.me/joydao_club")  # общий чат сообщества
 
+NUNU_APP = os.environ.get("NUNU_APP", "nunu")  # короткое имя Mini App «Ну-ну» в @BotFather (/newapp)
 PAUSE = os.environ.get("PAUSE", "") == "1"  # режим паузы: только анонс, см. app/pause.py
 
 if not BOT_TOKEN:

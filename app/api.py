@@ -20,6 +20,8 @@ from . import compat, config, db, joy, suisai
 from .i18n import NAMES, SUPPORTED, T, long_text, table, user_lang
 
 app = FastAPI(title="Suisai Dating API")
+from . import nunu  # noqa: E402
+app.include_router(nunu.router)
 STATIC = Path(__file__).parent.parent / "static"
 
 _bot = None  # устанавливается из main.py для нотификаций и фото

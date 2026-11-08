@@ -13,7 +13,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import config, db
+from . import config, db, nunu
 
 TEXT = (
     "🚀 <b>JoyDAO готовит грандиозное обновление</b>\n\n"
@@ -66,6 +66,7 @@ async def any_callback(cb: CallbackQuery):
 
 
 app = FastAPI()
+app.include_router(nunu.router)  # до catch-all внизу
 CHAT_URL = config.COMMUNITY_CHAT_URL
 # Страница Mini App: светлая карточка в стиле промо, не зависит от темы Telegram.
 # Ссылки t.me открываем через Telegram.WebApp — иначе WebView грузит их внутри себя.
