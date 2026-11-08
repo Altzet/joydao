@@ -403,7 +403,7 @@ return g+`</svg>`}
 /* ===== механика карты ===== */
 let W=null,curFid=null,focus=null;
 /* позвать: ссылка сразу в выбор чата Telegram, карточки — потом, когда друг на карте */
-function invite(){busy("Готовлю приглашение…");API("/invite","POST").then(r=>{const msg="Заходи ко мне на остров в «Ну-ну» — игре о том, знаем ли мы друг друга";
+function invite(){busy("Готовлю приглашение…");API("/invite","POST").then(r=>{const msg="Проверим, насколько хорошо мы знаем друг друга 😉";
 card(`<span class="who">Приглашение</span><h2>Позови друга</h2>${linkBox("Когда друг откроет ссылку, его остров появится рядом с твоим, а бот пришлёт тебе сообщение. Тогда и сыграете. Ссылка подходит для многих: можно кинуть в общий чат.",r.link)}
 <button class="n" id="mp" style="align-self:flex-start">На карту</button>`);wireLink(msg,r.link);$("mp").onclick=world},()=>oops(invite))}
 const fresh=(mode,o={})=>{st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(),s:[],g:[],friend:null,started:1,mode,guessers:[],...o};save();go()};
