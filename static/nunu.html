@@ -213,17 +213,19 @@ const SW=["Первым заговорить с незнакомым","Сказ�
 const SP=[["Если застесняюсь, то начну с простого вопроса: «Не подскажете, который час?»","Если буду стоять на кассе, то спрошу продавца, как у него день.","Если окажусь в очереди или в транспорте, то спрошу соседа о чём-нибудь вокруг."],
 ["Если застесняюсь, то скажу хотя бы полфразы: «Слушай, для меня это важно».","Если сяду ужинать с семьёй, то расскажу одну вещь, которая для меня важна.","Если почувствую, что меня не услышали, то скажу это вслух."],
 ["Если застесняюсь, то напишу сообщение, а не позвоню.","Если в пятницу открою Telegram, то первым делом напишу другу.","Если не придумаю повод, то позову на то, что и так собирался делать."]];
-function insight(){const c=[0,0,0];(st.s||[]).forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});if(!(c[0]+c[1]+c[2]))return"";
-return"В этой игре больше всего ты вырастил "+["цветов: ты чаще идёшь к людям","деревьев: ты чаще берёшь паузу и отходишь","скал: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))]+"."}
+/* что показал остров: тот же счёт, что под картой (все семена сада), а не одна партия — иначе цифры спорят */
+function insight(){const c=[0,0,0];seeds.forEach(x=>{if(x.z>=0&&x.z<3)c[x.z]++});const m=Math.max(...c);if(!m)return"";
+const P=["цветов","деревьев","скал"],M=["ты чаще идёшь к людям","ты чаще берёшь паузу и отходишь","ты чаще стоишь за своё"],top=[0,1,2].filter(k=>c[k]===m);
+return`На твоём острове больше всего ${top.map(k=>P[k]).join(" и ")}: ${top.map(k=>M[k]).join(", и ")}. Цветы ${c[0]} · деревья ${c[1]} · скалы ${c[2]}.`}
 /* своё дело: план пишет сам игрок (свои цели выполняются охотнее), но по той же форме — что, когда и где, «если помеха — то действие» */
-function stepWeek(fr){setNav("week");fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr;const own={what:"",when:"",act:"",who:"",obs:""},ins=st.s&&st.s.length===N?insight():"",W=[...SW,"Своё дело…"],O=[...SO,"Свой вариант…"];
+function stepWeek(fr){setNav("week");fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr;const own={what:"",when:"",act:"",who:"",obs:""},ins=insight(),W=[...SW,"Своё дело…"],O=[...SO,"Свой вариант…"];
 /* своя помеха: план «если — то» работает и на неё, если «то» — действие (Gollwitzer & Sheeran 2006) */
 const obs=()=>{const x=o<3?SO[o]:own.obs.trim()||"…";return x[0].toLowerCase()+x.slice(1)},ownAct=()=>w===3||o===3;
 const plan=()=>w<3&&o<3?SP[w][o]:`${w<3?W[w]:`«${own.what||"…"}» — ${own.when||"когда и где?"}`}. Если ${obs()}, то ${own.act||"…"}.`,mate=()=>fr||own.who.trim();
 const bonus=()=>mate()?"Когда отметишь в саду «Так и сделал», ваш мост (ты и "+mate()+") получит +3 доски.":"Впиши имя, и дело укрепит ваш мост.";
 const chips=(a,id,cur)=>`<div class="row" id="${id}">${a.map((x,k)=>`<button class="${k===cur?"t":"n"}" data-k="${k}">${esc(x)}</button>`).join("")}</div>`;
 const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" maxlength="${max}" placeholder="${ph}" value="${esc(v)}">`;
-const draw=()=>{app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${ins?`<div class="card"><span class="who">Что показала игра</span><p style="margin:0">${ins}</p></div>`:""}
+const draw=()=>{app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}
 <div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
 ${w===3?fld("ow","Что сделаем","Испечь пиццу в печи",own.what,80)+fld("on","Когда и где","В субботу вечером, у меня во дворе",own.when,60):""}
 <div class="zone">2. Что может помешать</div>${chips(O,"co",o)}
@@ -470,7 +472,7 @@ if(sel==="bottle"){pn.innerHTML=`<h2>Бутылка в море</h2><p style="ma
 $("bc").onclick=catchBottle;$("bt").onclick=()=>fresh("hero",{bottle:1});return}
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");return}
-if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Сад ${z[0]} · лес ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
+if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
 <div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("so","Играть одному")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");return}
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
