@@ -214,7 +214,7 @@ const SP=[["Если застесняюсь, то начну с простого
 ["Если застесняюсь, то скажу хотя бы полфразы: «Слушай, для меня это важно».","Если сяду ужинать с семьёй, то расскажу одну вещь, которая для меня важна.","Если почувствую, что меня не услышали, то скажу это вслух."],
 ["Если застесняюсь, то напишу сообщение, а не позвоню.","Если в пятницу открою Telegram, то первым делом напишу другу.","Если не придумаю повод, то позову на то, что и так собирался делать."]];
 function insight(){const c=[0,0,0];(st.s||[]).forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});if(!(c[0]+c[1]+c[2]))return"";
-return"В этой игре больше всего выросло "+["в саду: ты чаще идёшь к людям","в лесу: ты чаще берёшь паузу и отходишь","на скалах: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))]+"."}
+return"В этой игре больше всего ты вырастил "+["цветов: ты чаще идёшь к людям","деревьев: ты чаще берёшь паузу и отходишь","скал: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))]+"."}
 /* своё дело: план пишет сам игрок (свои цели выполняются охотнее), но по той же форме — что, когда и где, «если помеха — то действие» */
 function stepWeek(fr){setNav("week");fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr;const own={what:"",when:"",act:"",who:"",obs:""},ins=st.s&&st.s.length===N?insight():"",W=[...SW,"Своё дело…"],O=[...SO,"Свой вариант…"];
 /* своя помеха: план «если — то» работает и на неё, если «то» — действие (Gollwitzer & Sheeran 2006) */
@@ -287,8 +287,8 @@ g+=`</g>`;if(!ok)g+=`<circle cx="${cx}" cy="${cy}" r="13" fill="var(--fog)"/>`})
 lab.forEach((l,z)=>g+=`<text x="${(Zx[z][0]+Zx[z][1])/2}" y="168" text-anchor="middle" font-size="11" fill="var(--sand-fg)" font-family="Golos Text,system-ui">${l} ${cnt[z]}</text>`);
 return g+`</svg>`}
 function soloResult(){
-const c=[0,0,0];st.s.forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});const top=["в саду: ты чаще идёшь к людям","в лесу: ты чаще берёшь паузу и отходишь","на скалах: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))];
-let h=`<h1>Остров: ${esc(st.name)}</h1><div class="card">${island(st.s,st.s)}<p style="margin:0">Больше всего выросло ${top}.</p>
+const c=[0,0,0];st.s.forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});const top=["цветов: ты чаще идёшь к людям","деревьев: ты чаще берёшь паузу и отходишь","скал: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))];
+let h=`<h1>Остров: ${esc(st.name)}</h1><div class="card">${island(st.s,st.s)}<p style="margin:0">Больше всего ты вырастил ${top}.</p>
 <p class="note" style="margin:0">Это ты своими глазами. Сыграй те же карточки с другом — увидишь, видит ли он тебя так же.</p></div><div class="card"><h2>Твои ответы</h2>`;
 for(let k=0;k<N;k++)h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${esc(opt(sit(k),st.s[k]))}</div></div>`;
 h+=`</div><div class="row"><button class="main-btn" id="nw">Ещё партию</button><button class="n" id="hm">Играть с другом</button></div>`;
