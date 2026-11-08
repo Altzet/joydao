@@ -214,16 +214,19 @@ const SP=[["Если застесняюсь, то начну с простого
 function insight(){const c=[0,0,0];(st.s||[]).forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});if(!(c[0]+c[1]+c[2]))return"";
 return"В этой игре больше всего выросло "+["в саду: ты чаще идёшь к людям","в лесу: ты чаще берёшь паузу и отходишь","на скалах: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))]+"."}
 /* своё дело: план пишет сам игрок (свои цели выполняются охотнее), но по той же форме — что, когда и где, «если помеха — то действие» */
-function stepWeek(fr){fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr;const own={what:"",when:"",act:"",who:""},ins=st.s&&st.s.length===N?insight():"",W=[...SW,"Своё дело…"];
-const plan=()=>w<3?SP[w][o]:`«${own.what||"…"}» — ${own.when||"когда и где?"}. Если ${SO[o].toLowerCase()}, то ${own.act||"…"}.`,mate=()=>fr||own.who.trim();
+function stepWeek(fr){fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr;const own={what:"",when:"",act:"",who:"",obs:""},ins=st.s&&st.s.length===N?insight():"",W=[...SW,"Своё дело…"],O=[...SO,"Свой вариант…"];
+/* своя помеха: план «если — то» работает и на неё, если «то» — действие (Gollwitzer & Sheeran 2006) */
+const obs=()=>{const x=o<3?SO[o]:own.obs.trim()||"…";return x[0].toLowerCase()+x.slice(1)},ownAct=()=>w===3||o===3;
+const plan=()=>w<3&&o<3?SP[w][o]:`${w<3?W[w]:`«${own.what||"…"}» — ${own.when||"когда и где?"}`}. Если ${obs()}, то ${own.act||"…"}.`,mate=()=>fr||own.who.trim();
 const bonus=()=>mate()?"Когда отметишь в саду «Так и сделал», ваш мост (ты и "+mate()+") получит +3 доски.":"Впиши имя, и дело укрепит ваш мост.";
 const chips=(a,id,cur)=>`<div class="row" id="${id}">${a.map((x,k)=>`<button class="${k===cur?"t":"n"}" data-k="${k}">${esc(x)}</button>`).join("")}</div>`;
 const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" maxlength="${max}" placeholder="${ph}" value="${esc(v)}">`;
 const draw=()=>{app.innerHTML=`<h1>Дело на неделю</h1>${ins?`<div class="card"><span class="who">Что показала игра</span><p style="margin:0">${ins}</p></div>`:""}
 <div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
 ${w===3?fld("ow","Что сделаем","Испечь пиццу в печи",own.what,80)+fld("on","Когда и где","В субботу вечером, у меня во дворе",own.when,60):""}
-<div class="zone">2. Что может помешать</div>${chips(SO,"co",o)}
-${w===3?fld("oa","Если помешает, что я сделаю","Напишу ему первым, а не буду ждать",own.act,100):""}
+<div class="zone">2. Что может помешать</div>${chips(O,"co",o)}
+${o===3?fld("ob","Моя помеха","Устану после работы",own.obs,80):""}
+${ownAct()?fld("oa","Если помешает, что я сделаю","Напишу ему первым, а не буду ждать",own.act,100):""}
 <div class="zone">3. Мой план</div><div class="q" id="pl">${esc(plan())}</div>
 <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"${tg?" checked":""}> ${fr?"Сделаем вдвоём: я и "+esc(fr):"Сделаем вместе с другом"}</label>
 ${tg&&!fr?`<input id="oc" maxlength="30" placeholder="Имя друга — тогда дело укрепит ваш мост" value="${esc(own.who)}">`:""}
@@ -232,11 +235,11 @@ ${tg?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}
 <div class="row"><button class="main-btn" id="pt">Посадить в сад</button><button class="n" id="bk">Назад</button></div></div>
 <p class="note">Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе». Не вышло — ничего страшного, семя подождёт.</p>`;
 $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw()}};$("co").onclick=e=>{const b=e.target.closest("button");if(b){o=+b.dataset.k;draw()}};
-[["ow","what"],["on","when"],["oa","act"],["oc","who"]].forEach(([id,k])=>{const el=$(id);if(el)el.oninput=()=>{own[k]=el.value;$("pl").textContent=plan();$("er").textContent="";if($("bn"))$("bn").textContent=bonus()}});
+[["ow","what"],["on","when"],["ob","obs"],["oa","act"],["oc","who"]].forEach(([id,k])=>{const el=$(id);if(el)el.oninput=()=>{own[k]=el.value;$("pl").textContent=plan();$("er").textContent="";if($("bn"))$("bn").textContent=bonus()}});
 $("tg").onchange=()=>{tg=$("tg").checked;draw()};
 $("bk").onclick=()=>st.started?go():home();
-$("pt").onclick=()=>{if(w===3){const miss=!own.what.trim()?"Напиши, что сделаешь":!own.when.trim()?"Напиши, когда и где — так план сработает вернее":!own.act.trim()?"Напиши, что сделаешь, если помешает":"";if(miss){$("er").textContent=miss;return}}
-tg=$("tg").checked;const m=tg?mate():"";seeds.push({c:"Дело на неделю",q:(w<3?W[w]:"Своё дело")+" · помеха: "+SO[o].toLowerCase()+(tg?" · вдвоём: я и "+(m||"друг"):""),r:plan(),z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1,with:m,fid:tg&&fr?curFid:null});saveSeeds();garden()}};draw()}
+$("pt").onclick=()=>{const miss=w===3&&!own.what.trim()?"Напиши, что сделаешь":w===3&&!own.when.trim()?"Напиши, когда и где — так план сработает вернее":o===3&&!own.obs.trim()?"Напиши, что может помешать":ownAct()&&!own.act.trim()?"Напиши, что сделаешь, если помешает":"";if(miss){$("er").textContent=miss;return}
+tg=$("tg").checked;const m=tg?mate():"";seeds.push({c:"Дело на неделю",q:(w<3?W[w]:"Своё дело")+" · помеха: "+obs()+(tg?" · вдвоём: я и "+(m||"друг"):""),r:plan(),z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1,with:m,fid:tg&&fr?curFid:null});saveSeeds();garden()}};draw()}
 function home(){if(API)return world();
 app.innerHTML=`<h1>Ну-ну</h1><p class="note" style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
 <div class="card"><p style="margin:0">Каждый у себя отвечает на 10 карточек: о себе и о том, как ответит друг. Потом ${API?"отправляешь другу ссылку":"вы обмениваетесь кодами"} и смотрите, кто кого понял.</p>
