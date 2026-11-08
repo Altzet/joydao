@@ -70,3 +70,17 @@ def test_world_map(tmp_path, monkeypatch):
     c.post("/nunu/api/friend/2/deed", headers=anton)
     f = c.get("/nunu/api/world", headers=anton).json()["friends"][0]
     assert (f["name"], f["boards"], f["turn"], f["last"], f["island"]) == ("Евген", 8.5, None, g["id"], [2, 0, 1])
+
+
+def test_two_answers(tmp_path, monkeypatch):
+    """В «Кто я, по-твоему?» можно два образа; повтор и третий — нельзя."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    c, anton = TestClient(pause.app), init_data(1, "Антон")
+    s = [[0, 2], 1] + [3] * 8
+    ok = c.post("/nunu/api/game", json={"name": "А", "seed": 1, "mode": "duo", "s": s, "g": s}, headers=anton)
+    assert ok.status_code == 200
+    assert c.get(f"/nunu/api/game/{ok.json()['id']}", headers=anton).json()["s"][0] == [0, 2]
+    for bad in ([1, 1], [0, 1, 2], [6, 0]):
+        r = c.post("/nunu/api/game", json={"name": "А", "seed": 1, "mode": "duo", "s": [bad] + [0] * 9, "g": s},
+                   headers=anton)
+        assert r.status_code == 422

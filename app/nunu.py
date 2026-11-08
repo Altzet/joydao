@@ -72,8 +72,15 @@ def _user(init_data: str | None):
     return u
 
 
-def _answers(a: list[int], empty_ok: bool = False) -> str:
-    if (empty_ok and not a) or (len(a) == N and all(0 <= x <= PASS for x in a)):
+def _one(x) -> bool:
+    """Ответ: индекс 0–6 или 1–2 разных образа [i, j] (карточки «Кто я, по-твоему?»)."""
+    if isinstance(x, list):
+        return 1 <= len(x) <= 2 and len(set(x)) == len(x) and all(isinstance(y, int) and 0 <= y < PASS for y in x)
+    return isinstance(x, int) and 0 <= x <= PASS
+
+
+def _answers(a: list, empty_ok: bool = False) -> str:
+    if (empty_ok and not a) or (len(a) == N and all(_one(x) for x in a)):
         return json.dumps(a)
     raise HTTPException(422, "Нужно 10 ответов")
 
@@ -90,15 +97,15 @@ class GameIn(BaseModel):
     name: str
     seed: int
     mode: str  # duo — оба отвечают; hero — все угадывают хозяина
-    s: list[int]
-    g: list[int] = []
+    s: list[int | list[int]]
+    g: list[int | list[int]] = []
     to: int | None = None  # tg id друга: партия с карты, ему сразу сообщение от бота
 
 
 class PlayIn(BaseModel):
     name: str
-    s: list[int] = []  # в hero друг только угадывает
-    g: list[int]
+    s: list[int | list[int]] = []  # в hero друг только угадывает
+    g: list[int | list[int]]
 
 
 @router.get("/state")
