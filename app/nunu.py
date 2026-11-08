@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS plays (game_id TEXT NOT NULL, player INTEGER NOT NULL
     s TEXT NOT NULL, g TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')),
     PRIMARY KEY (game_id, player));
 CREATE TABLE IF NOT EXISTS users (tg_id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS invites (id TEXT PRIMARY KEY, owner INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS friends (a INTEGER NOT NULL, b INTEGER NOT NULL, created_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (a, b));
 CREATE TABLE IF NOT EXISTS deeds (a INTEGER NOT NULL, b INTEGER NOT NULL, n INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (a, b));
 """
@@ -232,6 +236,39 @@ def deed(fid: int, x_init_data: str | None = Header(default=None)):
     return {"ok": True}
 
 
+@router.post("/invite")
+def invite(x_init_data: str | None = Header(default=None)):
+    """Позвать друга: сначала он приходит на карту, потом вы вместе играете."""
+    u = _user(x_init_data)
+    iid = "i" + secrets.token_hex(4)
+    with closing(_db()) as c, c:
+        c.execute("INSERT INTO invites(id, owner) VALUES(?, ?)", (iid, u.id))
+        _seen(c, u)
+    return {"id": iid, "link": link(iid)}
+
+
+@router.post("/invite/{iid}/accept")
+async def accept(iid: str, x_init_data: str | None = Header(default=None)):
+    """Друг открыл приглашение: между островами канатный мост, позвавшему — сообщение.
+    ponytail: одно приглашение могут принять многие (ссылку переслали в чат) — это и хорошо."""
+    u = _user(x_init_data)
+    with closing(_db()) as c:
+        r = c.execute("SELECT owner FROM invites WHERE id=?", (iid,)).fetchone()
+        if not r:
+            raise HTTPException(404, "Приглашение не найдено")
+        if r["owner"] == u.id:
+            return {"friend": None}
+        a, b = sorted((u.id, r["owner"]))
+        with c:
+            new = c.execute("INSERT OR IGNORE INTO friends(a, b) VALUES(?, ?)", (a, b)).rowcount
+        _seen(c, u)
+        n = c.execute("SELECT name FROM users WHERE tg_id=?", (r["owner"],)).fetchone()
+    if new:
+        _bg(_notify(r["owner"], f"{u.first_name} пришёл на твою карту в «Ну-ну». Между вами канатный мост — "
+                                "начните партию 🏝", f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"))
+    return {"friend": {"id": r["owner"], "name": n["name"] if n else "Друг"}}
+
+
 def _island(c: sqlite3.Connection, uid: int) -> list[int]:
     """Сад, лес, скалы: сколько семян в каждой зоне (из сада игрока)."""
     r = c.execute("SELECT data FROM state WHERE tg_id=?", (uid,)).fetchone()
@@ -266,6 +303,9 @@ def world(x_init_data: str | None = Header(default=None)):
                 f["boards"] += r["boards"] or 0
                 if (r["pt"] or "") >= f["t"]:
                     f["last"], f["t"] = r["id"], r["pt"] or ""
+        for r in c.execute("SELECT a, b FROM friends WHERE a=:me OR b=:me", {"me": u.id}):
+            other = r["b"] if r["a"] == u.id else r["a"]
+            fr.setdefault(other, {"id": other, "boards": 0.0, "turn": None, "gid": None, "last": None, "t": ""})
         for f in fr.values():
             a, b = sorted((u.id, f["id"]))
             d = c.execute("SELECT n FROM deeds WHERE a=? AND b=?", (a, b)).fetchone()

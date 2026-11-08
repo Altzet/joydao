@@ -387,34 +387,41 @@ function artWorld(w,sel){const F=w.friends,n=F.length,slots=n+1,pos=[],me=[200,1
 F.forEach((f,i)=>{const ring=i<9?0:1,k=ring?i-9:i,m=ring?n-9:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,60)*.9,t=f.island[0]+f.island[1]+f.island[2];
 const R=28+Math.min(t,24)*.5,D=me[2]+R+(ring?110:0)+110-Math.min(f.boards,60)*.8;pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
 const ai=-Math.PI/2+Math.min(n,9)/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)];
-const all=[me,...pos,[...inv,30]],x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
+const all=[me,...pos,[...inv,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
+const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
 let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" style="width:100%;display:block;border-radius:16px" role="img" aria-label="Карта: твой остров и острова друзей">
 <defs><pattern id="wv" width="46" height="26" patternUnits="userSpaceOnUse"><path d="M4 14q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".35"/><path d="M27 4q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".25"/></pattern></defs>
 <rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1-x0)}" height="${f1(y1-y0)}" fill="#86C3D4"/><rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1-x0)}" height="${f1(y1-y0)}" fill="url(#wv)"/>`;
 [me,...pos].forEach((p,i)=>g+=artIsland(p[0],p[1],p[2],i?F[i-1].id:w.me.id,[0,0,0],"",null,"halo"));
-F.forEach((f,i)=>{if(f.boards>0||f.last)g+=artBridge(me,pos[i],f.boards)});
+F.forEach((f,i)=>g+=artBridge(me,pos[i],f.boards));
 g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0)}</g>`;
 F.forEach((f,i)=>g+=`<g data-i="${i+1}" style="cursor:pointer">${artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,f.island,f.name,f.turn,sel===i+1)}</g>`);
 g+=`<g data-i="inv" style="cursor:pointer"><circle cx="${f1(inv[0])}" cy="${f1(inv[1])}" r="22" fill="#A9D7E3" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><text x="${f1(inv[0])}" y="${f1(inv[1]+8)}" text-anchor="middle" font-size="24" fill="#fff" font-family="Golos Text,system-ui">+</text>
 <rect x="${f1(inv[0]-34)}" y="${f1(inv[1]+28)}" width="68" height="20" rx="10" fill="#FFF8E7" stroke="#D9C9A3"/><text x="${f1(inv[0])}" y="${f1(inv[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">позвать</text></g>`;
 return g+`</svg>`}
 /* ===== механика карты ===== */
-let W=null,curFid=null;
+let W=null,curFid=null,focus=null;
+/* позвать: ссылка сразу в выбор чата Telegram, карточки — потом, когда друг на карте */
+function invite(){busy("Готовлю приглашение…");API("/invite","POST").then(r=>{
+TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(r.link)+"&text="+encodeURIComponent("Заходи ко мне на остров в «Ну-ну» — игре о том, знаем ли мы друг друга"));
+card(`<span class="who">Приглашение</span><h2>Ссылка ушла</h2><p style="margin:0">Когда друг откроет её, его остров появится рядом с твоим, а бот пришлёт тебе сообщение. Тогда и сыграете.</p>
+<div class="row"><button class="main-btn" id="mp">На карту</button><button class="n" id="ag">Отправить ещё кому-то</button></div>`);$("mp").onclick=world;$("ag").onclick=invite},()=>oops(invite))}
 const fresh=(mode,o={})=>{st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(),s:[],g:[],friend:null,started:1,mode,guessers:[],...o};save();go()};
 const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${Math.round(b)} ${pl(Math.round(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/ый$/,"ого")} ещё ${Math.ceil(nx[0]-b)}.`:"")};
-function world(){busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);drawW(W.friends.findIndex(f=>f.turn==="me")+1)},()=>oops(world))}
+function world(){busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);const fi=focus?W.friends.findIndex(f=>f.id===focus):-1;focus=null;drawW((fi>=0?fi:W.friends.findIndex(f=>f.turn==="me"))+1)},()=>oops(world))}
 function drawW(sel){const z=W.me.island;
 app.innerHTML=`<h1>Ну-ну</h1><div>${artWorld(W,sel)}</div><div class="card" id="pn"></div>
 <p class="note">Море — общее и нейтральное. Остров растёт из твоих ответов: цветы — когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>`;
 app.querySelector("svg").onclick=e=>{const g=e.target.closest("[data-i]");if(g)drawW(g.dataset.i==="inv"?"inv":+g.dataset.i)};
 const pn=$("pn"),btn=(id,t,main)=>`<button class="${main?"main-btn":"n"}" id="${id}">${t}</button>`,f=sel>0?W.friends[sel-1]:null;
-if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Ответишь на 10 карточек, и Telegram предложит выбрать, кому отправить. Когда друг ответит, его остров появится на карте.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Пусть все угадывают меня")}</div>`;
-$("iv").onclick=()=>fresh("duo");$("ih").onclick=()=>fresh("hero");return}
+if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">«Все угадывают меня»: сначала ты отвечаешь о себе, потом рассылаешь ссылку, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Пусть все угадывают меня")}</div>`;
+$("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");return}
 if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Сад ${z[0]} · лес ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
 <div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Все угадывают меня")}${btn("so","Играть одному")}${btn("gd","Мой сад: "+seeds.length)}${btn("sw","Дело на неделю")}</div>`;
-$("iv").onclick=()=>fresh("duo");$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");$("gd").onclick=garden;$("sw").onclick=()=>{curFid=null;stepWeek()};return}
+$("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");$("gd").onclick=garden;$("sw").onclick=()=>{curFid=null;stepWeek()};return}
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
-pn.innerHTML=`<h2>${fn}</h2>${turn}<p class="note" style="margin:0">${stage(f.boards)}</p><div class="row">${f.turn==="me"?btn("an","Ответить: "+fn,1):btn("ng","Новая партия",!f.turn)}${f.last?btn("ls","Последняя партия"):""}${btn("dd","Дело вместе: +3 доски")}</div>`;
+const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
+pn.innerHTML=`<h2>${fn}</h2>${turn}${fresh0}<p class="note" style="margin:0">${stage(f.boards)}</p><div class="row">${f.turn==="me"?btn("an","Ответить: "+fn,1):btn("ng","Новая партия",!f.turn)}${f.last?btn("ls","Последняя партия"):""}${btn("dd","Дело вместе: +3 доски")}</div>`;
 if($("an"))$("an").onclick=()=>{busy("Открываю партию…");join(f.gid).then(go,()=>oops(world))};
 if($("ng"))$("ng").onclick=()=>fresh("duo",{to:f.id,toName:f.name});
 if($("ls"))$("ls").onclick=()=>{busy("Открываю партию…");join(f.last,f.id).then(go,()=>oops(world))};
@@ -449,7 +456,9 @@ st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mo
 async function boot(){if(!API)return home();busy("Загружаю твой остров…");
 try{const r=await API("/state"),d=r.data;tgName=r.name||"";
 if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-bridges"])bridges=d["nunu-bridges"]}else push();
-const sp=(TG.initDataUnsafe||{}).start_param;if(sp&&sp!==st.gid&&sp!==st.join)await join(sp)
+const sp=(TG.initDataUnsafe||{}).start_param;
+if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.friend)focus=r.friend.id;return world()}
+if(sp&&sp!==st.gid&&sp!==st.join)await join(sp)
 /* в Telegram дом — карта; недоигранная партия продолжается с того же места */
 else if(!(st.started&&st.g&&st.g.length>0&&st.g.length<N))return world()}catch(e){}
 go()}

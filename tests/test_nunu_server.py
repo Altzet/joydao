@@ -84,3 +84,20 @@ def test_two_answers(tmp_path, monkeypatch):
         r = c.post("/nunu/api/game", json={"name": "А", "seed": 1, "mode": "duo", "s": [bad] + [0] * 9, "g": s},
                    headers=anton)
         assert r.status_code == 422
+
+
+def test_invite_first(tmp_path, monkeypatch):
+    """Позвать: друг сначала приходит на карту (мост без досок), позвавшему — сообщение."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+
+    async def quiet(*a):
+        quiet.sent = a
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
+    i = c.post("/nunu/api/invite", headers=anton).json()
+    assert i["link"].endswith("startapp=" + i["id"]) and i["id"].startswith("i")
+    assert c.post(f"/nunu/api/invite/{i['id']}/accept", headers=anton).json() == {"friend": None}
+    assert c.post(f"/nunu/api/invite/{i['id']}/accept", headers=evgen).json() == {"friend": {"id": 1, "name": "Антон"}}
+    assert quiet.sent[0] == 1
+    f = c.get("/nunu/api/world", headers=anton).json()["friends"]
+    assert [(x["name"], x["boards"], x["last"]) for x in f] == [("Евген", 0, None)]
