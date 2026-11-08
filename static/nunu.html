@@ -13,7 +13,7 @@ html{-webkit-text-size-adjust:100%}*{box-sizing:border-box}
 --sad:#4B1528;--sad-fg:#F4C0D1;--les:#04342C;--les-fg:#9FE1CB;--sk:#2C2C2A;--sk-fg:#D3D1C7;--acc:#5DCAA5;--acc-fg:#04342C;--sea:#0F2A35;--grass:#2C3A1E;--fog:rgba(18,26,23,.55);color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#121A17;--card:#1B2521;--fg:#E6EEEA;--muted:#9DADA6;--line:#2E3B36;--sand:#3A2F1A;--sand-fg:#F2D9A6;
 --sad:#4B1528;--sad-fg:#F4C0D1;--les:#04342C;--les-fg:#9FE1CB;--sk:#2C2C2A;--sk-fg:#D3D1C7;--acc:#5DCAA5;--acc-fg:#04342C;--sea:#0F2A35;--grass:#2C3A1E;--fog:rgba(18,26,23,.55);color-scheme:dark}
-body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding-block:24px;padding-top:calc(24px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 /* постоянное меню внизу, как в приложениях: карта, сад, удиви себя, бутылка */
 body.has-nav{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
@@ -21,6 +21,16 @@ body.has-nav{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 #nav div{display:flex;width:100%;max-width:560px;justify-content:space-around}
 #nav button{border:0;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;padding:6px 10px;min-width:64px;text-align:center}
 #nav button[aria-current="page"]{color:var(--acc)}#nav svg{width:24px;height:24px}
+/* карта как карта: на весь экран, жесты, кнопки поверх, карточка снизу */
+body.on-map{padding-top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+#mapw{position:relative;border-radius:16px;overflow:hidden;background:#86C3D4;touch-action:none;user-select:none;-webkit-user-select:none;min-height:320px}
+#mapw>svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.mctl{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:8px}
+.mctl button{width:44px;height:44px;border-radius:12px;border:1px solid #D9C9A3;background:#FFF8E7;color:#3B2F1A;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+#sh{position:absolute;left:8px;right:8px;bottom:8px;max-height:46%;overflow:auto;gap:10px;padding-top:8px;box-shadow:0 -6px 24px rgba(0,0,0,.28)}
+#sh.min{max-height:62px;overflow:hidden}
+#grab{display:block;width:44px;height:16px;border:0;padding:0;margin:0 auto;background:none;flex:none}
+#grab::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:5px auto}
 h1{font:500 22px/1.3 var(--disp);margin:0;text-wrap:balance}
 h2{font:500 18px/1.4 var(--disp);margin:0;text-wrap:balance}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px}
@@ -153,7 +163,7 @@ const DEEP=[6,20,29,38,17,31,49,48,21,23,41,50,51,52];
 const C3=[["Чувства","Завтра важный разговор. Как я сплю ночью?",["Как младенец","Прокручиваю всё в голове","Встаю и делаю дела","Сплю, но снится, что опоздал"]],
 ["Чувства","Что быстрее всего выбьет меня из колеи?",["Когда не ценят старание","Когда лезут в моё","Хаос и шум","Почти ничего, я танк"]]];
 const N=10,$=id=>document.getElementById(id),app=$("app");
-const TG=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData?Telegram.WebApp:null;if(TG){TG.ready();TG.expand()}
+const TG=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData?Telegram.WebApp:null;if(TG){TG.ready();TG.expand();try{if(TG.isVersionAtLeast("7.7"))TG.disableVerticalSwipes()}catch(e){}}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ls={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}push()}};
 /* этап 2: в Telegram игрок узнаётся сам (initData), игра идёт по одной ссылке, сад и мосты живут на сервере.
@@ -417,9 +427,9 @@ const R=28+Math.min(t,24)*.5,D=me[2]+R+(ring?110:0)+110-Math.min(f.boards,60)*.8
 const at=k=>-Math.PI/2+k/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,ai=at(Math.min(n,8)),inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)],bi=at(Math.min(n,8)+1),bot=[200+DI*Math.cos(bi),190+DI*.82*Math.sin(bi)];
 const all=[me,...pos,[...inv,30],[...bot,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
 const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
-let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" style="width:100%;display:block;border-radius:16px" role="img" aria-label="Карта: твой остров и острова друзей">
+let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Карта: твой остров и острова друзей. Двигай пальцем, щипком приближай">
 <defs><pattern id="wv" width="46" height="26" patternUnits="userSpaceOnUse"><path d="M4 14q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".35"/><path d="M27 4q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".25"/></pattern></defs>
-<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1-x0)}" height="${f1(y1-y0)}" fill="#86C3D4"/><rect class="wv" x="${f1(x0-46)}" y="${f1(y0)}" width="${f1(x1-x0+46)}" height="${f1(y1-y0)}" fill="url(#wv)"/>`;
+<rect x="${f1(x0-1500)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3000)}" height="${f1(y1-y0+3000)}" fill="#86C3D4"/><rect class="wv" x="${f1(x0-1546)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3046)}" height="${f1(y1-y0+3000)}" fill="url(#wv)"/>`;
 [me,...pos].forEach((p,i)=>g+=artIsland(p[0],p[1],p[2],i?F[i-1].id:w.me.id,[0,0,0],"",null,"halo"));
 F.forEach((f,i)=>g+=artBridge(me,pos[i],f.boards));
 g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0)}</g>`;
@@ -434,7 +444,7 @@ let W=null,curFid=null,focus=null;
 const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],
 ["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],["bottle","Бутылка","M10 2h4v3l1.5 2.5V20a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V7.5L10 5z",()=>W?drawW("bottle"):world("bottle")]];
 const nav={cur:undefined};
-function setNav(s){if(!API)return;if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
+function setNav(s){if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
 if(!el){el=document.createElement("nav");el.id="nav";el.setAttribute("aria-label","Меню");document.body.appendChild(el);document.body.classList.add("has-nav");
 el.innerHTML=`<div>${NAV.map(([k,l,d])=>`<button data-n="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${d}"/></svg>${l}</button>`).join("")}</div>`;
 el.onclick=e=>{const b=e.target.closest("button");if(b)NAV.find(x=>x[0]===b.dataset.n)[3]()};
@@ -461,11 +471,47 @@ card(`<span class="who">Приглашение</span><h2>Позови друга
 const fresh=(mode,o={})=>{st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(),s:[],g:[],friend:null,started:1,mode,guessers:[],...o};save();go()};
 const half=x=>String(Math.round(x*2)/2).replace(".",",");
 const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${half(b)} ${pl(Math.floor(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/ый$/,"ого")} ещё ${half(nx[0]-b)}.`:"")};
-function world(pick){pick=typeof pick==="string"?pick:null;busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);const fi=focus?W.friends.findIndex(f=>f.id===focus):-1;focus=null;if(pick)return drawW(pick);drawW((fi>=0?fi:W.friends.findIndex(f=>f.turn==="me"||f.mark))+1)},()=>oops(world))}
-function drawW(sel){setNav(sel==="bottle"?"bottle":"map");const z=W.me.island;
-app.innerHTML=`<h1>Ну-ну</h1><div>${artWorld(W,sel)}</div><div class="card" id="pn"></div>
-<p class="note">Море — общее и нейтральное. Остров растёт из твоих ответов: цветы — когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>`;
-app.querySelector("svg").onclick=e=>{const g=e.target.closest("[data-i]");if(g)drawW(g.dataset.i==="inv"||g.dataset.i==="bottle"?g.dataset.i:+g.dataset.i)};
+/* ===== карта как карта: тащить, щипок, колесо, двойной тап, кнопки; остров — подлететь и открыть карточку ===== */
+let mv=null,mbase=null;
+function fitMap(){const w=$("mapw");if(!w)return;const nav=$("nav"),h=innerHeight-w.getBoundingClientRect().top-(nav?nav.offsetHeight:0)-10;w.style.height=Math.max(320,h)+"px"}
+addEventListener("resize",fitMap);try{TG&&TG.onEvent("viewportChanged",fitMap);TG&&TG.onEvent("fullscreenChanged",()=>setTimeout(fitMap,50))}catch(e){}
+function mapCtl(svg,sel,fly){const b=svg.viewBox.baseVal,base={x:b.x,y:b.y,w:b.width,h:b.height};
+if(!mv||!mbase||mbase.w!==base.w||mbase.h!==base.h||mbase.x!==base.x)mv={...base};mbase=base;
+const set=v=>{const cx=Math.min(Math.max(v.x+v.w/2,base.x-base.w*.2),base.x+base.w*1.2),cy=Math.min(Math.max(v.y+v.h/2,base.y-base.h*.2),base.y+base.h*1.2);
+mv={x:cx-v.w/2,y:cy-v.h/2,w:v.w,h:v.h};svg.setAttribute("viewBox",`${f1(mv.x)} ${f1(mv.y)} ${f1(mv.w)} ${f1(mv.h)}`)};
+const toSvg=(x,y)=>new DOMPoint(x,y).matrixTransform(svg.getScreenCTM().inverse());
+const zoomAt=(px,py,k)=>{const w=Math.min(Math.max(mv.w/k,base.w/5),base.w*1.6);k=mv.w/w;set({x:px-(px-mv.x)/k,y:py-(py-mv.y)/k,w,h:mv.h/k})};
+let anim=0;const flyTo=(cx,cy,w)=>{const a={...mv},h=w*a.h/a.w,z={x:cx-w/2,y:cy-h/2,w,h},t0=performance.now(),D=matchMedia("(prefers-reduced-motion: reduce)").matches?0:420,id=++anim;
+const step=n=>{if(id!==anim)return;const p=D?1:Math.min(1,(n-t0)/D),e=1-Math.pow(1-p,3);set({x:a.x+(z.x-a.x)*e,y:a.y+(z.y-a.y)*e,w:a.w+(z.w-a.w)*e,h:a.h+(z.h-a.h)*e});if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)};
+const centerOf=i=>{const g=svg.querySelector(`[data-i="${i}"]`);if(!g)return null;const r=g.getBBox();return[r.x+r.width/2,r.y+r.height/2]};
+const focus=i=>{const c=centerOf(i);if(!c)return;const w=Math.min(mv.w,base.w*.6),h=w*mv.h/mv.w;flyTo(c[0],c[1]+h*.27,w)};
+set(mv);if(fly!=null)focus(fly);
+const P=new Map();let start=null,moved=false,pd=0,lastTap=0;
+svg.onpointerdown=e=>{anim++;P.set(e.pointerId,{x:e.clientX,y:e.clientY});
+if(P.size===1){start={x:e.clientX,y:e.clientY};moved=false}if(P.size===2){const[a,c]=[...P.values()];pd=Math.hypot(a.x-c.x,a.y-c.y)}};
+svg.onpointermove=e=>{const prev=P.get(e.pointerId);if(!prev)return;const cur={x:e.clientX,y:e.clientY};
+if(P.size===1){if(!moved&&Math.hypot(cur.x-start.x,cur.y-start.y)>6){moved=true;try{svg.setPointerCapture(e.pointerId)}catch(x){}}if(moved){const a=toSvg(prev.x,prev.y),c=toSvg(cur.x,cur.y);set({...mv,x:mv.x-(c.x-a.x),y:mv.y-(c.y-a.y)})}P.set(e.pointerId,cur);return}
+if(P.size===2){moved=true;const[p1,p2]=[...P.values()],m0=toSvg((p1.x+p2.x)/2,(p1.y+p2.y)/2);P.set(e.pointerId,cur);const[q1,q2]=[...P.values()],d=Math.hypot(q1.x-q2.x,q1.y-q2.y);
+if(pd)zoomAt(m0.x,m0.y,d/pd);pd=d;const m1=toSvg((q1.x+q2.x)/2,(q1.y+q2.y)/2);set({...mv,x:mv.x-(m1.x-m0.x),y:mv.y-(m1.y-m0.y)})}};
+let dragged=false;
+const up=e=>{if(!P.has(e.pointerId))return;P.delete(e.pointerId);if(P.size===1){const[r]=[...P.values()];start={...r};moved=true;pd=0}dragged=moved};
+svg.onpointerup=up;svg.onpointercancel=e=>{P.delete(e.pointerId)};
+/* тап (клик без перетаскивания): остров — подлететь и открыть; море — свернуть карточку; два тапа — приблизить */
+svg.onclick=e=>{if(dragged){dragged=false;return}const g=e.target.closest&&e.target.closest("[data-i]");
+if(g){const i=g.dataset.i;return drawW(i==="inv"||i==="bottle"?i:+i,i)}
+const now=Date.now();if(now-lastTap<320){const p=toSvg(e.clientX,e.clientY);zoomAt(p.x,p.y,1.8);lastTap=0;return}lastTap=now;$("sh").classList.add("min")};
+svg.addEventListener("wheel",e=>{e.preventDefault();const p=toSvg(e.clientX,e.clientY);zoomAt(p.x,p.y,Math.exp(-e.deltaY*.0015))},{passive:false});
+const mid=()=>[mv.x+mv.w/2,mv.y+mv.h/2];
+$("zi").onclick=()=>{const[c,d]=mid();flyTo(c,d,Math.max(mv.w/1.6,base.w/5))};$("zo").onclick=()=>{const[c,d]=mid();flyTo(c,d,Math.min(mv.w*1.6,base.w*1.6))};
+$("zm").onclick=()=>focus(0)}
+function world(pick){pick=typeof pick==="string"?pick:null;busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);const fi=focus?W.friends.findIndex(f=>f.id===focus):-1;focus=null;if(pick)return drawW(pick);const s=(fi>=0?fi:W.friends.findIndex(f=>f.turn==="me"||f.mark))+1;drawW(s,s?String(s):undefined)},()=>oops(world))}
+function drawW(sel,fly){setNav(sel==="bottle"?"bottle":"map");document.body.classList.add("on-map");const z=W.me.island,fs=TG&&TG.requestFullscreen&&TG.isVersionAtLeast&&TG.isVersionAtLeast("8.0");
+app.innerHTML=`<div id="mapw">${artWorld(W,sel)}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="К моему острову">◎</button>${fs?`<button id="fs" aria-label="Во весь экран">⛶</button>`:""}</div>
+<div class="card" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
+if(sel===0&&fly==null)$("sh").classList.add("min");  /* открыли карту: видно всё море, карточка свёрнута */
+fitMap();const sv=app.querySelector("#mapw>svg");try{mapCtl(sv,sel,fly)}catch(e){}  /* нет жестов — острова всё равно нажимаются */
+if(!sv.onclick)sv.onclick=e=>{const g=e.target.closest("[data-i]");if(g){const i=g.dataset.i;drawW(i==="inv"||i==="bottle"?i:+i)}};
+$("grab").onclick=()=>$("sh").classList.toggle("min");if(fs)$("fs").onclick=()=>{try{TG.isFullscreen?TG.exitFullscreen():TG.requestFullscreen()}catch(e){}};
 const pn=$("pn"),btn=(id,t,main)=>`<button class="${main?"main-btn":"n"}" id="${id}">${t}</button>`,f=sel>0?W.friends[sel-1]:null;
 if(sel==="bottle"){pn.innerHTML=`<h2>Бутылка в море</h2><p style="margin:0">Незнакомцы бросают в море бутылки с ответами о себе. Выловишь — угадаешь, как поступает человек, которого ты никогда не видел.</p>
 <p class="note" style="margin:0">Мост строится, только если вы оба захотите. Поболтать можно в клубе <a href="https://t.me/joydao_club">@joydao_club</a>.</p><div class="row">${btn("bc","Выловить бутылку",1)}${btn("bt","Бросить свою")}</div>`;
@@ -473,6 +519,7 @@ $("bc").onclick=catchBottle;$("bt").onclick=()=>fresh("hero",{bottle:1});return}
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");return}
 if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
+<p class="note" style="margin:0">Море — общее и нейтральное. Цветы растут, когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>
 <div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("so","Играть одному")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");return}
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
