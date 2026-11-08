@@ -172,7 +172,7 @@ function go(){if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.leng
 if(st.join&&st.friend&&st.friend.pending)return st.story&&st.sg===undefined?storyGuess():sendPlay();
 if(API&&(M==="hero"||M==="duo"&&!st.friend))return shareTG(M);
 if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")guessResult();else result();tail(M)}
-function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<button class="main-btn" id="mp">На карту</button>`:""}<button class="${API?"n":"main-btn"}" id="sw">Вызов на 7 дней</button>${M!=="guess"?`<button class="n" id="gd">Мой сад: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=()=>stepWeek(curFid&&st.friend?st.friend.name:"");if(M!=="guess")$("gd").onclick=garden;if(API)$("mp").onclick=world}
+function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<button class="main-btn" id="mp">На карту</button>`:""}<button class="${API?"n":"main-btn"}" id="sw">Удиви себя</button>${M!=="guess"?`<button class="n" id="gd">Мой сад: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=()=>stepWeek(curFid&&st.friend?st.friend.name:"");if(M!=="guess")$("gd").onclick=garden;if(API)$("mp").onclick=world}
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
@@ -213,7 +213,7 @@ const plan=()=>w<3&&o<3?SP[w][o]:`${w<3?W[w]:`«${own.what||"…"}» — ${own.w
 const bonus=()=>mate()?"Когда отметишь в саду «Так и сделал», ваш мост (ты и "+mate()+") получит +3 доски.":"Впиши имя, и дело укрепит ваш мост.";
 const chips=(a,id,cur)=>`<div class="row" id="${id}">${a.map((x,k)=>`<button class="${k===cur?"t":"n"}" data-k="${k}">${esc(x)}</button>`).join("")}</div>`;
 const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" maxlength="${max}" placeholder="${ph}" value="${esc(v)}">`;
-const draw=()=>{app.innerHTML=`<h1>Новый вызов на ближайшие семь дней!</h1>${ins?`<div class="card"><span class="who">Что показала игра</span><p style="margin:0">${ins}</p></div>`:""}
+const draw=()=>{app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${ins?`<div class="card"><span class="who">Что показала игра</span><p style="margin:0">${ins}</p></div>`:""}
 <div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
 ${w===3?fld("ow","Что сделаем","Испечь пиццу в печи",own.what,80)+fld("on","Когда и где","В субботу вечером, у меня во дворе",own.when,60):""}
 <div class="zone">2. Что может помешать</div>${chips(O,"co",o)}
@@ -231,7 +231,7 @@ $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw
 $("tg").onchange=()=>{tg=$("tg").checked;draw()};
 $("bk").onclick=()=>st.started?go():home();
 $("pt").onclick=()=>{const miss=w===3&&!own.what.trim()?"Напиши, что сделаешь":w===3&&!own.when.trim()?"Напиши, когда и где — так план сработает вернее":o===3&&!own.obs.trim()?"Напиши, что может помешать":ownAct()&&!own.act.trim()?"Напиши, что сделаешь, если помешает":"";if(miss){$("er").textContent=miss;return}
-tg=$("tg").checked;const m=tg?mate():"";seeds.push({c:"Вызов на 7 дней",q:(w<3?W[w]:"Своё дело")+" · помеха: "+obs()+(tg?" · вдвоём: я и "+(m||"друг"):""),r:plan(),z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1,with:m,fid:tg&&fr?curFid:null});saveSeeds();garden()}};draw()}
+tg=$("tg").checked;const m=tg?mate():"";seeds.push({c:"Удиви себя",q:(w<3?W[w]:"Своё дело")+" · помеха: "+obs()+(tg?" · вдвоём: я и "+(m||"друг"):""),r:plan(),z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1,with:m,fid:tg&&fr?curFid:null});saveSeeds();garden()}};draw()}
 /* вне Telegram: игра живёт в Telegram — там аккаунт, карта, друзья и сад на любом устройстве */
 function home(){if(API)return world();
 app.innerHTML=`<h1>Ну-ну</h1><div class="card"><p style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
@@ -417,7 +417,7 @@ const pn=$("pn"),btn=(id,t,main)=>`<button class="${main?"main-btn":"n"}" id="${
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");return}
 if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Сад ${z[0]} · лес ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
-<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("so","Играть одному")}${btn("gd","Мой сад: "+seeds.length)}${btn("sw","Вызов на 7 дней")}</div>`;
+<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("so","Играть одному")}${btn("gd","Мой сад: "+seeds.length)}${btn("sw","Удиви себя")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");$("gd").onclick=garden;$("sw").onclick=()=>{curFid=null;stepWeek()};return}
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
