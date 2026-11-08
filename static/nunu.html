@@ -6,6 +6,7 @@
 <style>
 html{-webkit-text-size-adjust:100%}*{box-sizing:border-box}
 /* Layout: one narrow card column, like a phone passed hand to hand */
+html{font-size:calc(16px * var(--fs,1))}
 :root{--bg:#EDF2EE;--card:#FFFFFF;--fg:#1D2A25;--muted:#5D6B65;--line:#D4DDD8;--sand:#F3E8CF;--sand-fg:#6B4A12;
 --sad:#FBEAF0;--sad-fg:#72243E;--sad-b:#D4537E;--les:#E1F5EE;--les-fg:#085041;--les-b:#1D9E75;--sk:#F1EFE8;--sk-fg:#444441;--sk-b:#888780;--acc:#1D7A5C;--acc-fg:#fff;--sea:#CFE6EE;--grass:#DDEBC6;--fog:rgba(255,255,255,.55);
 --disp:"Unbounded",system-ui,sans-serif;--body:"Golos Text",system-ui,sans-serif}
@@ -13,14 +14,15 @@ html{-webkit-text-size-adjust:100%}*{box-sizing:border-box}
 --sad:#4B1528;--sad-fg:#F4C0D1;--les:#04342C;--les-fg:#9FE1CB;--sk:#2C2C2A;--sk-fg:#D3D1C7;--acc:#5DCAA5;--acc-fg:#04342C;--sea:#0F2A35;--grass:#2C3A1E;--fog:rgba(18,26,23,.55);color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#121A17;--card:#1B2521;--fg:#E6EEEA;--muted:#9DADA6;--line:#2E3B36;--sand:#3A2F1A;--sand-fg:#F2D9A6;
 --sad:#4B1528;--sad-fg:#F4C0D1;--les:#04342C;--les-fg:#9FE1CB;--sk:#2C2C2A;--sk-fg:#D3D1C7;--acc:#5DCAA5;--acc-fg:#04342C;--sea:#0F2A35;--grass:#2C3A1E;--fog:rgba(18,26,23,.55);color-scheme:dark}
-body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding-block:24px;padding-top:calc(24px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body{background:var(--bg);color:var(--fg);font:1rem/1.6 var(--body);padding-block:24px;padding-top:calc(24px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 /* постоянное меню внизу, как в приложениях: карта, сад, удиви себя, бутылка */
 body.has-nav{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 #nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
 #nav div{display:flex;width:100%;max-width:560px;justify-content:space-around}
-#nav button{border:0;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;padding:6px 10px;min-width:64px;text-align:center}
-#nav button[aria-current="page"]{color:var(--acc)}#nav svg{width:24px;height:24px}
+#nav button{border:0;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;padding:6px 4px;min-width:0;flex:1;text-align:center;line-height:1.2;white-space:nowrap}
+#nav button[aria-current="page"]{color:var(--acc)}
+.sw{width:44px;height:44px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line);padding:0}.sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--fg)}#nav svg{width:24px;height:24px}
 /* карта как карта: на весь экран, жесты, кнопки поверх, карточка снизу */
 body.on-map{padding-top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
 #mapw{position:relative;border-radius:16px;overflow:hidden;background:#86C3D4;touch-action:none;user-select:none;-webkit-user-select:none;min-height:320px}
@@ -28,21 +30,21 @@ body.on-map{padding-top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-
 .mctl{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:8px}
 .mctl button{width:44px;height:44px;border-radius:12px;border:1px solid #D9C9A3;background:#FFF8E7;color:#3B2F1A;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
 #sh{position:absolute;left:8px;right:8px;bottom:8px;max-height:46%;overflow:auto;gap:10px;padding-top:8px;box-shadow:0 -6px 24px rgba(0,0,0,.28)}
-#sh.min{max-height:62px;overflow:hidden}
+#sh.min{max-height:calc(2.2rem + 30px);overflow:hidden}
 #grab{display:block;width:44px;height:16px;border:0;padding:0;margin:0 auto;background:none;flex:none}
 #grab::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:5px auto}
-h1{font:500 22px/1.3 var(--disp);margin:0;text-wrap:balance}
-h2{font:500 18px/1.4 var(--disp);margin:0;text-wrap:balance}
+h1{font:500 1.375rem/1.3 var(--disp);margin:0;text-wrap:balance}
+h2{font:500 1.125rem/1.4 var(--disp);margin:0;text-wrap:balance}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px}
-.meta{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.meta{font-size:0.8125rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .ask{display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:14px;border:2px solid}
-.ask .av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 18px var(--disp);flex:none}
-.ask b{display:block;font-size:17px;font-weight:600}.ask small{font-size:13px}
+.ask .av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 1.125rem var(--disp);flex:none}
+.ask b{display:block;font-size:1.0625rem;font-weight:600}.ask small{font-size:0.8125rem}
 .ask.me{background:var(--sand);color:var(--sand-fg);border-color:var(--sand-fg)}.ask.me .av{background:var(--sand-fg);color:var(--sand)}
 .ask.fr{background:var(--les);color:var(--les-fg);border-color:var(--les-b)}.ask.fr .av{background:var(--les-b);color:#fff}
-.who{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--sand-fg);background:var(--sand);padding:4px 10px;border-radius:99px;align-self:flex-start}
-.q{font-size:18px;font-weight:500;line-height:1.5}
-.zone{font-size:13px;color:var(--muted);margin-top:4px}
+.who{font-size:0.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--sand-fg);background:var(--sand);padding:4px 10px;border-radius:99px;align-self:flex-start}
+.q{font-size:1.125rem;font-weight:500;line-height:1.5}
+.zone{font-size:0.8125rem;color:var(--muted);margin-top:4px}
 .row{display:flex;flex-wrap:wrap;gap:8px}
 button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid;padding:9px 13px;text-align:left;line-height:1.35}
 button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
@@ -52,16 +54,16 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .n{background:var(--card);color:var(--fg);border-color:var(--line)}.n:hover{border-color:var(--muted)}
 .main-btn{background:var(--acc);color:var(--acc-fg);border-color:var(--acc);font-weight:500;align-self:flex-start;padding:11px 18px}
 input,textarea{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);flex:1;min-width:0}textarea{resize:vertical;width:100%}
-.err{font-size:13px;color:#C0392B;min-height:1em}
+.err{font-size:0.8125rem;color:#C0392B;min-height:1em}
 .pass{text-align:center;align-items:center;padding:40px 20px}
 .res{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
-.res .s{font-size:14px;color:var(--muted)}
-.tag{font-size:12px;padding:2px 8px;border-radius:99px;display:inline-block}
+.res .s{font-size:0.875rem;color:var(--muted)}
+.tag{font-size:0.75rem;padding:2px 8px;border-radius:99px;display:inline-block}
 .open{background:var(--les);color:var(--les-fg)}.fog{background:var(--sk);color:var(--sk-fg)}
 .isl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .isl div{border-radius:12px;padding:12px}
-.isl b{font:500 28px var(--disp);display:block;font-variant-numeric:tabular-nums}
-.note{font-size:13px;color:var(--muted)}
+.isl b{font:500 1.75rem var(--disp);display:block;font-variant-numeric:tabular-nums}
+.note{font-size:0.8125rem;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}
 /* карта живёт: волны плывут, бутылка качается, «твой ход» пульсирует; кто просил меньше движения — всё стоит */
 .wv{animation:wv 7s linear infinite}@keyframes wv{to{transform:translateX(46px)}}
@@ -170,7 +172,29 @@ const ls={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return 
 Каждый лишний шаг отсекает часть людей (Fogg, B=MAP), поэтому никаких кодов. Вне Telegram — страница «Открыть в Telegram» */
 const API=TG?(p,m="GET",d)=>fetch("/nunu/api"+p,{method:m,headers:{"X-Init-Data":TG.initData,"Content-Type":"application/json"},body:d&&JSON.stringify(d)}).then(r=>r.ok?r.json():Promise.reject(r.status)):null;
 let pushT,tgName="";
-function push(){if(!API)return;clearTimeout(pushT);pushT=setTimeout(()=>API("/state","PUT",{data:{nunu2:st,"nunu-seeds":seeds,"nunu-bridges":bridges}}).catch(()=>{}),800)}
+/* настройки: тема, цвет акцента, размер текста; живут в аккаунте вместе с садом */
+const ACC={teal:["Бирюза","#1D7A5C","#fff","#5DCAA5","#04342C"],coral:["Коралл","#B5482A","#fff","#F0997B","#4A1B0C"],blue:["Синий","#1F6FB8","#fff","#85B7EB","#042C53"],
+violet:["Фиолетовый","#5A4FC4","#fff","#AFA9EC","#26215C"],amber:["Янтарь","#8F530C","#fff","#EF9F27","#412402"]},FS=[.875,1,1.125,1.25,1.4];
+let prefs={theme:"auto",acc:"teal",fs:1,...(ls.get("nunu-prefs")||{})};
+function applyPrefs(){const r=document.documentElement,a=ACC[prefs.acc]||ACC.teal,
+dark=prefs.theme==="dark"||prefs.theme==="auto"&&(TG&&TG.colorScheme?TG.colorScheme==="dark":!!(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches));
+r.dataset.theme=dark?"dark":"light";r.style.setProperty("--acc",dark?a[3]:a[1]);r.style.setProperty("--acc-fg",dark?a[4]:a[2]);r.style.setProperty("--fs",prefs.fs);
+try{TG&&TG.setHeaderColor&&TG.setHeaderColor(getComputedStyle(r).getPropertyValue("--bg").trim());TG&&TG.setBackgroundColor&&TG.setBackgroundColor(getComputedStyle(r).getPropertyValue("--bg").trim())}catch(e){}}
+applyPrefs();try{TG&&TG.onEvent("themeChanged",applyPrefs)}catch(e){}
+function settings(){setNav("settings");const b=(id,txt,on)=>`<button class="${on?"t":"n"}" id="${id}" aria-pressed="${on}">${txt}</button>`,i=FS.indexOf(prefs.fs);
+app.innerHTML=`<h1>Настройки</h1>
+<div class="card"><h2>Тема</h2><div class="row">${b("th-auto","Как в Telegram",prefs.theme==="auto")}${b("th-light","Светлая",prefs.theme==="light")}${b("th-dark","Тёмная",prefs.theme==="dark")}</div></div>
+<div class="card"><h2>Цвет</h2><div class="row">${Object.entries(ACC).map(([k,a])=>`<button class="sw" data-a="${k}" aria-label="${a[0]}" aria-pressed="${prefs.acc===k}" style="background:${r_dark()?a[3]:a[1]}"></button>`).join("")}</div>
+<p class="note" style="margin:0">${ACC[prefs.acc][0]}: кнопки, меню и выделение.</p><button class="main-btn" style="align-self:flex-start">Так выглядит кнопка</button></div>
+<div class="card"><h2>Размер текста</h2><div class="row" style="align-items:center"><button class="n" id="fs-" aria-label="Мельче" ${i<=0?"disabled":""}>А−</button>
+<b style="font-weight:500;min-width:64px;text-align:center">${Math.round(prefs.fs*100)}%</b><button class="n" id="fs+" aria-label="Крупнее" ${i>=FS.length-1?"disabled":""}>А+</button></div>
+<p style="margin:0">Так будет выглядеть текст в игре: карточки, ответы и сад.</p><p class="note" style="margin:0">Подписи на карте приближаются жестами: щипком или кнопкой «+».</p></div>`;
+const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
+["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});
+app.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{prefs.acc=x.dataset.a;save2()});
+$("fs-").onclick=()=>{prefs.fs=FS[Math.max(0,i-1)];save2()};$("fs+").onclick=()=>{prefs.fs=FS[Math.min(FS.length-1,i+1)];save2()}}
+const r_dark=()=>document.documentElement.dataset.theme==="dark";
+function push(){if(!API)return;clearTimeout(pushT);pushT=setTimeout(()=>API("/state","PUT",{data:{nunu2:st,"nunu-seeds":seeds,"nunu-bridges":bridges,"nunu-prefs":prefs}}).catch(()=>{}),800)}
 /* ответ = индекс варианта; у сцен 0-1 сад, 2-3 лес, 4-5 скалы; 6 = «Проехали» */
 const PASS=6,opt=(s,x)=>x===PASS?"Проехали":Array.isArray(x)?x.map(k=>s.o[k]).join(" и "):s.o[x],Z=(s,x)=>s.z&&x<PASS?x>>1:-1;
 let st=ls.get("nunu2")||{name:"",s:[],g:[],friend:null},draft=null;
@@ -442,7 +466,8 @@ return g+`</svg>`}
 let W=null,curFid=null,focus=null;
 /* меню: всегда под рукой; «Назад» в шапке Telegram ведёт на карту; новый экран — сверху */
 const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],
-["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],["bottle","Бутылка","M10 2h4v3l1.5 2.5V20a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V7.5L10 5z",()=>W?drawW("bottle"):world("bottle")]];
+["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],["bottle","Бутылка","M10 2h4v3l1.5 2.5V20a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V7.5L10 5z",()=>W?drawW("bottle"):world("bottle")],
+["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];
 const nav={cur:undefined};
 function setNav(s){if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
 if(!el){el=document.createElement("nav");el.id="nav";el.setAttribute("aria-label","Меню");document.body.appendChild(el);document.body.classList.add("has-nav");
@@ -567,7 +592,7 @@ return`<div class="card"><h2>Своя ситуация</h2><div class="q">${esc(
 function busy(t){card(`<p style="margin:0">${t}</p>`)}
 function oops(f){card(`<p style="margin:0">Не получилось связаться с сервером. Проверь интернет.</p><button class="main-btn" id="rt">Ещё раз</button>`);$("rt").onclick=f}
 /* ссылка: в чат Telegram, скопировать или QR-код — когда все рядом (режим компании) */
-const linkBox=(t,l=st.glink)=>`<div style="font:500 15px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(l)}</div>
+const linkBox=(t,l=st.glink)=>`<div style="font:500 0.9375rem var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(l)}</div>
 <div class="row"><button class="main-btn" id="snd">Отправить в Telegram</button><button class="n" id="qr">QR-код</button><button class="n" id="cp">Скопировать</button></div><div id="qrb" style="display:flex;flex-direction:column;gap:8px"></div><p class="note" style="margin:0" id="cpn">${t}</p>`;
 function qrShow(l){const box=$("qrb");if(box.innerHTML){box.innerHTML="";return}
 const draw=()=>{const q=qrcode(0,"M");q.addData(l);q.make();box.innerHTML=`<div style="background:#fff;padding:8px;border-radius:12px;align-self:center;width:min(100%,280px)">${q.createSvgTag({cellSize:6,margin:3,scalable:true})}</div><p class="note" style="margin:0;text-align:center">Наведи камеру телефона — откроется игра в Telegram</p>`};
@@ -599,7 +624,7 @@ st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mo
 :{name:st.name||tgName||"Друг",seed:v.seed,s:[],g:[],mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,pending:1},story:v.story||null,bottle:v.bottle};save()}
 async function boot(){if(!API)return home();busy("Загружаю твой остров…");
 try{const r=await API("/state"),d=r.data;tgName=r.name||"";
-if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-bridges"])bridges=d["nunu-bridges"]}else push();
+if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-bridges"])bridges=d["nunu-bridges"];if(d["nunu-prefs"]){prefs={...prefs,...d["nunu-prefs"]};ls.set("nunu-prefs",prefs);applyPrefs()}}else push();
 const sp=(TG.initDataUnsafe||{}).start_param;
 if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.friend)focus=r.friend.id;return world()}
 /* открыли по ссылке на партию — сразу в неё (даже если это текущая); иначе дом — карта,
