@@ -180,7 +180,7 @@ function go(){if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.leng
 if(st.join&&st.friend&&st.friend.pending)return sendPlay();
 if(API&&(M==="hero"||M==="duo"&&!st.friend))return shareTG(M);
 if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")guessResult();else if(!st.friend)share();else result();tail(M)}
-function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row"><button class="main-btn" id="sw">Дело на неделю</button>${M!=="guess"?`<button class="n" id="gd">Мой сад: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=stepWeek;if(M!=="guess")$("gd").onclick=garden}
+function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<button class="main-btn" id="mp">На карту</button>`:""}<button class="${API?"n":"main-btn"}" id="sw">Дело на неделю</button>${M!=="guess"?`<button class="n" id="gd">Мой сад: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=()=>stepWeek(curFid&&st.friend?st.friend.name:"");if(M!=="guess")$("gd").onclick=garden;if(API)$("mp").onclick=world}
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
@@ -202,7 +202,7 @@ ${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты 
 h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`;
 app.innerHTML=h;
 app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;const x=seeds[k];x.life={same:b.dataset.s==="1",note:$("nt"+k).value.trim().slice(0,200),d:new Date().toISOString().slice(0,10)};
-if(x.with&&x.life.same&&!x.bridged){bridges[x.with]=(bridges[x.with]||0)+3;x.bridged=1;ls.set("nunu-bridges",bridges)}saveSeeds();garden()});
+if(x.with&&x.life.same&&!x.bridged){const k=x.fid?"id:"+x.fid:x.with;bridges[k]=(bridges[k]||0)+3;if(x.fid&&API)API("/friend/"+x.fid+"/deed","POST").catch(()=>{});x.bridged=1;ls.set("nunu-bridges",bridges)}saveSeeds();garden()});
 $("fa").onclick=()=>{onlyMine=false;garden()};$("fm").onclick=()=>{onlyMine=true;garden()};
 $("bk").onclick=()=>st.started?go():home()}
 /* дело на неделю: план «если помеха — то действие» (Gollwitzer & Sheeran 2006) после мысли о помехе (Oettingen, MCII).
@@ -236,8 +236,8 @@ $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw
 $("tg").onchange=()=>{tg=$("tg").checked;draw()};
 $("bk").onclick=()=>st.started?go():home();
 $("pt").onclick=()=>{if(w===3){const miss=!own.what.trim()?"Напиши, что сделаешь":!own.when.trim()?"Напиши, когда и где — так план сработает вернее":!own.act.trim()?"Напиши, что сделаешь, если помешает":"";if(miss){$("er").textContent=miss;return}}
-tg=$("tg").checked;const m=tg?mate():"";seeds.push({c:"Дело на неделю",q:(w<3?W[w]:"Своё дело")+" · помеха: "+SO[o].toLowerCase()+(tg?" · вдвоём: я и "+(m||"друг"):""),r:plan(),z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1,with:m});saveSeeds();garden()}};draw()}
-function home(){
+tg=$("tg").checked;const m=tg?mate():"";seeds.push({c:"Дело на неделю",q:(w<3?W[w]:"Своё дело")+" · помеха: "+SO[o].toLowerCase()+(tg?" · вдвоём: я и "+(m||"друг"):""),r:plan(),z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:false,step:1,with:m,fid:tg&&fr?curFid:null});saveSeeds();garden()}};draw()}
+function home(){if(API)return world();
 app.innerHTML=`<h1>Ну-ну</h1><p class="note" style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
 <div class="card"><p style="margin:0">Каждый у себя отвечает на 10 карточек: о себе и о том, как ответит друг. Потом ${API?"отправляешь другу ссылку":"вы обмениваетесь кодами"} и смотрите, кто кого понял.</p>
 <label class="note" for="nm">Твоё имя</label><input id="nm" placeholder="Например, Антон" maxlength="30" value="${esc(st.name||tgName)}">${API?"":`<label class="note" for="fc0">Код друга, если он тебя позвал</label><input id="fc0" placeholder="NN...-Имя (можно оставить пустым)">`}<div class="err" id="e"></div>
@@ -254,7 +254,7 @@ const ask=(me,name)=>me?`<div class="ask me"><span class="av">Я</span><div><b>�
 function play(i){
 st.started=1;const M=st.mode||(st.solo?"solo":"duo"),one=M!=="duo",s=sit(i),self=draft===null;
 card(`<div class="meta"><span>${i+1} из ${N} · уровень ${s.lv} · ${s.c}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
-${M==="guess"?ask(0,st.friend.name):self?ask(1):ask(0,st.friend&&st.friend.name)}<div class="q">${s.q}</div><div id="o"></div>`);
+${M==="guess"?ask(0,st.friend.name):self?ask(1):ask(0,st.friend&&st.friend.name||st.toName)}<div class="q">${s.q}</div><div id="o"></div>`);
 const idx=s.o.map((_,k)=>k);for(let k=idx.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
 const r=document.createElement("div");r.className="row";
 const ans=x=>{if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};
@@ -333,12 +333,14 @@ v.forEach((x,k)=>{const cx=48+k*(224/(N-1))-7;g+=x?x>=max?`<rect x="${cx}" y="30
 return g+`</svg>`}
 /* ponytail: стадии моста по Холлу (канат → верёвка → доски → камень); пороги в досках условные, подстроить по данным */
 let bridges=ls.get("nunu-bridges")||{};
-function addBridge(name,n){if(st.bridged===1||(st.bb=st.bb||{})[name])return;bridges[name]=(bridges[name]||0)+n;st.bb[name]=1;save();ls.set("nunu-bridges",bridges)}
+const bkey=name=>API&&st.friend&&st.friend.id?"id:"+st.friend.id:name;
+function addBridge(name,n){if(st.bridged===1||(st.bb=st.bb||{})[name])return;const k=bkey(name),f=st.friend;bridges[k]=(bridges[k]||0)+n;st.bb[name]=1;save();
+if(API&&f&&f.id&&(st.gid||st.join))API("/game/"+(st.gid||st.join)+"/boards","POST",{friend:f.id,n}).catch(()=>{});ls.set("nunu-bridges",bridges)}
 const STG=[[0,"канатный"],[10,"верёвочный"],[30,"дощатый"],[60,"каменный"]],pl=(n,f)=>n%10===1&&n%100!==11?f[0]:n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?f[1]:f[2];
 /* карточка моста: что значит, где вы сейчас, сколько до следующей стадии и как укрепить.
 Близость цели подгоняет (goal-gradient, Kivetz et al. 2006); совместные дела сближают сильнее разговоров (Hall 2019) */
 function bridgeCard(v,max,name,title){const b=v.filter(x=>x>=max).length,r=v.filter(x=>x&&x<max).length;addBridge(name,b+r/2);
-const t=bridges[name]||0,i=STG.filter(s=>t>=s[0]).length-1,nx=STG[i+1],left=nx?Math.ceil(nx[0]-t):0;
+curFid=st.friend&&st.friend.id||null;const t=bridges[bkey(name)]||0,i=STG.filter(s=>t>=s[0]).length-1,nx=STG[i+1],left=nx?Math.ceil(nx[0]-t):0;
 return`<div class="card"><h2>${title}</h2>${bridge(v,max)}
 <p style="margin:0">В этой игре: ${b} ${pl(b,["доска","доски","досок"])} и ${r} ${pl(r,["верёвочка","верёвочки","верёвочек"])}.</p>
 <p class="note" style="margin:0">Доска — вы поняли друг друга точно. Верёвочка — почти угадали или понял только один. Пусто — пока не поняли.</p>
@@ -348,7 +350,7 @@ ${nx?`<div style="height:8px;border-radius:99px;background:var(--line)" role="im
 <div class="zone">Как укрепить мост</div>
 <div class="row"><button class="main-btn" id="brd">Сделать дело вместе: +3 доски</button><button class="n" id="brp">Ещё партию</button></div>
 <p class="note" style="margin:0">Общее дело в жизни сближает сильнее разговоров. Выберите его вместе, а когда сделаете — отметь в саду.</p></div>`}
-function bridgeBtns(name){$("brd").onclick=()=>stepWeek(name);$("brp").onclick=()=>{st={name:st.name,seed:newSeed(),s:[],g:[],friend:null,started:1,mode:"duo",guessers:[]};save();go()}}
+function bridgeBtns(name){$("brd").onclick=()=>stepWeek(name);$("brp").onclick=()=>{const f=st.friend;st={name:st.name,seed:newSeed(),s:[],g:[],friend:null,started:1,mode:"duo",guessers:[],...(API&&f&&f.id?{to:f.id,toName:f.name}:{})};save();go()}}
 function result(){
 const f=st.friend,fn=esc(f.name),L=["Не угадал","Почти угадал","Точно в цель"];
 const v=[...Array(N)].map((_,k)=>hit(sit(k),f.s[k],st.g[k])+hit(sit(k),st.s[k],f.g[k]));
@@ -367,6 +369,79 @@ h+=`${API?J?`<p class="note">${fn} увидит ваш мост у себя: б�
 app.innerHTML=h;bridgeBtns(f.name);if(!J)$("bk").onclick=()=>{st.friend=null;save();go()};$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 /* внутри Telegram ссылки на t.me открываем средствами Telegram */
 document.addEventListener("click",e=>{const a=e.target.closest("a[href^='https://t.me/']");if(a&&TG){e.preventDefault();TG.openTelegramLink(a.href)}});
+/* ===== Карта мира (этап 2): море — нейтральное пространство, острова — личности.
+Кисть отделена от механики: world() собирает данные с сервера, art*() только рисуют.
+Сменить стиль = переписать art*(), игру и сервер не трогать. ===== */
+const rnd=s=>()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const f1=x=>x.toFixed(1);
+/* остров сверху и чуть сбоку: клякса из трёх гармоник, сплюснутая по вертикали, сглаженная кривыми Безье */
+function blob(cx,cy,R,ph,k){const n=24,p=[];for(let i=0;i<n;i++){const a=i/n*2*Math.PI,q=R*k*(1+.13*Math.sin(3*a+ph[0])+.08*Math.sin(5*a+ph[1])+.05*Math.sin(2*a+ph[2]));p.push([cx+q*Math.cos(a),cy+q*.72*Math.sin(a)])}
+let d=`M${f1(p[0][0])} ${f1(p[0][1])}`;for(let i=0;i<n;i++){const a=p[(i-1+n)%n],b=p[i],c=p[(i+1)%n],e=p[(i+2)%n];
+d+=`C${f1(b[0]+(c[0]-a[0])/6)} ${f1(b[1]+(c[1]-a[1])/6)} ${f1(c[0]-(e[0]-b[0])/6)} ${f1(c[1]-(e[1]-b[1])/6)} ${f1(c[0])} ${f1(c[1])}`}return d+"Z"}
+const artFlower=(x,y,s)=>`<line x1="${f1(x)}" y1="${f1(y)}" x2="${f1(x)}" y2="${f1(y+6*s)}" stroke="#4E8A2E" stroke-width="${f1(1.4*s)}"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(3.4*s)}" fill="#E0709A"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(1.4*s)}" fill="#FAD27A"/>`;
+const artTree=(x,y,s)=>`<ellipse cx="${f1(x+2*s)}" cy="${f1(y+7*s)}" rx="${f1(5*s)}" ry="${f1(1.8*s)}" fill="#5E8F45" opacity=".5"/><rect x="${f1(x-1*s)}" y="${f1(y+3*s)}" width="${f1(2*s)}" height="${f1(4*s)}" fill="#7A5230"/><polygon points="${f1(x)},${f1(y-9*s)} ${f1(x-6*s)},${f1(y+4*s)} ${f1(x+6*s)},${f1(y+4*s)}" fill="#2E7D5B"/><polygon points="${f1(x)},${f1(y-9*s)} ${f1(x-3.5*s)},${f1(y-1*s)} ${f1(x+1*s)},${f1(y-1*s)}" fill="#47A077"/>`;
+const artRock=(x,y,s)=>`<polygon points="${f1(x-7*s)},${f1(y+5*s)} ${f1(x-3*s)},${f1(y-4*s)} ${f1(x+2*s)},${f1(y-6*s)} ${f1(x+7*s)},${f1(y+5*s)}" fill="#9A978E"/><polygon points="${f1(x-3*s)},${f1(y-4*s)} ${f1(x+2*s)},${f1(y-6*s)} ${f1(x)},${f1(y+1*s)}" fill="#C8C5BC"/>`;
+const artTuft=(x,y,s)=>`<path d="M${f1(x-3*s)} ${f1(y+2*s)}q${f1(1*s)} ${f1(-4*s)} ${f1(2*s)} ${f1(-5*s)}M${f1(x)} ${f1(y+2*s)}v${f1(-6*s)}M${f1(x+3*s)} ${f1(y+2*s)}q${f1(-1*s)} ${f1(-4*s)} ${f1(-2*s)} ${f1(-5*s)}" stroke="#6FA34A" stroke-width="${f1(1.2*s)}" fill="none" stroke-linecap="round"/>`;
+/* растения из ответов: сад — цветы (к людям), лес — деревья (пауза), скалы — камни (на своём) */
+function artIsland(cx,cy,R,id,z,name,badge,on){const r=rnd(id*7919+13),ph=[r()*6,r()*6,r()*6],B=(k,dy=0)=>blob(cx,cy+dy,R,ph,k),s=R/40;
+if(on==="halo")return`<path d="${B(1.34)}" fill="#BCE4EC"/>`;
+let g=`<path d="${B(1.04,4)}" fill="#4F8FA3" opacity=".35"/><path d="${B(1.08)}" fill="none" stroke="#fff" stroke-width="1.6" opacity=".75"/>
+<path d="${B(1)}" fill="#EFDDB0"/><path d="${B(.84,-1)}" fill="#A8CF7C"/><path d="${blob(cx,cy-R*.1,R,ph,.5)}" fill="#97C46D"/>`;
+const cap=k=>Math.min(z[k],6),kinds=[...Array(cap(0)).fill(0),...Array(cap(1)).fill(1),...Array(cap(2)).fill(2)],pts=[];
+if(!kinds.length)for(let i=0;i<3;i++)kinds.push(3);
+kinds.forEach(k=>{for(let t=0;t<40;t++){const a=r()*2*Math.PI,q=Math.sqrt(r())*.68,x=cx+q*R*Math.cos(a),y=cy+q*R*.5*Math.sin(a);
+if(pts.every(p=>Math.hypot(p[0]-x,(p[1]-y)*1.4)>10*s)){pts.push([x,y,k]);break}}});
+pts.sort((a,b)=>a[1]-b[1]).forEach(([x,y,k])=>g+=[artFlower,artTree,artRock,artTuft][k](x,y,s));
+const w=name.length*7+16,ty=cy+R*.72+14;
+g+=`<rect x="${f1(cx-w/2)}" y="${f1(ty-10)}" width="${w}" height="20" rx="10" fill="#FFF8E7" stroke="${on?"#1D7A5C":"#D9C9A3"}" stroke-width="${on?2:1}"/><text x="${f1(cx)}" y="${f1(ty+4)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">${esc(name)}</text>`;
+if(badge==="me")g+=`<circle cx="${f1(cx+R*.85)}" cy="${f1(cy-R*.55)}" r="9" fill="#D85A30" stroke="#fff" stroke-width="2"/><text x="${f1(cx+R*.85)}" y="${f1(cy-R*.55+4)}" text-anchor="middle" font-size="12" fill="#fff" font-family="Golos Text,system-ui">!</text>`;
+if(badge==="them")g+=`<circle cx="${f1(cx+R*.85)}" cy="${f1(cy-R*.55)}" r="9" fill="#fff" stroke="#9DADA6"/><text x="${f1(cx+R*.85)}" y="${f1(cy-R*.55+3)}" text-anchor="middle" font-size="12" fill="#5D6B65">…</text>`;
+return g}
+/* мост по стадиям Холла: канатный → верёвочный → дощатый → каменный */
+function artBridge(a,b,boards){const i=STG.filter(s=>boards>=s[0]).length-1,dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,
+x1=a[0]+ux*a[2]*.9,y1=a[1]+uy*a[2]*.66,x2=b[0]-ux*b[2]*.9,y2=b[1]-uy*b[2]*.66,sl=Math.hypot(x2-x1,y2-y1),nx=(y1-y2)/sl,ny=(x2-x1)/sl,
+line=(o,c,w,da="")=>`<line x1="${f1(x1+nx*o)}" y1="${f1(y1+ny*o)}" x2="${f1(x2+nx*o)}" y2="${f1(y2+ny*o)}" stroke="${c}" stroke-width="${w}" ${da||'stroke-linecap="round"'}/>`;
+if(i===0){const mx=(x1+x2)/2,my=(y1+y2)/2+8;return`<path d="M${f1(x1)} ${f1(y1)}Q${f1(mx)} ${f1(my)} ${f1(x2)} ${f1(y2)}" stroke="#8B6B3E" stroke-width="1.6" fill="none"/>`}
+if(i===1)return line(0,"#B98544",8,'stroke-dasharray="3.5 9" stroke-linecap="butt"')+line(-4,"#8B6B3E",1.2)+line(4,"#8B6B3E",1.2);
+if(i===2)return line(0,"#6E5230",11)+line(0,"#C9904A",9,'stroke-dasharray="4 1.6" stroke-linecap="butt"')+line(-5.5,"#5B4225",1.4)+line(5.5,"#5B4225",1.4);
+return line(0,"#8E8A80",14)+line(0,"#B4B0A6",10,'stroke-dasharray="7 2" stroke-linecap="butt"')+line(-7,"#6F6B62",1.5)+line(7,"#6F6B62",1.5)}
+/* раскладка: я в центре, друзья по кругу; чем крепче мост, тем ближе (круги близости Данбара) */
+function artWorld(w,sel){const F=w.friends,n=F.length,slots=n+1,pos=[],me=[200,190,Math.min(46+F.length,60)];
+F.forEach((f,i)=>{const ring=i<9?0:1,k=ring?i-9:i,m=ring?n-9:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,60)*.9,t=f.island[0]+f.island[1]+f.island[2];
+const R=28+Math.min(t,24)*.5,D=me[2]+R+(ring?110:0)+110-Math.min(f.boards,60)*.8;pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
+const ai=-Math.PI/2+Math.min(n,9)/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)];
+const all=[me,...pos,[...inv,30]],x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
+let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" style="width:100%;display:block;border-radius:16px" role="img" aria-label="Карта: твой остров и острова друзей">
+<defs><pattern id="wv" width="46" height="26" patternUnits="userSpaceOnUse"><path d="M4 14q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".35"/><path d="M27 4q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".25"/></pattern></defs>
+<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1-x0)}" height="${f1(y1-y0)}" fill="#86C3D4"/><rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1-x0)}" height="${f1(y1-y0)}" fill="url(#wv)"/>`;
+[me,...pos].forEach((p,i)=>g+=artIsland(p[0],p[1],p[2],i?F[i-1].id:w.me.id,[0,0,0],"",null,"halo"));
+F.forEach((f,i)=>{if(f.boards>0||f.last)g+=artBridge(me,pos[i],f.boards)});
+g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0)}</g>`;
+F.forEach((f,i)=>g+=`<g data-i="${i+1}" style="cursor:pointer">${artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,f.island,f.name,f.turn,sel===i+1)}</g>`);
+g+=`<g data-i="inv" style="cursor:pointer"><circle cx="${f1(inv[0])}" cy="${f1(inv[1])}" r="22" fill="#A9D7E3" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><text x="${f1(inv[0])}" y="${f1(inv[1]+8)}" text-anchor="middle" font-size="24" fill="#fff" font-family="Golos Text,system-ui">+</text>
+<rect x="${f1(inv[0]-34)}" y="${f1(inv[1]+28)}" width="68" height="20" rx="10" fill="#FFF8E7" stroke="#D9C9A3"/><text x="${f1(inv[0])}" y="${f1(inv[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">позвать</text></g>`;
+return g+`</svg>`}
+/* ===== механика карты ===== */
+let W=null,curFid=null;
+const fresh=(mode,o={})=>{st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(),s:[],g:[],friend:null,started:1,mode,guessers:[],...o};save();go()};
+const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${Math.round(b)} ${pl(Math.round(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/ый$/,"ого")} ещё ${Math.ceil(nx[0]-b)}.`:"")};
+function world(){busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);drawW(W.friends.findIndex(f=>f.turn==="me")+1)},()=>oops(world))}
+function drawW(sel){const z=W.me.island;
+app.innerHTML=`<h1>Ну-ну</h1><div>${artWorld(W,sel)}</div><div class="card" id="pn"></div>
+<p class="note">Море — общее и нейтральное. Остров растёт из твоих ответов: цветы — когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>`;
+app.querySelector("svg").onclick=e=>{const g=e.target.closest("[data-i]");if(g)drawW(g.dataset.i==="inv"?"inv":+g.dataset.i)};
+const pn=$("pn"),btn=(id,t,main)=>`<button class="${main?"main-btn":"n"}" id="${id}">${t}</button>`,f=sel>0?W.friends[sel-1]:null;
+if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Ответишь на 10 карточек, и Telegram предложит выбрать, кому отправить. Когда друг ответит, его остров появится на карте.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Пусть все угадывают меня")}</div>`;
+$("iv").onclick=()=>fresh("duo");$("ih").onclick=()=>fresh("hero");return}
+if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Сад ${z[0]} · лес ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
+<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Все угадывают меня")}${btn("so","Играть одному")}${btn("gd","Мой сад: "+seeds.length)}${btn("sw","Дело на неделю")}</div>`;
+$("iv").onclick=()=>fresh("duo");$("ih").onclick=()=>fresh("hero");$("so").onclick=()=>fresh("solo");$("gd").onclick=garden;$("sw").onclick=()=>{curFid=null;stepWeek()};return}
+const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
+pn.innerHTML=`<h2>${fn}</h2>${turn}<p class="note" style="margin:0">${stage(f.boards)}</p><div class="row">${f.turn==="me"?btn("an","Ответить: "+fn,1):btn("ng","Новая партия",!f.turn)}${f.last?btn("ls","Последняя партия"):""}${btn("dd","Дело вместе: +3 доски")}</div>`;
+if($("an"))$("an").onclick=()=>{busy("Открываю партию…");join(f.gid).then(go,()=>oops(world))};
+if($("ng"))$("ng").onclick=()=>fresh("duo",{to:f.id,toName:f.name});
+if($("ls"))$("ls").onclick=()=>{busy("Открываю партию…");join(f.last,f.id).then(go,()=>oops(world))};
+$("dd").onclick=()=>{curFid=f.id;stepWeek(f.name)}}
 function busy(t){card(`<p style="margin:0">${t}</p>`)}
 function oops(f){card(`<p style="margin:0">Не получилось связаться с сервером. Проверь интернет.</p><button class="main-btn" id="rt">Ещё раз</button>`);$("rt").onclick=f}
 const linkBox=t=>`<div style="font:500 15px var(--disp);word-break:break-all;background:var(--sand);color:var(--sand-fg);padding:12px;border-radius:10px;user-select:all" id="cd">${esc(st.glink)}</div>
@@ -375,26 +450,31 @@ function wireLink(msg){$("snd").onclick=()=>TG.openTelegramLink("https://t.me/sh
 $("cp").onclick=()=>navigator.clipboard.writeText(st.glink).then(()=>$("cpn").textContent="Ссылка скопирована.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил ссылку, скопируй вручную."})}
 /* хозяин: игра ложится на сервер один раз, дальше только ссылка; кто ответил — видно здесь */
 function shareTG(M){busy("Готовлю ссылку…");
-(st.gid?Promise.resolve():API("/game","POST",{name:st.name,seed:st.seed,mode:M,s:st.s,g:M==="hero"?[]:st.g}).then(r=>{st.gid=r.id;st.glink=r.link;save()}))
+(st.gid?Promise.resolve():API("/game","POST",{name:st.name,seed:st.seed,mode:M,s:st.s,g:M==="hero"?[]:st.g,to:st.to||null}).then(r=>{st.gid=r.id;st.glink=r.link;save()}))
 .then(()=>API("/game/"+st.gid)).then(v=>{const P=v.plays;
+if(st.to&&!P.length){card(`<span class="who">Отправлено</span><h2>Партия ушла: ${esc(st.toName)}</h2><p style="margin:0">Бот уже прислал сообщение. Когда ${esc(st.toName)} ответит, мост на карте подрастёт.</p><button class="n" id="rf" style="align-self:flex-start">Ответил? Проверить</button>`);$("rf").onclick=go;return tail(M)}
+if(st.to&&P.length===1){const p=P[0];st.friend={id:p.id,name:p.name,s:p.s,g:p.g,seed:st.seed};save();return go()}
 if(M==="hero"){st.guessers=P.map(p=>({name:p.name,g:p.g}));save();heroShare();return tail(M)}
 card(`<span class="who">Готово</span><h2>Позови друга</h2><p style="margin:0">Друг откроет ссылку в Telegram, ответит на те же 10 карточек, и вы оба увидите мост.</p>
 ${linkBox("Когда друг ответит, бот пришлёт тебе сообщение.")}
 <div class="zone">Уже ответили</div>${P.length?`<div class="row">${P.map((p,k)=>`<button class="t" data-k="${k}">${esc(p.name)}</button>`).join("")}</div>`:`<p class="note" style="margin:0">Пока никто.</p>`}
 <div class="row"><button class="n" id="rf">Обновить</button><button class="n" id="rs">Начать заново</button></div>`);
 wireLink("Сыграй со мной в «Ну-ну»");$("rf").onclick=go;$("rs").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()};
-app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const p=P[+b.dataset.k];st.friend={name:p.name,s:p.s,g:p.g,seed:st.seed};save();go()});tail(M)},()=>oops(go))}
+app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const p=P[+b.dataset.k];st.friend={id:p.id,name:p.name,s:p.s,g:p.g,seed:st.seed};save();go()});tail(M)},()=>oops(go))}
 /* друг пришёл по ссылке: его ответы уходят на сервер, в ответ приходят ответы хозяина */
 function sendPlay(){busy("Отправляю ответы…");API("/game/"+st.join+"/play","POST",{name:st.name,s:st.mode==="guess"?[]:st.s,g:st.g})
-.then(v=>{st.friend={name:v.name,s:v.s,g:v.g,seed:v.seed};save();go()},()=>oops(sendPlay))}
-async function join(sp){const v=await API("/game/"+sp),md=v.mode==="hero"?"guess":"duo";
-if(v.mine){st={name:v.name,seed:v.seed,s:v.s,g:v.mode==="hero"?v.s:v.g,mode:v.mode,started:1,planted:1,gid:v.id,glink:v.link,friend:null,guessers:[]};return}
-st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{name:v.name,s:v.s,g:v.g,seed:v.seed}}
-:{name:st.name||tgName||"Друг",seed:v.seed,s:[],g:[],mode:md,started:1,join:sp,friend:{name:v.name,pending:1}};save()}
+.then(v=>{st.friend={id:v.owner,name:v.name,s:v.s,g:v.g,seed:v.seed};save();go()},()=>oops(sendPlay))}
+async function join(sp,fid){const v=await API("/game/"+sp),md=v.mode==="hero"?"guess":"duo";
+if(v.mine){const p=fid&&v.mode==="duo"&&v.plays.find(p=>p.id===fid);st={name:v.name,seed:v.seed,s:v.s,g:v.mode==="hero"?v.s:v.g,mode:v.mode,started:1,planted:1,gid:v.id,glink:v.link,guessers:[],
+friend:p?{id:p.id,name:p.name,s:p.s,g:p.g,seed:v.seed}:null};save();return}
+st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,s:v.s,g:v.g,seed:v.seed}}
+:{name:st.name||tgName||"Друг",seed:v.seed,s:[],g:[],mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,pending:1}};save()}
 async function boot(){if(!API)return go();busy("Загружаю твой остров…");
 try{const r=await API("/state"),d=r.data;tgName=r.name||"";
 if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-bridges"])bridges=d["nunu-bridges"]}else push();
-const sp=(TG.initDataUnsafe||{}).start_param;if(sp&&sp!==st.gid&&sp!==st.join)await join(sp)}catch(e){}
+const sp=(TG.initDataUnsafe||{}).start_param;if(sp&&sp!==st.gid&&sp!==st.join)await join(sp)
+/* в Telegram дом — карта; недоигранная партия продолжается с того же места */
+else if(!(st.started&&st.g&&st.g.length>0&&st.g.length<N))return world()}catch(e){}
 go()}
 boot();
 </script>

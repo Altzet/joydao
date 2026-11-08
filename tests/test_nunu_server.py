@@ -42,8 +42,31 @@ def test_game_by_link(tmp_path, monkeypatch):
                headers=evgen).json()
     assert v["s"] == [0] * 10 and quiet.sent[0] == 1  # Евген видит Антона, Антону ушло сообщение
     own = c.get(f"/nunu/api/game/{g['id']}", headers=anton).json()
-    assert own["plays"] == [{"name": "Евген", "s": [2] * 10, "g": [0] * 10}]
+    assert own["plays"] == [{"id": 2, "name": "Евген", "s": [2] * 10, "g": [0] * 10}]
     assert c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Я", "s": [0] * 10, "g": [0] * 10},
                   headers=anton).status_code == 409
     assert c.post("/nunu/api/game", json={"name": "А", "seed": 5, "mode": "duo", "s": [9] * 10},
                   headers=anton).status_code == 422
+
+
+def test_world_map(tmp_path, monkeypatch):
+    """Карта: партия другу с карты → у него «твой ход», после ответа мост копится по аккаунтам."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+
+    async def quiet(*a):
+        quiet.sent = a
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
+    c.put("/nunu/api/state", json={"data": {"nunu-seeds": [{"z": 0}, {"z": 0}, {"z": 2}, {"z": -1}]}}, headers=evgen)
+    g = c.post("/nunu/api/game", json={"name": "Антон", "seed": 7, "mode": "duo", "s": [0] * 10, "g": [1] * 10,
+                                       "to": 2}, headers=anton).json()
+    assert quiet.sent[0] == 2  # Евгену сразу сообщение
+    w = c.get("/nunu/api/world", headers=evgen).json()
+    assert w["friends"][0] | {} == {"id": 1, "name": "Антон", "boards": 0, "turn": "me", "gid": g["id"],
+                                    "last": None, "island": [0, 0, 0]}
+    c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Евген", "s": [2] * 10, "g": [0] * 10}, headers=evgen)
+    c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 1, "n": 5.5}, headers=evgen)
+    c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 2, "n": 9}, headers=anton)  # второе не пишется
+    c.post("/nunu/api/friend/2/deed", headers=anton)
+    f = c.get("/nunu/api/world", headers=anton).json()["friends"][0]
+    assert (f["name"], f["boards"], f["turn"], f["last"], f["island"]) == ("Евген", 8.5, None, g["id"], [2, 0, 1])
