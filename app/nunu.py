@@ -43,7 +43,11 @@ CREATE TABLE IF NOT EXISTS deeds (a INTEGER NOT NULL, b INTEGER NOT NULL, n INTE
     PRIMARY KEY (a, b));
 """
 MIGRATE = ("ALTER TABLE games ADD COLUMN to_id INTEGER",  # партия конкретному другу с карты
-           "ALTER TABLE plays ADD COLUMN boards REAL")    # доски моста за эту партию
+           "ALTER TABLE plays ADD COLUMN boards REAL",    # доски моста за эту партию
+           "ALTER TABLE games ADD COLUMN story TEXT",     # своя ситуация автора: {q, a, real}
+           "ALTER TABLE plays ADD COLUMN guess TEXT",     # догадка друга своими словами
+           "ALTER TABLE plays ADD COLUMN mark INTEGER")   # автор отметил: 2 угадал, 1 почти, 0 нет
+STORY_BOARDS = {2: 1.0, 1: 0.5}  # своя ситуация: угадал — доска, почти — верёвочка
 
 
 def _db() -> sqlite3.Connection:
@@ -97,6 +101,12 @@ class StateIn(BaseModel):
     data: dict
 
 
+class Story(BaseModel):
+    q: str     # что случилось
+    a: str     # как поступил или поступил бы
+    real: bool  # так было на самом деле
+
+
 class GameIn(BaseModel):
     name: str
     seed: int
@@ -104,12 +114,21 @@ class GameIn(BaseModel):
     s: list[int | list[int]]
     g: list[int | list[int]] = []
     to: int | None = None  # tg id друга: партия с карты, ему сразу сообщение от бота
+    story: Story | None = None  # своя ситуация: друг угадывает своими словами
+
+
 
 
 class PlayIn(BaseModel):
     name: str
     s: list[int | list[int]] = []  # в hero друг только угадывает
     g: list[int | list[int]]
+    guess: str | None = None  # как, по-твоему, поступил автор своей ситуации
+
+
+class MarkIn(BaseModel):
+    player: int
+    mark: int
 
 
 @router.get("/state")
@@ -141,9 +160,13 @@ async def new_game(body: GameIn, x_init_data: str | None = Header(default=None))
     s, g = _answers(body.s), _answers(body.g, empty_ok=body.mode == "hero")
     gid = secrets.token_hex(4)
     name = body.name.strip()[:30] or u.first_name
+    story = None
+    if body.story and body.story.q.strip() and body.story.a.strip():
+        story = json.dumps({"q": body.story.q.strip()[:400], "a": body.story.a.strip()[:250], "real": body.story.real},
+                           ensure_ascii=False)
     with closing(_db()) as c, c:
-        c.execute("INSERT INTO games(id, owner, name, seed, mode, s, g, to_id) VALUES(?,?,?,?,?,?,?,?)",
-                  (gid, u.id, name, body.seed, body.mode, s, g, body.to))
+        c.execute("INSERT INTO games(id, owner, name, seed, mode, s, g, to_id, story) VALUES(?,?,?,?,?,?,?,?,?)",
+                  (gid, u.id, name, body.seed, body.mode, s, g, body.to, story))
         _seen(c, u)
     if body.to:
         _bg(_notify(body.to, f"{name} прислал тебе партию в «Ну-ну». Твой ход 🏝", link(gid)))
@@ -156,18 +179,23 @@ def _view(c: sqlite3.Connection, gid: str, uid: int) -> dict:
     if not r:
         raise HTTPException(404, "Игра не найдена")
     mine = r["owner"] == uid
-    plays = c.execute("SELECT player, name, s, g FROM plays WHERE game_id=? ORDER BY created_at",
+    plays = c.execute("SELECT player, name, s, g, guess, mark FROM plays WHERE game_id=? ORDER BY created_at",
                       (gid,)).fetchall()
     played = any(p["player"] == uid for p in plays)
     out = {"id": gid, "link": link(gid), "mode": r["mode"], "seed": r["seed"], "name": r["name"], "owner": r["owner"],
            "mine": mine, "played": played, "plays": []}
     if mine or played:
         out |= {"s": json.loads(r["s"]), "g": json.loads(r["g"])}
+    if r["story"]:  # как поступил автор — только тем, кто уже угадал
+        st = json.loads(r["story"])
+        out["story"] = st if mine or played else {"q": st["q"], "real": st["real"]}
     if played:
         me = next(p for p in plays if p["player"] == uid)
-        out["my"] = {"name": me["name"], "s": json.loads(me["s"]), "g": json.loads(me["g"])}
+        out["my"] = {"name": me["name"], "s": json.loads(me["s"]), "g": json.loads(me["g"]),
+                     "guess": me["guess"], "mark": me["mark"]}
     if mine:
-        out["plays"] = [{"id": p["player"], "name": p["name"], "s": json.loads(p["s"]), "g": json.loads(p["g"])} for p in plays]
+        out["plays"] = [{"id": p["player"], "name": p["name"], "s": json.loads(p["s"]), "g": json.loads(p["g"]),
+                         "guess": p["guess"], "mark": p["mark"]} for p in plays]
     return out
 
 
@@ -182,19 +210,41 @@ def get_game(gid: str, x_init_data: str | None = Header(default=None)):
 async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=None)):
     u = _user(x_init_data)
     with closing(_db()) as c:
-        r = c.execute("SELECT owner, mode FROM games WHERE id=?", (gid,)).fetchone()
+        r = c.execute("SELECT owner, mode, story FROM games WHERE id=?", (gid,)).fetchone()
         if not r:
             raise HTTPException(404, "Игра не найдена")
         if r["owner"] == u.id:
             raise HTTPException(409, "Это твоя игра")
+        guess = (body.guess or "").strip()[:250] if r["story"] else ""
         name = body.name.strip()[:30] or u.first_name
         with c:
-            c.execute("INSERT OR REPLACE INTO plays(game_id, player, name, s, g) VALUES(?,?,?,?,?)",
-                      (gid, u.id, name, _answers(body.s, empty_ok=r["mode"] == "hero"), _answers(body.g)))
+            c.execute("INSERT OR REPLACE INTO plays(game_id, player, name, s, g, guess) VALUES(?,?,?,?,?,?)",
+                      (gid, u.id, name, _answers(body.s, empty_ok=r["mode"] == "hero"), _answers(body.g), guess or None))
         view = _view(c, gid, u.id)
         _seen(c, u)
-    _bg(_notify(r["owner"], f"{name} ответил в «Ну-ну». Посмотри ваш мост 🌉", link(gid)))
+    text = (f"{name} ответил в «Ну-ну» и угадывал твою ситуацию. Отметь, угадал ли ✍️" if guess
+            else f"{name} ответил в «Ну-ну». Посмотри ваш мост 🌉")
+    _bg(_notify(r["owner"], text, link(gid)))
     return view
+
+
+@router.post("/game/{gid}/mark")
+async def mark(gid: str, body: MarkIn, x_init_data: str | None = Header(default=None)):
+    """Автор своей ситуации отмечает догадку друга: угадал — доска мосту, почти — верёвочка."""
+    u = _user(x_init_data)
+    if body.mark not in (0, 1, 2):
+        raise HTTPException(422, "Отметка 0, 1 или 2")
+    with closing(_db()) as c:
+        r = c.execute("SELECT owner FROM games WHERE id=?", (gid,)).fetchone()
+        if not r or r["owner"] != u.id:
+            raise HTTPException(404, "Игра не найдена")
+        with c:
+            n = c.execute("UPDATE plays SET mark=? WHERE game_id=? AND player=? AND guess IS NOT NULL AND mark IS NULL",
+                          (body.mark, gid, body.player)).rowcount
+    if n:
+        word = ["не совсем угадал", "почти угадал", "угадал"][body.mark]
+        _bg(_notify(body.player, f"{u.first_name} отметил твою догадку: ты {word} 🌉", link(gid)))
+    return {"ok": bool(n)}
 
 
 def _bg(coro) -> None:
@@ -286,7 +336,8 @@ def world(x_init_data: str | None = Header(default=None)):
     u = _user(x_init_data)
     with closing(_db()) as c:
         _seen(c, u)
-        rows = c.execute("""SELECT g.id, g.owner, g.to_id, g.created_at, p.player, p.boards, p.created_at AS pt
+        rows = c.execute("""SELECT g.id, g.owner, g.to_id, g.created_at, p.player, p.boards, p.created_at AS pt,
+            p.guess, p.mark
             FROM games g LEFT JOIN plays p ON p.game_id = g.id
             WHERE g.owner = :me OR g.to_id = :me OR p.player = :me""", {"me": u.id}).fetchall()
         fr: dict[int, dict] = {}
@@ -296,16 +347,20 @@ def world(x_init_data: str | None = Header(default=None)):
                 other = r["to_id"] if r["owner"] == u.id else r["owner"]
             if not other or other == u.id or (r["player"] not in (None, u.id) and r["owner"] != u.id):
                 continue
-            f = fr.setdefault(other, {"id": other, "boards": 0.0, "turn": None, "gid": None, "last": None, "t": ""})
+            f = fr.setdefault(other, {"id": other, "boards": 0.0, "turn": None, "gid": None, "last": None, "mark": None,
+                                      "t": ""})
             if r["player"] is None:
                 f["turn"], f["gid"] = ("them" if r["owner"] == u.id else "me"), r["id"]
             else:
-                f["boards"] += r["boards"] or 0
+                f["boards"] += (r["boards"] or 0) + STORY_BOARDS.get(r["mark"], 0)
+                if r["owner"] == u.id and r["guess"] and r["mark"] is None:
+                    f["mark"] = r["id"]  # друг угадывал мою ситуацию — жду отметки
                 if (r["pt"] or "") >= f["t"]:
                     f["last"], f["t"] = r["id"], r["pt"] or ""
         for r in c.execute("SELECT a, b FROM friends WHERE a=:me OR b=:me", {"me": u.id}):
             other = r["b"] if r["a"] == u.id else r["a"]
-            fr.setdefault(other, {"id": other, "boards": 0.0, "turn": None, "gid": None, "last": None, "t": ""})
+            fr.setdefault(other, {"id": other, "boards": 0.0, "turn": None, "gid": None, "last": None, "mark": None,
+                                  "t": ""})
         for f in fr.values():
             a, b = sorted((u.id, f["id"]))
             d = c.execute("SELECT n FROM deeds WHERE a=? AND b=?", (a, b)).fetchone()

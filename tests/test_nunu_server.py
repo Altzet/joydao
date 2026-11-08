@@ -42,7 +42,7 @@ def test_game_by_link(tmp_path, monkeypatch):
                headers=evgen).json()
     assert v["s"] == [0] * 10 and quiet.sent[0] == 1  # Евген видит Антона, Антону ушло сообщение
     own = c.get(f"/nunu/api/game/{g['id']}", headers=anton).json()
-    assert own["plays"] == [{"id": 2, "name": "Евген", "s": [2] * 10, "g": [0] * 10}]
+    assert own["plays"] == [{"id": 2, "name": "Евген", "s": [2] * 10, "g": [0] * 10, "guess": None, "mark": None}]
     assert c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Я", "s": [0] * 10, "g": [0] * 10},
                   headers=anton).status_code == 409
     assert c.post("/nunu/api/game", json={"name": "А", "seed": 5, "mode": "duo", "s": [9] * 10},
@@ -63,7 +63,7 @@ def test_world_map(tmp_path, monkeypatch):
     assert quiet.sent[0] == 2  # Евгену сразу сообщение
     w = c.get("/nunu/api/world", headers=evgen).json()
     assert w["friends"][0] | {} == {"id": 1, "name": "Антон", "boards": 0, "turn": "me", "gid": g["id"],
-                                    "last": None, "island": [0, 0, 0]}
+                                    "last": None, "mark": None, "island": [0, 0, 0]}
     c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Евген", "s": [2] * 10, "g": [0] * 10}, headers=evgen)
     c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 1, "n": 5.5}, headers=evgen)
     c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 2, "n": 9}, headers=anton)  # второе не пишется
@@ -101,3 +101,31 @@ def test_invite_first(tmp_path, monkeypatch):
     assert quiet.sent[0] == 1
     f = c.get("/nunu/api/world", headers=anton).json()["friends"]
     assert [(x["name"], x["boards"], x["last"]) for x in f] == [("Евген", 0, None)]
+
+
+def test_own_story(tmp_path, monkeypatch):
+    """Своя ситуация: друг угадывает своими словами, ответ автора виден только после догадки,
+    отметка «угадал» — доска мосту, отметить можно один раз."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+
+    async def quiet(*a):
+        quiet.sent = a
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
+    story = {"q": "Сосед просит дрель, прошлую вернул сломанной", "a": "Дал, но до вечера", "real": True}
+    g = c.post("/nunu/api/game", json={"name": "Антон", "seed": 3, "mode": "duo", "s": [0] * 10, "g": [0] * 10,
+                                       "to": 2, "story": story}, headers=anton).json()
+    v = c.get(f"/nunu/api/game/{g['id']}", headers=evgen).json()
+    assert v["story"] == {"q": story["q"], "real": True}  # ответа автора ещё не видно
+    v = c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Евген", "s": [1] * 10, "g": [0] * 10,
+                                                        "guess": "Дал бы, куда деваться"}, headers=evgen).json()
+    assert v["story"]["a"] == "Дал, но до вечера" and v["my"]["guess"] == "Дал бы, куда деваться"
+    assert "угадывал твою ситуацию" in quiet.sent[1]
+    w = c.get("/nunu/api/world", headers=anton).json()["friends"][0]
+    assert w["mark"] == g["id"]
+    assert c.post(f"/nunu/api/game/{g['id']}/mark", json={"player": 2, "mark": 2}, headers=evgen).status_code == 404
+    assert c.post(f"/nunu/api/game/{g['id']}/mark", json={"player": 2, "mark": 2}, headers=anton).json() == {"ok": True}
+    assert c.post(f"/nunu/api/game/{g['id']}/mark", json={"player": 2, "mark": 0}, headers=anton).json() == {"ok": False}
+    w = c.get("/nunu/api/world", headers=anton).json()["friends"][0]
+    assert (w["mark"], w["boards"]) == (None, 1.0)
+    assert c.get(f"/nunu/api/game/{g['id']}", headers=evgen).json()["my"]["mark"] == 2
