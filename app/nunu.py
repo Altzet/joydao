@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS deeds (a INTEGER NOT NULL, b INTEGER NOT NULL, n INTE
     PRIMARY KEY (a, b));
 CREATE TABLE IF NOT EXISTS deed_ids (pid TEXT PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, tg_id INTEGER NOT NULL, seed TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS meets (id TEXT PRIMARY KEY, by INTEGER NOT NULL, a INTEGER NOT NULL, b INTEGER NOT NULL,
+    ok_a INTEGER NOT NULL DEFAULT 0, ok_b INTEGER NOT NULL DEFAULT 0, UNIQUE (by, a, b));
 CREATE TABLE IF NOT EXISTS reminders (tg_id INTEGER NOT NULL, kind TEXT NOT NULL, at TEXT NOT NULL,
     PRIMARY KEY (tg_id, kind));
 """
@@ -417,6 +419,55 @@ async def accept(iid: str, x_init_data: str | None = Header(default=None)):
         _bg(_notify(r["owner"], f"{u.first_name} пришёл на твою карту в «Ну-ну». Между вами канатный мост — "
                                 "начните партию 🏝", f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"))
     return {"friend": {"id": r["owner"], "name": n["name"] if n else "Друг"}}
+
+
+class MeetIn(BaseModel):
+    other: int
+
+
+@router.post("/friend/{fid}/meet")
+async def meet(fid: int, body: MeetIn, x_init_data: str | None = Header(default=None)):
+    """Позвать двух своих друзей друг к другу. У двоих с общим другом больше шансов сойтись (Granovetter 1973).
+    Ответ всегда одинаковый: позвавший не узнаёт, были ли они уже знакомы, — чужие связи не раскрываем.
+    ponytail: одну пару один человек зовёт один раз (UNIQUE) — защита от спама; повтор молча ничего не шлёт."""
+    u = _user(x_init_data)
+    a, b = sorted((fid, body.other))
+    with closing(_db()) as c:
+        if a == b or u.id in (a, b) or not (_friends(c, u.id, a) and _friends(c, u.id, b)):
+            raise HTTPException(404, "Друг не найден")
+        mid, new = "m" + secrets.token_hex(4), 0
+        if not _friends(c, a, b):
+            with c:
+                new = c.execute("INSERT OR IGNORE INTO meets(id, by, a, b) VALUES(?,?,?,?)", (mid, u.id, a, b)).rowcount
+        names = {r["tg_id"]: r["name"] for r in c.execute("SELECT tg_id, name FROM users WHERE tg_id IN (?, ?)", (a, b))}
+        _seen(c, u)
+    if new:
+        for me, other in ((a, b), (b, a)):
+            n = names.get(other, "Друг")
+            _bg(_notify(me, f"{u.first_name} зовёт вас друг к другу в «Ну-ну»: ты и {n}. Открой приглашение — "
+                            f"когда {n} тоже откроет, между вашими островами появится канатный мост 🏝", link(mid)))
+    return {"ok": True}
+
+
+@router.post("/meet/{mid}/accept")
+async def meet_accept(mid: str, x_init_data: str | None = Header(default=None)):
+    """Мост между двумя друзьями общего друга — только когда приглашение открыли оба."""
+    u = _user(x_init_data)
+    with closing(_db()) as c:
+        r = c.execute("SELECT a, b, ok_a, ok_b FROM meets WHERE id=?", (mid,)).fetchone()
+        if not r or u.id not in (r["a"], r["b"]):
+            raise HTTPException(404, "Приглашение не найдено")
+        col, other = ("ok_a", r["b"]) if u.id == r["a"] else ("ok_b", r["a"])
+        both = bool(r["ok_b"] if u.id == r["a"] else r["ok_a"])
+        with c:
+            c.execute(f"UPDATE meets SET {col}=1 WHERE id=?", (mid,))
+            new = c.execute("INSERT OR IGNORE INTO friends(a, b) VALUES(?, ?)", (r["a"], r["b"])).rowcount if both else 0
+        _seen(c, u)
+        n = c.execute("SELECT name FROM users WHERE tg_id=?", (other,)).fetchone()
+    if new:
+        _bg(_notify(other, f"{u.first_name} тоже открыл приглашение. Между вашими островами канатный мост — "
+                           "начните партию 🏝", link()))
+    return {"friend": {"id": other, "name": n["name"] if n else "Друг"}, "bridge": both}
 
 
 def _friends(c: sqlite3.Connection, a: int, b: int) -> bool:

@@ -629,12 +629,16 @@ $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onl
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
 const mk=f.mark?`<p style="margin:0">${fn} угадывал твою ситуацию — отметь, угадал ли.</p>`:"";
-pn.innerHTML=`<h2>${fn}</h2>${turn}${mk}${fresh0}<p class="note" style="margin:0">${stage(f.boards)}</p><div class="row">${f.turn==="me"?btn("an","Ответить: "+fn,1):btn("ng","Новая партия",!f.turn&&!f.mark)}${btn("os","Своя ситуация")}${f.mark?btn("mk","Отметить догадку",!f.turn):""}${f.last?btn("ls","Последняя партия"):""}${btn("dd","Дело вместе: +3 доски")}</div>`;
+pn.innerHTML=`<h2>${fn}</h2>${turn}${mk}${fresh0}<p class="note" style="margin:0">${stage(f.boards)}</p><div class="row">${f.turn==="me"?btn("an","Ответить: "+fn,1):btn("ng","Новая партия",!f.turn&&!f.mark)}${btn("os","Своя ситуация")}${f.mark?btn("mk","Отметить догадку",!f.turn):""}${f.last?btn("ls","Последняя партия"):""}${btn("dd","Дело вместе: +3 доски")}${W.friends.length>1?btn("mt","Познакомить с другом"):""}</div>`;
 if($("an"))$("an").onclick=()=>{busy("Открываю партию…");join(f.gid).then(go,()=>oops(world))};
 if($("ng"))$("ng").onclick=()=>fresh("duo",{to:f.id,toName:f.name});$("os").onclick=()=>onlyStory({to:f.id,toName:f.name});
 if($("mk"))$("mk").onclick=()=>{busy("Открываю партию…");join(f.mark,f.id).then(go,()=>oops(world))};
 if($("ls"))$("ls").onclick=()=>{busy("Открываю партию…");join(f.last,f.id).then(go,()=>oops(world))};
-$("dd").onclick=()=>{curFid=f.id;stepWeek(f.name)}}
+$("dd").onclick=()=>{curFid=f.id;stepWeek(f.name)};
+/* позвать двух своих друзей друг к другу: у двоих с общим другом больше шансов сойтись (Granovetter 1973).
+Мост между ними — только когда приглашение открыли оба; были ли они уже знакомы, сервер не говорит */
+if($("mt"))$("mt").onclick=()=>{pn.innerHTML=`<h2>С кем познакомить: ${fn}?</h2><p class="note" style="margin:0">Оба получат приглашение от бота с твоим именем. Мост между их островами появится, когда его откроют оба.</p><div class="row col">${W.friends.filter(x=>x.id!==f.id).map(x=>`<button class="n" data-o="${x.id}">${esc(x.name)}</button>`).join("")}</div>`;
+pn.querySelectorAll("button[data-o]").forEach(b=>b.onclick=()=>{const o=W.friends.find(x=>x.id===+b.dataset.o);API("/friend/"+f.id+"/meet","POST",{other:o.id}).then(()=>{pn.innerHTML=`<h2>Приглашение ушло</h2><p style="margin:0">Позвал: ${fn} и ${esc(o.name)}. Если они ещё не знакомы в игре, бот написал обоим.</p>`},()=>oops(world))})}}
 /* своя ситуация: личная история сближает сильнее готовых вопросов (Collins & Miller 1994).
 Друг угадывает своими словами, автор отмечает: угадал — доска мосту, почти — верёвочка */
 const MK=["не угадал","почти угадал","угадал"],cap1=x=>x[0].toUpperCase()+x.slice(1),mkBtns=(a="")=>[2,1,0].map(m=>`<button class="${m?"t":"n"}" ${a} data-m="${m}">${cap1(MK[m])}</button>`).join("");
@@ -710,6 +714,8 @@ if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-
 /* общие дела от друзей: ложатся в сад, если такого ещё нет */
 if(r.inbox&&r.inbox.length){r.inbox.forEach(x=>{if(!seeds.some(y=>y.pid&&y.pid===x.pid))seeds.push(x)});saveSeeds()}
 const sp=(TG.initDataUnsafe||{}).start_param;
+if(sp&&sp[0]==="m"){const r=await API("/meet/"+sp+"/accept","POST");if(r.bridge){focus=r.friend.id;return world()}
+card(`<h2>Приглашение принято</h2><p style="margin:0">Мост появится, когда ${esc(r.friend.name)} тоже откроет приглашение. Бот напишет тебе.</p><button class="main-btn" id="mp">На карту</button>`);$("mp").onclick=world;return}
 if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.friend)focus=r.friend.id;return world()}
 /* открыли по ссылке на партию — сразу в неё (даже если это текущая); иначе дом — карта,
 а недоигранная партия продолжается с того же места */

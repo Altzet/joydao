@@ -227,3 +227,30 @@ def test_reminders(tmp_path, monkeypatch):
     assert nunu.reminders_due(date(2026, 11, 11)) == []
     assert nunu.reminders_due(date(2026, 11, 15)) == []
     assert len(nunu.reminders_due(date(2026, 11, 18))) == 2
+
+
+def test_meet_friends(tmp_path, monkeypatch):
+    """Позвать друзей друг к другу: мост только когда открыли оба; чужие связи не раскрываются."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    sent = []
+
+    async def quiet(*a):
+        sent.append(a)
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c = TestClient(pause.app)
+    anton, evgen, olya, max_ = (init_data(k, n) for k, n in ((1, "Антон"), (2, "Евген"), (3, "Оля"), (4, "Макс")))
+    i = c.post("/nunu/api/invite", headers=anton).json()["id"]
+    for h in (evgen, olya):
+        c.post(f"/nunu/api/invite/{i}/accept", headers=h)
+    sent.clear()
+    assert c.post("/nunu/api/friend/2/meet", json={"other": 4}, headers=anton).status_code == 404  # Макс не друг
+    assert c.post("/nunu/api/friend/2/meet", json={"other": 3}, headers=anton).json() == {"ok": True}
+    assert sorted(a[0] for a in sent) == [2, 3] and "ты и Оля" in [a[1] for a in sent if a[0] == 2][0]
+    mid = sent[0][2].split("startapp=")[1]
+    assert c.post("/nunu/api/friend/3/meet", json={"other": 2}, headers=anton).json() == {"ok": True}
+    assert len(sent) == 2  # повтор никому не пишет
+    assert c.post(f"/nunu/api/meet/{mid}/accept", headers=max_).status_code == 404
+    assert c.post(f"/nunu/api/meet/{mid}/accept", headers=evgen).json() == {"friend": {"id": 3, "name": "Оля"}, "bridge": False}
+    assert [f["id"] for f in c.get("/nunu/api/world", headers=evgen).json()["friends"]] == [1]
+    assert c.post(f"/nunu/api/meet/{mid}/accept", headers=olya).json() == {"friend": {"id": 2, "name": "Евген"}, "bridge": True}
+    assert sorted(f["id"] for f in c.get("/nunu/api/world", headers=evgen).json()["friends"]) == [1, 3]
