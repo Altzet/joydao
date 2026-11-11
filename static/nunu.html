@@ -25,10 +25,10 @@ body.has-nav{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .sw{width:44px;height:44px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line);padding:0}.sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--fg)}#nav svg{width:24px;height:24px}
 /* карта как карта: на весь экран, жесты, кнопки поверх, карточка снизу */
 body.on-map{padding-top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
-#mapw{position:relative;border-radius:16px;overflow:hidden;background:#86C3D4;touch-action:none;user-select:none;-webkit-user-select:none;min-height:320px}
+#mapw{position:relative;border-radius:16px;overflow:hidden;background:#6DB2C9;touch-action:none;user-select:none;-webkit-user-select:none;min-height:320px}
 #mapw>svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 .mctl{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:8px}
-.mctl button{width:44px;height:44px;border-radius:12px;border:1px solid #D9C9A3;background:#FFF8E7;color:#3B2F1A;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.mctl button{width:44px;height:44px;border-radius:12px;border:0;background:rgba(255,248,231,.72);color:#3B2F1A;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
 #sh{position:absolute;left:8px;right:8px;bottom:8px;max-height:46%;overflow:auto;gap:10px;padding-top:8px;box-shadow:0 -6px 24px rgba(0,0,0,.28)}
 #sh.min{max-height:calc(2.2rem + 30px);overflow:hidden}
 #grab{display:block;width:44px;height:16px;border:0;padding:0;margin:0 auto;background:none;flex:none}
@@ -45,7 +45,9 @@ h2{font:500 1.125rem/1.4 var(--disp);margin:0;text-wrap:balance}
 .who{font-size:0.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--sand-fg);background:var(--sand);padding:4px 10px;border-radius:99px;align-self:flex-start}
 .q{font-size:1.125rem;font-weight:500;line-height:1.5}
 .zone{font-size:0.8125rem;color:var(--muted);margin-top:4px}
-.row{display:flex;flex-wrap:wrap;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px}.col{flex-direction:column}
+.lad{display:flex;gap:4px;align-items:center;height:8px}.lad i{flex:1;height:5px;border-radius:3px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}.duo button{text-align:center;padding:18px 8px;min-height:112px;border-radius:14px}.duo button::before{content:attr(data-e);display:block;font-size:2rem;line-height:1.3}
 button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid;padding:9px 13px;text-align:left;line-height:1.35}
 button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .p{background:var(--sad);color:var(--sad-fg);border-color:var(--sad-b)}
@@ -67,7 +69,7 @@ input,textarea{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid
 .note{font-size:0.8125rem;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}
 /* карта живёт: волны плывут, бутылка качается, «твой ход» пульсирует; кто просил меньше движения — всё стоит */
-.wv{animation:wv 7s linear infinite}@keyframes wv{to{transform:translateX(46px)}}
+.wv{animation:wv 14s linear infinite}@keyframes wv{to{transform:translateX(92px)}}
 .bob{animation:bob 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes bob{50%{transform:translateY(-4px) rotate(5deg)}}
 .pulse{animation:pulse 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes pulse{50%{transform:scale(1.2)}}}
 </style></head><body>
@@ -127,6 +129,41 @@ const S=[
 ["Незнакомцы","Поезд, купе. Напротив человек читает книгу, о которой ты три года мечтал с кем-нибудь поговорить. Он хохочет ровно на той странице, где хохотал ты. До его станции двадцать минут.",["«Двенадцатая глава, да?»","Начну смеяться погромче, чтобы заметил"],["Буду улыбаться в окно","Выйду в тамбур, так и не решившись"],["Достану свою книгу и перечитаю это место","Запомню и расскажу дома"]],
 ["Незнакомцы","Ты месяц живёшь в новом доме и не знаешь ни души. Каждый вечер сосед за стеной жарит что-то божественное. Запах проходит сквозь бетон. Ты уже съел три пачки пельменей и начал разговаривать с чайником.",["Постучу с вилкой: «Я по запаху»","Испеку что-нибудь и предложу обмен"],["Закрою окно и сварю пельмени","Закажу доставку и смирюсь"],["Найду рецепт по запаху и приготовлю сам","Продолжу беседу с чайником, он хороший собеседник"]],
 ["Незнакомцы","Во дворе к тебе подходит незнакомая женщина: «Это вы чинили велосипед моему сыну? Он теперь только про вас и говорит, хочет стать механиком!» И смотрит так, будто ты спас мир. А тебя давно никто так не хвалил.",["Скажу спасибо и спрошу, как зовут сына","Предложу научить его самого"],["«Да ладно, там ерунда была»","Смущусь и быстро уйду"],["Приму молча, но день сделан","«Это был не я» — на всякий случай"]],
+];
+/* уровень 0 «Разминка»: [вопрос, [два ответа], [две картинки]]. Вкусы и привычки, одно касание.
+Закрытые лёгкие вопросы пропускают реже всего (Pew 2021), вход с простого (Aron 1997).
+Угадать из двух можно наугад, поэтому угаданное даёт верёвочку, а не доску (решение 11.11) */
+const C0=[
+["Суббота, восемь утра. Я…",["Уже на ногах","Ещё сплю"],["☀️","🌙"]],
+["Утро начинается с…",["Кофе","Чая"],["☕","🍵"]],
+["Отпуск мечты — это…",["Море","Горы"],["🌊","⛰️"]],
+["Ужин сегодня я скорее…",["Приготовлю сам","Закажу"],["🍳","🛵"]],
+["Мне ближе…",["Собаки","Кошки"],["🐕","🐈"]],
+["Надо что-то узнать у друга. Я…",["Напишу","Позвоню"],["💬","📞"]],
+["Вечер пятницы. Меня тянет…",["В люди","Домой"],["🎉","🛋️"]],
+["К чаю возьму…",["Сладкое","Солёное"],["🍰","🧀"]],
+["Фильм на вечер:",["Комедия","Триллер"],["😂","😱"]],
+["В дороге я…",["В наушниках","Смотрю в окно"],["🎧","🪟"]],
+["Новую вещь я…",["Сначала читаю инструкцию","Сразу включаю"],["📖","🔧"]],
+["Моё время года:",["Лето","Зима"],["☀️","❄️"]],
+["На встречу я приду…",["Заранее","В последнюю минуту"],["⏰","🏃"]],
+["Пицца с ананасами:",["Да","Ни за что"],["😋","🙅"]],
+["Душа просит…",["Города","Леса"],["🏙️","🌲"]],
+["В магазин я иду…",["Со списком","По вдохновению"],["📝","🛒"]],
+["Сообщения я чаще…",["Пишу","Наговариваю"],["⌨️","🎙️"]],
+["Звонит будильник. Я…",["Встаю с первого","Ещё пять минуточек"],["🔔","😴"]],
+["На столе шашлык и салат. Первым возьму…",["Шашлык","Салат"],["🍖","🥗"]],
+["В машине я обычно…",["За рулём","Пассажир"],["🚗","🗺️"]],
+["Свалились лишние деньги. Я…",["Потрачу на поездку","Куплю вещь"],["🎒","🧰"]],
+["В машине играет любимая песня. Я…",["Пою во всё горло","Слушаю молча"],["🎤","🤫"]],
+["За окном дождь. Я…",["Всё равно иду гулять","Остаюсь дома"],["☔","🫖"]],
+["Чай я пью…",["С сахаром","Без сахара"],["🍬","🍃"]],
+["Подарок мне лучше…",["Сюрприз","То, что сам попросил"],["🎁","📋"]],
+["Фото на память. Я…",["В кадре","Снимаю"],["🤳","📷"]],
+["Хороший сериал я смотрю…",["Запоем за ночь","По серии в день"],["🍿","📅"]],
+["В новом городе я…",["Иду куда глаза глядят","Иду по маршруту"],["🧭","📍"]],
+["Мороженое:",["Пломбир","Шоколадное"],["🍦","🍫"]],
+["Сломалась вещь. Я…",["Починю","Куплю новую"],["🔧","🛍️"]],
 ];
 /* уровень 1 «Кто я, по-твоему?»: [черта, вопрос, [4 образа], подарок, вопрос B для A/B].
 Черты Big Five: друзья угадывают их точнее всего (Carlson). Подарок: оценочная черта, её сажает только ответ друга (Vazire 2010) */
@@ -203,7 +240,9 @@ function push(){if(!API)return;clearTimeout(pushT);pushT=setTimeout(()=>API("/st
 const PASS=6,opt=(s,x)=>x===PASS?"Проехали":Array.isArray(x)?x.map(k=>s.o[k]).join(" и "):s.o[x],Z=(s,x)=>s.z&&x<PASS?x>>1:-1;
 let st=ls.get("nunu2")||{name:"",s:[],g:[],friend:null},draft=null;
 if(!(st.seed>=0))st.s=st.g=[],st.friend=null;
-/* набор из 10 по номеру: у друга тот же номер, значит те же карточки. Лестница 3 → 4 → 3 (Aron 1997) */
+/* набор из 10 по номеру: у друга тот же номер, значит те же карточки. Лестница 3 разминки → 2 → 3 → 2 (Aron 1997);
+номера до V0 — партии, сыгранные до разминки: у них прежняя лестница 3 → 4 → 3 */
+const V0=1679616,warm=a=>({c:"Разминка",q:a[0],o:a[1],e:a[2],lv:0});
 const P2=S.map((_,k)=>k).filter(k=>k<50&&!DEEP.includes(k)),picked={};
 const scene=(k,lv)=>({c:S[k][0],q:S[k][1],o:[...S[k][2],...S[k][3],...S[k][4]],z:1,lv});
 /* в «Кто я, по-твоему?» можно два образа: человек бывает и тем, и другим; в сценах — один поступок */
@@ -212,8 +251,10 @@ function pick(seed){if(picked[seed])return picked[seed];let a=seed>>>0||1;const 
 const sh=n=>{const ix=[...Array(n).keys()];for(let k=n-1;k>0;k--){const j=Math.floor(r()*(k+1));[ix[k],ix[j]]=[ix[j],ix[k]]}return ix};
 /* ponytail: A/B формулировок (образ или прямо) по чётности номера; замер ждёт этапа 2 с сервером */
 const ab=seed%2,P3=[...DEEP.map(k=>()=>scene(k,3)),...C3.map(c=>()=>crd(c,3))];
-return picked[seed]=[...sh(C1.length).slice(0,3).map(k=>crd(C1[k],1,ab)),...sh(P2.length).slice(0,4).map(k=>scene(P2[k],2)),...sh(P3.length).slice(0,3).map(k=>P3[k]())]}
-const sit=k=>pick(st.seed)[k],newSeed=()=>Math.floor(Math.random()*1679616);
+if(seed<V0)return picked[seed]=[...sh(C1.length).slice(0,3).map(k=>crd(C1[k],1,ab)),...sh(P2.length).slice(0,4).map(k=>scene(P2[k],2)),...sh(P3.length).slice(0,3).map(k=>P3[k]())];
+const o1=sh(C1.length),a1=o1.find(k=>!C1[k][3]);
+return picked[seed]=[...sh(C0.length).slice(0,3).map(k=>warm(C0[k])),...[a1,o1.find(k=>k!==a1)].map(k=>crd(C1[k],1,ab)),...sh(P2.length).slice(0,3).map(k=>scene(P2[k],2)),...sh(P3.length).slice(0,2).map(k=>P3[k]())]}
+const sit=k=>pick(st.seed)[k],newSeed=()=>V0+Math.floor(Math.random()*V0);
 const save=()=>ls.set("nunu2",st);
 function card(h){app.innerHTML=`<div class="card">${h}</div>`}
 function go(){setNav(null);if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
@@ -223,7 +264,7 @@ if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")gu
 function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<button class="main-btn" id="mp">На карту</button>`:""}<button class="${API?"n":"main-btn"}" id="sw">Удиви себя</button>${M!=="guess"?`<button class="n" id="gd">Мой сад: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=()=>stepWeek(curFid&&st.friend?st.friend.name:"");if(M!=="guess")$("gd").onclick=garden;if(API)$("mp").onclick=world}
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
-function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
+function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS||t.lv===0)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
 let onlyMine=false;
 /* сад: по умолчанию — что ждёт в земле; распустившееся и проросшее иначе — по нажатию на квадрат */
 let gview="wait";const inView=x=>gview==="wait"?!x.life:gview==="bloom"?x.life&&x.life.same:x.life&&!x.life.same;
@@ -310,25 +351,26 @@ app.innerHTML=`<h1>Ну-ну</h1><div class="card"><p style="margin:0">Игра 
 /* кто сейчас отвечает: я — тёплый песок, друг — бирюза; разные цвет, буква и слова, чтобы не перепутать шаги */
 const ask=(me,name)=>me?`<div class="ask me"><span class="av">Я</span><div><b>Отвечаю за себя</b><small>Как поступлю я сам?</small></div></div>`
 :`<div class="ask fr"><span class="av">${name?esc(name[0].toUpperCase()):"?"}</span><div><b>${name?"Теперь за друга: "+esc(name):"Теперь за друга"}</b><small>Как ответил бы ${name?esc(name):"твой друг"}? В вопросе «я» и «ты» — это ${name?esc(name):"он"}.</small></div></div>`;
+const LV=["#9FD8E6","#5DB8CF","#2E8FA8","#17607A"];
 function play(i){
 st.started=1;const M=st.mode||(st.solo?"solo":"duo"),one=M!=="duo",s=sit(i),self=draft===null;
-card(`<div class="meta"><span>${i+1} из ${N} · уровень ${s.lv} · ${s.c}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
+card(`<div class="lad" role="img" aria-label="Карточка ${i+1} из ${N}">${[...Array(N)].map((_,k)=>`<i style="background:${LV[sit(k).lv]}${k<i?"":k===i?";height:8px":";opacity:.3"}"></i>`).join("")}</div><div class="meta"><span>${i+1} из ${N} · ${s.c}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
 ${M==="guess"?ask(0,st.friend.name):self?ask(1):ask(0,st.friend&&st.friend.name||st.toName)}<div class="q">${s.q}</div><div id="o"></div>`);
 const idx=s.o.map((_,k)=>k);for(let k=idx.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
-const r=document.createElement("div");r.className="row";
+const r=document.createElement("div");r.className=s.lv===0?"duo":"row col";
 const ans=x=>{if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};
 if(s.multi){let sel=[];const nx=document.createElement("button");nx.className="main-btn";nx.textContent="Дальше";
 const paint=()=>{r.querySelectorAll("button").forEach(b=>{const on=sel.includes(+b.dataset.x);b.className=on?"t":"n";b.setAttribute("aria-pressed",on)});nx.style.display=sel.length?"":"none"};
 idx.forEach(x=>{const b=document.createElement("button");b.dataset.x=x;b.textContent=opt(s,x);b.onclick=()=>{sel=sel.includes(x)?sel.filter(y=>y!==x):[...sel,x].slice(-2);paint()};r.appendChild(b)});
 nx.onclick=()=>ans(sel.length===1?sel[0]:[...sel].sort());$("o").appendChild(r);$("o").insertAdjacentHTML("beforeend",`<div class="zone">Можно выбрать один или два</div>`);$("o").appendChild(nx);paint()}
-else{idx.forEach(x=>{const b=document.createElement("button");b.className="n";b.textContent=opt(s,x);b.onclick=()=>ans(x);r.appendChild(b)});$("o").appendChild(r)}
+else{idx.forEach(x=>{const b=document.createElement("button");b.className="n";b.textContent=opt(s,x);if(s.e)b.dataset.e=s.e[x];b.onclick=()=>ans(x);r.appendChild(b)});$("o").appendChild(r)}
 /* «Проехали» на уровне «Личное»: глубину выбирает сам игрок, пропуск без штрафа */
 if(s.lv===3){const b=document.createElement("button");b.className="g";b.textContent="Проехали";b.style.alignSelf="flex-start";b.onclick=()=>ans(PASS);$("o").appendChild(b)}
 if(M!=="guess"&&self&&s.z){st.mine=st.mine||[];const m=document.createElement("button");const paint=()=>{m.className=st.mine[i]?"p":"n";m.textContent=st.mine[i]?"Это было со мной ✓":"Это было со мной";m.setAttribute("aria-pressed",!!st.mine[i])};
 paint();m.style.alignSelf="flex-start";m.onclick=()=>{st.mine[i]=!st.mine[i];save();paint()};
 $("o").insertAdjacentHTML("beforeend",`<div class="zone">Отметь, если такое правда было, — потом легко найдёшь в саду</div>`);$("o").appendChild(m)}}
-const set=x=>Array.isArray(x)?x:[x];
-const hit=(s,own,g)=>{if(own===PASS||g===PASS)return 0;const A=set(own),B=set(g);if(A.length===B.length&&A.every(x=>B.includes(x)))return 2;
+const set=x=>Array.isArray(x)?x:[x],lb=(s,a)=>a&&s.lv===0?2:a;  /* в разминке угадал — значит угадал, хоть мосту и верёвочка */
+const hit=(s,own,g)=>{if(own===PASS||g===PASS)return 0;if(s.lv===0)return own===g?1:0;const A=set(own),B=set(g);if(A.length===B.length&&A.every(x=>B.includes(x)))return 2;
 return A.some(x=>B.includes(x))||Z(s,own)>=0&&Z(s,own)===Z(s,g)?1:0};
 /* остров: каждый ответ = растение на своём участке; угадал друг -> ярко, нет -> в тумане */
 function island(own,gs,ops){
@@ -376,7 +418,7 @@ const v=[...Array(N)].map((_,k)=>hit(sit(k),H.s[k],st.g[k]));
 const B=st.bottle,u=v.filter(x=>x>0).length;
 let h=B?`<h1>Бутылка от: ${hn}</h1><div class="card">${bridge(v,2)}<p style="margin:0">Ты понял незнакомца в ${u} ${pl(u,["карточке","карточках","карточках"])} из ${N}.</p>${wishBox(st.wish,H.name,H.id)}</div>${storyBlock()}`
 :`<h1>Ты и ${hn}</h1>${bridgeCard(v,2,H.name,"Мост: ты и "+hn)}${storyBlock()}${`<p class="note">${hn} увидит ваш мост у себя: бот уже прислал сообщение.</p>`}<div class="card"><h2>По ситуациям</h2>`;
-for(let k=0;k<N;k++){const a=hit(sit(k),H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[a].toLowerCase()}</span></div></div>`}
+for(let k=0;k<N;k++){const a=hit(sit(k),H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[lb(sit(k),a)].toLowerCase()}</span></div></div>`}
 h+=`</div><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
 if(B)h+=`<div class="row"><button class="n" id="cb">Выловить ещё</button><button class="g" id="rp">Пожаловаться</button></div>`;
 app.innerHTML=h;if(B){wireWish(st.join,w=>{st.wish=w;save();go()});wireReport(st.join);$("cb").onclick=catchBottle}else bridgeBtns(H.name);wireMark();$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
@@ -409,7 +451,7 @@ function bridgeCard(v,max,name,title){const b=v.filter(x=>x>=max).length,r=v.fil
 curFid=st.friend&&st.friend.id||null;const t=bridges[bkey(name)]||0;
 return`<div class="card"><h2>${title}</h2>${bridge(v,max)}
 <p style="margin:0">В этой игре: ${b} ${pl(b,["доска","доски","досок"])} и ${r} ${pl(r,["верёвочка","верёвочки","верёвочек"])}.</p>
-<p class="note" style="margin:0">Доска — вы поняли друг друга точно. Верёвочка — почти угадали или понял только один. Пусто — пока не поняли.</p>
+<p class="note" style="margin:0">Доска — вы поняли друг друга точно. Верёвочка — почти угадали, понял только один или это была разминка. Пусто — пока не поняли.</p>
 <div id="bst" style="display:flex;flex-direction:column;gap:12px">${bridgeState(t)}</div>
 <div class="zone">Как укрепить мост</div>
 <div class="row"><button class="main-btn" id="brd">Сделать дело вместе: +3 доски</button><button class="n" id="brp">Ещё партию</button></div>
@@ -421,8 +463,8 @@ const v=[...Array(N)].map((_,k)=>hit(sit(k),f.s[k],st.g[k])+hit(sit(k),st.s[k],f
 let h=`<h1>Ну-ну: ${esc(st.name)} и ${fn}</h1>${bridgeCard(v,4,f.name,"Ваш мост")}${storyBlock()}<div class="card"><h2>По ситуациям</h2>`;
 for(let k=0;k<N;k++){const s=sit(k),a=hit(s,st.s[k],f.g[k]),b=hit(s,f.s[k],st.g[k]);
 h+=`<div class="res"><div class="s">${k+1}. ${s.q}</div>
-<div>Ты: ${esc(opt(s,st.s[k]))} <span class="tag ${a?"open":"fog"}">${fn}: ${L[a].toLowerCase()}</span></div>
-<div>${fn}: ${esc(opt(s,f.s[k]))} <span class="tag ${b?"open":"fog"}">ты: ${L[b].toLowerCase()}</span></div>${s.gift&&f.g[k]!==PASS?`<div class="tag p" style="align-self:flex-start">${fn} дарит тебе: ${esc(opt(s,f.g[k]))}</div>`:""}</div>`}
+<div>Ты: ${esc(opt(s,st.s[k]))} <span class="tag ${a?"open":"fog"}">${fn}: ${L[lb(s,a)].toLowerCase()}</span></div>
+<div>${fn}: ${esc(opt(s,f.s[k]))} <span class="tag ${b?"open":"fog"}">ты: ${L[lb(s,b)].toLowerCase()}</span></div>${s.gift&&f.g[k]!==PASS?`<div class="tag p" style="align-self:flex-start">${fn} дарит тебе: ${esc(opt(s,f.g[k]))}</div>`:""}</div>`}
 h+=`</div>`;
 [[st.s,f.g,"Твой остров"],[f.s,st.g,"Остров: "+fn]].forEach(([own,gs,title])=>{const c=[0,0,0];let open=0;
 let all=0;own.forEach((x,k)=>{const z=Z(sit(k),x);if(z<0)return;all++;c[z]++;if(z===Z(sit(k),gs[k]))open++});
@@ -450,13 +492,13 @@ const artTreeB=(x,y,s)=>artTree(x,y,s)+[[-2.6,0],[2.4,-1.4],[0,-4.6]].map(([dx,d
 const artRockB=(x,y,s)=>artRock(x,y,s)+`<line x1="${f1(x+1*s)}" y1="${f1(y-6*s)}" x2="${f1(x+1*s)}" y2="${f1(y-3*s)}" stroke="#4E8A2E" stroke-width="${f1(1*s)}"/><circle cx="${f1(x+1*s)}" cy="${f1(y-7*s)}" r="${f1(2*s)}" fill="#E0709A"/><circle cx="${f1(x+1*s)}" cy="${f1(y-7*s)}" r="${f1(.8*s)}" fill="#FAD27A"/>`;
 const artTuft=(x,y,s)=>`<path d="M${f1(x-3*s)} ${f1(y+2*s)}q${f1(1*s)} ${f1(-4*s)} ${f1(2*s)} ${f1(-5*s)}M${f1(x)} ${f1(y+2*s)}v${f1(-6*s)}M${f1(x+3*s)} ${f1(y+2*s)}q${f1(-1*s)} ${f1(-4*s)} ${f1(-2*s)} ${f1(-5*s)}" stroke="#6FA34A" stroke-width="${f1(1.2*s)}" fill="none" stroke-linecap="round"/>`;
 /* растения из ответов: сад — цветы (к людям), лес — деревья (пауза), скалы — камни (на своём) */
-function artIsland(cx,cy,R,id,z,name,badge,on,bl=[0,0,0]){const r=rnd(id*7919+13),ph=[r()*6,r()*6,r()*6],B=(k,dy=0)=>blob(cx,cy+dy,R,ph,k),s=Math.min(R/40,1.2);
-if(on==="halo")return`<path d="${B(1.34)}" fill="#BCE4EC"/>`;
+function artIsland(cx,cy,R,id,z,name,badge,on,bl=[0,0,0],mine){const r=rnd(id*7919+13),ph=[r()*6,r()*6,r()*6],B=(k,dy=0)=>blob(cx,cy+dy,R,ph,k),s=Math.max(1,Math.min(R/40,1.2))*1.25,col=mine?["#F6DFA0","#A9D872","#93C955"]:["#E8DDBF","#A9C692","#9ABA83"];
+if(on==="halo")return`<path d="${B(1.75)}" fill="#86C3D4"/><path d="${B(1.34)}" fill="#BCE4EC"/>`;
 let g=`<path d="${B(1.04,4)}" fill="#4F8FA3" opacity=".35"/><path d="${B(1.08)}" fill="none" stroke="#fff" stroke-width="1.6" opacity=".75"/>
-<path d="${B(1)}" fill="#EFDDB0"/><path d="${B(.84,-1)}" fill="#A8CF7C"/><path d="${blob(cx,cy-R*.1,R,ph,.5)}" fill="#97C46D"/>`;
+<path d="${B(1)}" fill="${col[0]}"/><path d="${B(.84,-1)}" fill="${col[1]}"/><path d="${blob(cx,cy-R*.1,R,ph,.5)}" fill="${col[2]}"/>`;
 /* первые bl[k] растений каждого вида — распустившиеся в жизни («так и сделал») */
 /* остров растёт с садом: растений помещается больше — площадь растёт как R² */
-const cap=k=>Math.min(z[k],Math.floor(6*(R/46)**2)),kinds=[0,1,2].flatMap(k=>Array.from({length:cap(k)},(_,j)=>j<Math.min(bl[k]||0,cap(k))?k+4:k)),pts=[];
+const cap=k=>Math.min(z[k],Math.max(1,Math.floor(3*(R/46)**2))),kinds=[0,1,2].flatMap(k=>Array.from({length:cap(k)},(_,j)=>j<Math.min(bl[k]||0,cap(k))?k+4:k)),pts=[];
 if(!kinds.length)for(let i=0;i<3;i++)kinds.push(3);
 kinds.forEach(k=>{for(let t=0;t<40;t++){const a=r()*2*Math.PI,q=Math.sqrt(r())*.68,x=cx+q*R*Math.cos(a),y=cy+q*R*.5*Math.sin(a);
 if(pts.every(p=>Math.hypot(p[0]-x,(p[1]-y)*1.4)>10*s)){pts.push([x,y,k]);break}}});
@@ -488,11 +530,11 @@ const at=k=>-Math.PI/2+k/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,ai=at(Math.mi
 const all=[me,...pos,[...inv,30],[...bot,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
 const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
 let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Карта: твой остров и острова друзей. Двигай пальцем, щипком приближай">
-<defs><pattern id="wv" width="46" height="26" patternUnits="userSpaceOnUse"><path d="M4 14q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".35"/><path d="M27 4q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".25"/></pattern></defs>
-<rect x="${f1(x0-1500)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3000)}" height="${f1(y1-y0+3000)}" fill="#86C3D4"/><rect class="wv" x="${f1(x0-1546)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3046)}" height="${f1(y1-y0+3000)}" fill="url(#wv)"/>`;
+<defs><pattern id="wv" width="92" height="58" patternUnits="userSpaceOnUse"><path d="M8 18q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".2"/><path d="M58 44q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".14"/></pattern></defs>
+<rect x="${f1(x0-1500)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3000)}" height="${f1(y1-y0+3000)}" fill="#6DB2C9"/><rect class="wv" x="${f1(x0-1592)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3092)}" height="${f1(y1-y0+3000)}" fill="url(#wv)"/>`;
 [me,...pos].forEach((p,i)=>g+=artIsland(p[0],p[1],p[2],i?F[i-1].id:w.me.id,[0,0,0],"",null,"halo"));
 F.forEach((f,i)=>g+=artBridge(me,pos[i],f.boards));
-g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0,w.me.bloom)}</g>`;
+g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0,w.me.bloom,1)}</g>`;
 F.forEach((f,i)=>g+=`<g data-i="${i+1}" style="cursor:pointer">${artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,f.island,f.name,f.turn,sel===i+1,f.bloom)}</g>`);
 g+=`<g data-i="bottle" style="cursor:pointer"><g class="bob">${artBottle(bot[0],bot[1])}</g><rect x="${f1(bot[0]-36)}" y="${f1(bot[1]+28)}" width="72" height="20" rx="10" fill="#FFF8E7" stroke="${sel==="bottle"?"#1D7A5C":"#D9C9A3"}" stroke-width="${sel==="bottle"?2:1}"/><text x="${f1(bot[0])}" y="${f1(bot[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">бутылка</text></g>
 <g data-i="inv" style="cursor:pointer"><circle cx="${f1(inv[0])}" cy="${f1(inv[1])}" r="22" fill="#A9D7E3" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><text x="${f1(inv[0])}" y="${f1(inv[1]+8)}" text-anchor="middle" font-size="24" fill="#fff" font-family="Golos Text,system-ui">+</text>

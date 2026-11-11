@@ -173,7 +173,7 @@ def put_state(body: StateIn, x_init_data: str | None = Header(default=None)):
 @router.post("/game")
 async def new_game(body: GameIn, x_init_data: str | None = Header(default=None)):
     u = _user(x_init_data)
-    if body.mode not in ("duo", "hero") or not 0 <= body.seed < 36 ** 4 or (body.bottle and body.mode != "hero"):
+    if body.mode not in ("duo", "hero") or not 0 <= body.seed < 2 * 36 ** 4 or (body.bottle and body.mode != "hero"):
         raise HTTPException(422, "Неизвестная игра")
     s, g = _answers(body.s), _answers(body.g, empty_ok=body.mode == "hero")
     gid = secrets.token_hex(4)
