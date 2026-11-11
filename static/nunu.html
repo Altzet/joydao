@@ -71,7 +71,9 @@ input,textarea{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid
 /* карта живёт: волны плывут, бутылка качается, «твой ход» пульсирует; кто просил меньше движения — всё стоит */
 .wv{animation:wv 14s linear infinite}@keyframes wv{to{transform:translateX(92px)}}
 .bob{animation:bob 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes bob{50%{transform:translateY(-4px) rotate(5deg)}}
-.pulse{animation:pulse 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes pulse{50%{transform:scale(1.2)}}}
+.pulse{animation:pulse 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes pulse{50%{transform:scale(1.2)}}
+/* всход: семя падает в землю, стебель тянется, листья раскрываются, затем цветок (или росток «иначе») */
+.grow .seed{animation:seed .35s ease-out both}.grow .stem{stroke-dasharray:60;stroke-dashoffset:60;animation:stem .6s .3s ease-out forwards}.grow .lf,.grow .fl{transform-box:fill-box;transform:scale(0);animation:lf .4s ease-out forwards}.grow .lf{transform-origin:bottom center}.grow .l1{animation-delay:.8s}.grow .l2{animation-delay:.95s}.grow .fl{transform-origin:center;animation:lf .55s cubic-bezier(.3,1.6,.6,1) 1.15s forwards}.grow .cap{opacity:0;animation:cap .3s 1.3s forwards}@keyframes seed{from{transform:translateY(-16px);opacity:0}}@keyframes stem{to{stroke-dashoffset:0}}@keyframes lf{to{transform:scale(1)}}@keyframes cap{to{opacity:1}}}
 </style></head><body>
 <main id="app"></main>
 <script>
@@ -270,7 +272,7 @@ let onlyMine=false;
 let gview="wait";const inView=x=>gview==="wait"?!x.life:gview==="bloom"?x.life&&x.life.same:x.life&&!x.life.same;
 function garden(){setNav("garden");const mineN=seeds.filter(x=>x.mine&&inView(x)).length,inN=seeds.filter(inView).length;
 const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length,tile=v=>`data-v="${v}" role="button" tabindex="0" aria-pressed="${gview===v}"`;
-let h=`<h1>Мой сад</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя распустится.</p>
+let h=`<h1>Мой сад</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя взойдёт.</p>
 <div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>так и сделал</div>
 <div ${tile("other")} style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
 <div ${tile("wait")} style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>${pl(seeds.length-up-other,["семя","семени","семян"])}</div></div>
@@ -289,7 +291,7 @@ ${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты 
 h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`;
 app.innerHTML=h;
 app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;const x=seeds[k];x.life={same:b.dataset.s==="1",note:$("nt"+k).value.trim().slice(0,200),d:new Date().toISOString().slice(0,10)};
-if(x.with&&x.life.same&&!x.bridged){const k=x.fid?"id:"+x.fid:x.with;bridges[k]=(bridges[k]||0)+3;if(x.fid&&API)API("/friend/"+x.fid+"/deed","POST",{pid:x.pid||null}).catch(()=>{});x.bridged=1;ls.set("nunu-bridges",bridges)}saveSeeds();garden()});
+if(x.with&&x.life.same&&!x.bridged){const k=x.fid?"id:"+x.fid:x.with;bridges[k]=(bridges[k]||0)+3;if(x.fid&&API)API("/friend/"+x.fid+"/deed","POST",{pid:x.pid||null}).catch(()=>{});x.bridged=1;ls.set("nunu-bridges",bridges)}saveSeeds();sprouted(b.closest(".card"),x.life.same)});
 app.querySelectorAll("[data-v]").forEach(d=>d.onclick=d.onkeydown=e=>{if(e.type==="keydown"&&e.key!=="Enter"&&e.key!==" ")return;gview=gview===d.dataset.v?"wait":d.dataset.v;garden();const v=$("gv");v&&v.scrollIntoView&&v.scrollIntoView({block:"start",behavior:"smooth"})});
 $("fa").onclick=()=>{onlyMine=false;garden()};$("fm").onclick=()=>{onlyMine=true;garden()};
 $("bk").onclick=()=>st.started?go():home()}
@@ -300,6 +302,11 @@ const SP=[["Если застесняюсь, то начну с простого
 ["Если застесняюсь, то скажу хотя бы полфразы: «Слушай, для меня это важно».","Если сяду ужинать с семьёй, то расскажу одну вещь, которая для меня важна.","Если почувствую, что меня не услышали, то скажу это вслух."],
 ["Если застесняюсь, то напишу сообщение, а не позвоню.","Если в пятницу открою Telegram, то первым делом напишу другу.","Если не придумаю повод, то позову на то, что и так собирался делать."]];
 /* что показал остров: тот же счёт, что под картой (все семена сада), а не одна партия — иначе цифры спорят */
+/* всход семени при отметке: 1,7 с анимации на месте карточки, потом сад. Кто просил меньше движения — сразу итог на миг */
+function sprouted(card,same){try{const T=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.HapticFeedback;T&&T.notificationOccurred("success")}catch(e){}
+if(!card){garden();return}const R=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+card.innerHTML=`<div class="grow" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0"><svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true"><ellipse cx="60" cy="104" rx="44" ry="10" fill="#C9A66B" opacity=".55"/><ellipse class="seed" cx="60" cy="98" rx="6" ry="4" fill="#8A5A2B"/><path class="stem" d="M60 98C60 84 61 70 60 52" stroke="#1D7A5C" stroke-width="4" stroke-linecap="round" fill="none"/><path class="lf l1" d="M60 74C52 60 36 60 32 68C40 76 52 76 60 74Z" fill="#1D7A5C"/><path class="lf l2" d="M60 66C68 52 86 50 90 58C82 68 68 68 60 66Z" fill="#2E9A73"/>${same?'<g class="fl"><circle cx="60" cy="38" r="7" fill="#E0709A"/><circle cx="51" cy="44" r="7" fill="#E0709A"/><circle cx="69" cy="44" r="7" fill="#E0709A"/><circle cx="54" cy="53" r="7" fill="#E0709A"/><circle cx="66" cy="53" r="7" fill="#E0709A"/><circle cx="60" cy="47" r="5" fill="#F2C94C"/></g>':'<g class="fl"><path d="M60 52C56 44 58 36 64 32C66 40 64 46 60 52Z" fill="#A9D872"/></g>'}</svg><b class="cap" style="font:500 1.125rem var(--disp)">${same?"Взошло и расцвело 🌸":"Проросло иначе 🌱"}</b></div>`;
+setTimeout(garden,R?600:1900)}
 function insight(){const c=[0,0,0];seeds.forEach(x=>{if(x.z>=0&&x.z<3)c[x.z]++});const m=Math.max(...c);if(!m)return"";
 const P=["цветов","деревьев","скал"],M=["ты чаще идёшь к людям","ты чаще берёшь паузу и отходишь","ты чаще стоишь за своё"],top=[0,1,2].filter(k=>c[k]===m);
 return`На твоём острове больше всего ${top.map(k=>P[k]).join(" и ")}: ${top.map(k=>M[k]).join(", и ")}. Цветы ${c[0]} · деревья ${c[1]} · скалы ${c[2]}.`}
