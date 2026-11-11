@@ -1,72 +1,47 @@
-# JoyDao ✨
+<p align="center"><img src="docs/cover.png" alt="JoyDAO · Ну-ну — острова и мосты" width="720"></p>
 
-**Сообщество людей, которым интересно, что скрывает дата рождения.**
-Telegram-бот [@JOYDAO_bot](https://t.me/JOYDAO_bot) + Mini App · канал [@joydao](https://t.me/joydao) · чат [@joydao_club](https://t.me/joydao_club)
+# JoyDAO · «Ну-ну»
+
+**Строй мосты с людьми. По шагу в день.**
+
+«Ну-ну» — игра в Telegram о том, насколько хорошо вы с друзьями знаете друг друга. У каждого свой остров, между друзьями растут мосты, а раз в неделю ты ставишь себе маленькое дело и отмечаешь, сделал ли его.
+
+▶ **Играть:** [t.me/JOYDAO_bot/nunu](https://t.me/JOYDAO_bot/nunu) · канал [@joydao](https://t.me/joydao) · общий чат [@joydao_club](https://t.me/joydao_club)
 
 *English below.*
 
-- 🎂 Портрет по дате рождения и баланс энергий: что есть, чего не хватает
-- ☀️ Энергия дня: каждое утро новый текст, без повторов в течение месяца
-- 💞 🤝 💼 Совместимость в любви, дружбе и бизнесе, а также для групп и команд
-- 👥 Знакомства по созвучию: лента анкет с объяснением «почему вы совпали»
-- 🔍 Проверка любой даты: короткий разбор, которым удобно поделиться с другом
-- ⚡ JOY energy: энергия сообщества за вклад, а не за деньги ([подробнее](#joy-energy))
-- 🌐 3 языка: русский, українська, English
+## Как это работает
 
-> Нумерология здесь — игра и повод для рефлексии, а не научный факт.
+- 🏝 **Твой остров.** Отвечаешь на карточки-сцены, и остров растёт из ответов: цветы — когда идёшь к людям, деревья — когда уходишь в себя, камни — когда стоишь за себя. Это состояния, а не оценки.
+- 🌉 **Мосты.** Отвечаешь о себе и угадываешь друга. Поняли друг друга — мост крепнет: канатный → подвесной → дощатый → каменный. Чем крепче мост, тем ближе остров друга на карте.
+- 🌱 **«Чем удивишь себя на этой неделе?»** Маленькое дело в формате «если…, то…» — одно или вместе с другом. Бот напомнит, а сделанное распускается на острове.
+- 👥 **Компания.** Одна ссылка или QR-код на всех: «угадайте меня».
+- ✍️ **Своя ситуация.** Расскажи случай из жизни, а друг угадает, как ты поступил.
+- 🍾 **Бутылка в море.** Партия с незнакомцем. Мост появляется, только если этого хотят оба.
+
+Вход — через Telegram: ни паролей, ни кодов.
+
+## На чём стоит
+
+Каждое решение в игре опирается на исследование. Где опоры нет, мы так и пишем: гипотеза.
+
+| Что в игре | Опора |
+|---|---|
+| Вопросы от лёгких к личным | Aron et al., 1997 — близость растёт от постепенной взаимной откровенности |
+| «Кто я, по-твоему?» | Carlson (мета-восприятие); Boothby et al., 2018 — мы плохо угадываем, как нас видят другие |
+| Стадии моста | Hall, 2018 — дружба крепнет от времени, проведённого вместе |
+| Дело «если…, то…» | Gollwitzer & Sheeran, 2006 — намерения реализации |
+| Мост можно починить | Silverman & Barasch, 2023 |
+| Мост вместо счёта | соревнование отдаляет, совместное дело сближает |
+
+Игра — компас, а не рентген: она показывает, куда ты смотришь, и не ставит диагнозов.
 
 ## Почему код открыт
 
-Мы работаем с личными данными: датой рождения, фото, симпатиями. Поэтому код открыт, и каждый может проверить, что с ними происходит:
-
-- **Дату рождения не видит никто.** Другим людям показываются только число и процент совместимости, в том числе в платном глубоком разборе пары (тесты `test_pair_result_notifies_both_without_leaking_birth_date`, `test_deep_report_hides_birth_date_and_needs_joy`).
-- **Фото без метаданных.** Его пережимает Telegram или наш сервер, геометка из файла удаляется. Чужое фото можно получить только по анкете, которую тебе уже показали в ленте (`/api/photo`).
-- **Вход только через Telegram.** Каждый запрос Mini App проверяется подписью `initData` (`_auth` в [app/api.py](app/api.py)).
-- **Удаление аккаунта** стирает дату, анкету, лайки и взаимные симпатии (`/api/profile/delete`). Повторная регистрация не даёт заново получить JOY (`test_deleting_account_does_not_refarm_joy`).
-- **Никакой рекламы и продажи данных.** Проект живёт на добровольные донаты.
-
-## JOY energy
-
-Внутренняя энергия сообщества. Логика вся в [app/joy.py](app/joy.py), баланс — это сумма записей журнала `joy_ledger`, одна награда за одно событие гарантирована ограничением в базе.
-
-| Как получить | Сколько |
-|---|---|
-| Заполнить анкету и пройти тест принципов сообщества (7 из 9) | 1 000 JOY, через 3 дня или после первой взаимной симпатии |
-| Верный ответ на «Число дня» | 50 JOY |
-| 7 дней подряд | 300 JOY |
-| Квиз пары после взаимной симпатии | 200 JOY каждому |
-| Еженедельный турнир (взнос 500 JOY) | 50 / 30 / 20 % банка за 1–3 место, 10 % сжигается |
-
-| На что потратить | Сколько |
-|---|---|
-| «Искра»: усиленный лайк, ты первый в ленте получателя | 100 JOY |
-| Буст анкеты на 24 часа | 300 JOY |
-| Глубокий разбор пары | 500 JOY |
-| Разбор звезды и совместимость с ней | 200 JOY |
-
-Сейчас JOY живёт только внутри приложения. Вывод в джеттон на TON запланирован отдельной фазой.
-
-### Монета на TON
-
-[JOY energy](https://tonviewer.com/EQBd1qH6vQHnjGxRsD-jxg5L9S_zsmjXti2Chnve5p0Md6-s): `EQBd1qH6vQHnjGxRsD-jxg5L9S_zsmjXti2Chnve5p0Md6-s`
-
-- Всего **9 000 000 000 JOY**, больше не будет: право выпуска отозвано (admin = пустой адрес).
-- Сжигать можно: 20 % каждой траты в приложении сгорает.
-- JOY зарабатывают, а не покупают. Проект не продаёт JOY и не обещает рост цены.
-
-9 энергий — 9 кошельков по 1 млрд JOY:
-
-| № | Энергия | Пул | Кошелёк |
-|---|---|---|---|
-| 1 | Власть | Резерв | [UQCVqBzT0w_kV7zzD7dDWx7FMDBE8vdlN51cYTJS-ZEnnIx7](https://tonviewer.com/UQCVqBzT0w_kV7zzD7dDWx7FMDBE8vdlN51cYTJS-ZEnnIx7) |
-| 2 | Творческая психология | Награды · квиз пары | [UQAaPcINZWqaqagK_vX6Nd-3a475gIB9Fzff-WmFMVwcbV8Q](https://tonviewer.com/UQAaPcINZWqaqagK_vX6Nd-3a475gIB9Fzff-WmFMVwcbV8Q) |
-| 3 | Анализ | Награды · «Число дня» и серии | [UQAXYzXlxmJaArS5rrfqvmxT1JLacKCy9AG0UGYovwjH5qap](https://tonviewer.com/UQAXYzXlxmJaArS5rrfqvmxT1JLacKCy9AG0UGYovwjH5qap) |
-| 4 | Передача знаний | Награды · вход в клуб | [UQDKHMtLru22wPSuXE5fkK0s03CxqthUsSSfbWs5o7ZTrgkA](https://tonviewer.com/UQDKHMtLru22wPSuXE5fkK0s03CxqthUsSSfbWs5o7ZTrgkA) |
-| 5 | Борьба | Викторины и турниры | [UQCmZnbBbybu7kyZii1Ie6ZYkNJ0GufyraeU4EafXx9-Abye](https://tonviewer.com/UQCmZnbBbybu7kyZii1Ie6ZYkNJ0GufyraeU4EafXx9-Abye) |
-| 6 | Творчество | Награды · запас на новые механики | [UQCvIR8zIbhF9RMZSahj2BCV3hj8iSGvpZSE8NF_fM8C6qVQ](https://tonviewer.com/UQCvIR8zIbhF9RMZSahj2BCV3hj8iSGvpZSE8NF_fM8C6qVQ) |
-| 7 | Йога | Казна (траты по голосованию) | [UQD2zE8YPxA2mN8G25AAPS1Vhj_Y_FX1Y0ykbuaLKdM819be](https://tonviewer.com/UQD2zE8YPxA2mN8G25AAPS1Vhj_Y_FX1Y0ykbuaLKdM819be) |
-| 8 | Упорный труд | Команда (вестинг 24 мес.) | [UQCqIKv0e8dX1TNEUKEGRfpvofLG_-akz2d0wIJiUzSsq3u5](https://tonviewer.com/UQCqIKv0e8dX1TNEUKEGRfpvofLG_-akz2d0wIJiUzSsq3u5) |
-| 9 | Служение людям | Рефералы | [UQDiIZq96aaHWDCJUp75ylWze8eAm3a5CLXGxM6Z_fuUQSfy](https://tonviewer.com/UQDiIZq96aaHWDCJUp75ylWze8eAm3a5CLXGxM6Z_fuUQSfy) |
+- **Вход только через Telegram.** Каждый запрос проверяется подписью `initData` (сервер: [app/nunu.py](app/nunu.py)).
+- **Видно только своё.** На карте только твои мосты; аватарок нет.
+- **Незнакомцы — только по взаимному желанию.** Пожаловаться можно в два нажатия.
+- **Никакой рекламы и продажи данных.**
 
 ## Запуск
 
@@ -76,54 +51,38 @@ cp .env.example .env        # впишите BOT_TOKEN и WEBAPP_URL
 .venv/bin/python -m app.main
 ```
 
-Бот, API и планировщики работают в одном процессе. `ANTHROPIC_API_KEY` необязателен: он нужен для постов в канал, глубокого разбора пары и перевода длинных текстов портрета.
-
-Тесты: `pip install pytest httpx && BOT_TOKEN=1:t python -m pytest -q tests`.
-Сервер: systemd-юнит и скрипт установки (nginx + certbot) лежат в [deploy/](deploy/): `bash deploy/server-setup.sh ваш.домен`.
-
-## Устройство
+Тесты: `pip install pytest httpx && BOT_TOKEN=1:t python -m pytest -q tests/test_nunu.py tests/test_nunu_server.py tests/test_pause.py`.
+Сервер: systemd-юнит и скрипт установки (nginx + certbot) — в [deploy/](deploy/).
 
 ```
-app/
-  main.py      точка входа: бот (polling) + FastAPI + планировщики
-  bot.py       Telegram-бот: онбординг и переход в Mini App
-  api.py       API для Mini App, проверка initData
-  suisai.py    расчёты по дате рождения
-  compat.py    совместимость 0–100, веса в data/compat_rules.json
-  joy.py       JOY energy: награды, траты, квизы, турниры
-  mailing.py   утренняя рассылка «Энергия дня»
-  teaser.py    короткий разбор любой даты для пересылки
-  agent.py     ежедневные посты канала с премодерацией
-  card.py      картинки к постам (Pillow)
-  db.py        SQLite
-  i18n.py      переводы
-static/index.html   Mini App (один файл, vanilla JS)
-tests/              pytest
-tools/              сборка переводов и отладка ленты
-deploy/             systemd + nginx
+static/nunu.html   игра: один файл, vanilla JS, рисованный SVG
+app/nunu.py        API игры: партии, мосты, приглашения, бутылки, напоминания
+app/pause.py       бот «Ну-ну»: профиль, кнопка «Играть»
+app/main.py        точка входа
+tests/             pytest
 ```
 
-## Переводы
-
-Ключ перевода — сама русская фраза. Строки собраны в [tools/strings.json](tools/strings.json), переводы лежат в `tools/tr/<uk|en>_N.txt`.
-Нашли неточность? Поправьте строку и запустите `python tools/build_i18n.py`. Скрипт проверит плейсхолдеры и HTML-теги и соберёт `app/i18n/<lang>.json`. PR приветствуются.
+Старый JoyDao (портрет по дате рождения, совместимость, знакомства, JOY energy и монета на TON) не удалён: включается `LEGACY=1`, описание — в [docs/LEGACY.md](docs/LEGACY.md).
 
 ---
 
 ## English
 
-JoyDao is a community for people curious about what a birth date hides. It offers a numerology portrait, a daily "energy of the day", and compatibility for love, friendship and business, including whole teams. It also has gentle matchmaking that explains *why* two people resonate. Everything runs as a Telegram bot plus a Mini App, in Ukrainian, Russian and English.
+**Build bridges with people. One step a day.**
 
-The code is open so anyone can verify how personal data is handled:
+*Nu-nu* is a Telegram game about how well you and your friends really know each other. Everyone has an island; bridges grow between friends; and once a week you set yourself one small thing to do and mark whether you did it.
 
-- Birth dates are never shown to other users, not even in the paid pair report.
-- Photos are re-encoded with metadata stripped.
-- Every request is authenticated with Telegram `initData`.
-- Deleting the account wipes the profile and likes.
+- 🏝 **Your island** grows from your answers: flowers when you move toward people, trees when you step back, rocks when you stand your ground. States, not grades.
+- 🌉 **Bridges.** Answer about yourself and guess your friend. Understand each other and the bridge gets stronger: rope → suspension → planks → stone.
+- 🌱 **"How will you surprise yourself this week?"** One small *if–then* plan, alone or with a friend. The bot reminds you; what you did blooms on your island.
+- 👥 **Party mode:** one link or QR code — everyone guesses you.
+- 🍾 **Message in a bottle:** play with a stranger; a bridge appears only if both want it.
 
-**JOY energy** is the community's in-app currency. You earn it for joining (completed profile plus a principles test), daily quizzes, streaks, pair quizzes and weekly tournaments. You spend it on a Spark (super-like), a 24h profile boost or a deep pair report. Withdrawal to a TON jetton is planned for a later phase.
+Every design decision is backed by research (Aron 1997, Gollwitzer & Sheeran 2006, Hall 2018, and others); anything without support is labelled a hypothesis.
 
-Stack: Python, aiogram 3, FastAPI, SQLite, Pillow, and a single-file vanilla JS Mini App.
+▶ [Play in Telegram](https://t.me/JOYDAO_bot/nunu) · The interface is in Russian for now.
+
+Stack: Python, aiogram 3, FastAPI, SQLite, and a single-file vanilla JS Mini App with hand-drawn SVG.
 
 ## License
 
