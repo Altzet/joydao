@@ -6,6 +6,8 @@
 
 «Ну-ну» — игра в Telegram о том, насколько хорошо вы с друзьями знаете друг друга. У каждого свой остров, между друзьями растут мосты, а маленькие дела ты ставишь себе хоть каждый день — бот напомнит в нужный час. Это и игра, и заметки, и дневник.
 
+🌱 **Главный образ — сад.** Каждое дело — семя: ты сажаешь его на своём острове, и оно ждёт в земле. Сделал в жизни — семя распускается; вышло по-другому — прорастает иначе. Игра не сделает дело за тебя: она помогает посадить намерение и не забыть о нём, а растёт оно в реальной жизни.
+
 ▶ **Играть:** [t.me/JOYDAO_bot/nunu](https://t.me/JOYDAO_bot/nunu) · канал [@joydao](https://t.me/joydao) · общий чат [@joydao_club](https://t.me/joydao_club)
 
 *English below.*
@@ -71,6 +73,8 @@ tests/             pytest
 **Build bridges with people. One step a day.**
 
 *Nu-nu* is a Telegram game about how well you and your friends really know each other. Everyone has an island; bridges grow between friends; and you set yourself small things to do — every day if you like — and the bot reminds you at the hour you pick. A game, a notebook and a diary in one.
+
+🌱 **The core image is a garden.** Every plan is a seed you plant on your island. Do it in real life and it blooms; do it differently and it sprouts another way. The game can't do it for you — it helps you plant the intention and remember it; the growing happens in real life.
 
 - 🏝 **Your island** grows from your answers: flowers when you move toward people, trees when you step back, rocks when you stand your ground. States, not grades.
 - 🌉 **Bridges.** Answer about yourself and guess your friend. Understand each other and the bridge gets stronger: rope → suspension → planks → stone.
