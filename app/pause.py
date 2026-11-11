@@ -19,6 +19,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 
 from . import config, db, nunu
+from .nunu import remind_loop  # имя nunu ниже занято маршрутом /nunu
 
 TEXT = (
     "🏝 <b>Ну-ну</b> — игра о том, насколько хорошо вы знаете друг друга.\n\n"
@@ -179,7 +180,8 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
     server = uvicorn.Server(uvicorn.Config(app, host=config.HOST, port=config.PORT, log_level="info"))
-    tasks = [asyncio.create_task(dp.start_polling(bot)), asyncio.create_task(server.serve())]
+    tasks = [asyncio.create_task(dp.start_polling(bot)), asyncio.create_task(server.serve()),
+             asyncio.create_task(remind_loop())]
     _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     for t in pending:
         t.cancel()

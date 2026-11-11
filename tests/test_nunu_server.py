@@ -30,7 +30,7 @@ def test_game_by_link(tmp_path, monkeypatch):
 
     assert c.get("/nunu/api/state").status_code == 401  # без Telegram не пускаем
     assert c.put("/nunu/api/state", json={"data": {"seeds": [1]}}, headers=anton).status_code == 200
-    assert c.get("/nunu/api/state", headers=anton).json() == {"data": {"seeds": [1]}, "name": "Антон"}
+    assert c.get("/nunu/api/state", headers=anton).json() == {"data": {"seeds": [1]}, "name": "Антон", "inbox": []}
 
     g = c.post("/nunu/api/game", json={"name": "Антон", "seed": 5, "mode": "duo", "s": [0] * 10, "g": [1] * 10},
                headers=anton).json()
@@ -118,7 +118,7 @@ def test_own_story(tmp_path, monkeypatch):
     g = c.post("/nunu/api/game", json={"name": "Антон", "seed": 3, "mode": "duo", "s": [0] * 10, "g": [0] * 10,
                                        "to": 2, "story": story}, headers=anton).json()
     v = c.get(f"/nunu/api/game/{g['id']}", headers=evgen).json()
-    assert v["story"] == {"q": story["q"], "real": True}  # ответа автора ещё не видно
+    assert v["story"] == {"q": story["q"], "real": True, "only": False}  # ответа автора ещё не видно
     v = c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Евген", "s": [1] * 10, "g": [0] * 10,
                                                         "guess": "Дал бы, куда деваться"}, headers=evgen).json()
     assert v["story"]["a"] == "Дал, но до вечера" and v["my"]["guess"] == "Дал бы, куда деваться"
@@ -160,3 +160,70 @@ def test_bottle(tmp_path, monkeypatch):
     assert [f["name"] for f in c.get("/nunu/api/world", headers=olya).json()["friends"]] == ["Антон"]
     c.post(f"/nunu/api/bottle/{g['id']}/report", headers=boris)
     assert c.get("/nunu/api/bottle", headers=boris).json() == {"gid": None}
+
+
+def test_story_only_with_options(tmp_path, monkeypatch):
+    """Только своя ситуация с вариантами: верный не виден до ответа, выбор варианта отмечается сам."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+
+    async def quiet(*a):
+        quiet.sent = a
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c, anton, evgen, boris = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген"), init_data(3, "Боря")
+    story = {"q": "Сосед просит дрель", "a": "Дал до вечера", "real": True, "o": ["Не дал", "Дал до вечера", ""],
+             "only": True}
+    g = c.post("/nunu/api/game", json={"name": "Антон", "seed": 3, "mode": "hero", "s": [6] * 10, "story": story},
+               headers=anton).json()
+    v = c.get(f"/nunu/api/game/{g['id']}", headers=evgen).json()["story"]
+    assert v["only"] and sorted(v["c"]) == ["Дал до вечера", "Не дал"] and "a" not in v  # повтор и пустой убраны
+    v = c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Евген", "g": [6] * 10, "guess": "Дал до вечера"},
+               headers=evgen).json()
+    assert v["my"]["mark"] == 2 and "угадал" in quiet.sent[1]
+    v = c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Боря", "g": [6] * 10, "guess": "Не дал"},
+               headers=boris).json()
+    assert v["my"]["mark"] == 0 and "не угадал" in quiet.sent[1]
+    fr = {f["id"]: f["boards"] for f in c.get("/nunu/api/world", headers=anton).json()["friends"]}
+    assert fr == {2: 1.0, 3: 0.0}
+
+
+def test_joint_deed(tmp_path, monkeypatch):
+    """Общее дело: другу сообщение и семя в сад; отметили оба — доски один раз."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    sent = []
+
+    async def quiet(*a):
+        sent.append(a)
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c, anton, evgen, boris = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген"), init_data(3, "Боря")
+    c.post("/nunu/api/game", json={"name": "Антон", "seed": 3, "mode": "duo", "s": [0] * 10, "g": [0] * 10, "to": 2},
+           headers=anton)
+    plan = {"pid": "abc12345", "text": "Сходим в баню", "due": "2026-11-20"}
+    assert c.post("/nunu/api/friend/3/plan", json=plan, headers=anton).status_code == 404  # не друг
+    assert c.post("/nunu/api/friend/2/plan", json=plan, headers=anton).json()["ok"]
+    assert "общее дело" in sent[-1][1] and "Сходим в баню" in sent[-1][1]
+    inbox = c.get("/nunu/api/state", headers=evgen).json()["inbox"]
+    assert inbox[0]["pid"] == "abc12345" and inbox[0]["fid"] == 1 and inbox[0]["due"] == "2026-11-20"
+    assert c.get("/nunu/api/state", headers=evgen).json()["inbox"] == []  # отдаётся один раз
+    c.post("/nunu/api/friend/2/deed", json={"pid": "abc12345"}, headers=anton)
+    c.post("/nunu/api/friend/1/deed", json={"pid": "abc12345"}, headers=evgen)
+    assert c.get("/nunu/api/world", headers=anton).json()["friends"][0]["boards"] == 3.0
+
+
+def test_reminders(tmp_path, monkeypatch):
+    """День дела — одно напоминание; про сад не чаще раза в неделю; выключено — молчим."""
+    from datetime import date
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    seeds = [{"r": "Позвоню маме", "d": "2026-11-01", "life": None, "due": "2026-11-11", "pid": "a1"},
+             {"r": "x", "d": "2026-11-10", "life": None}]
+    with nunu.closing(nunu._db()) as c, c:
+        c.execute("INSERT INTO state(tg_id,data) VALUES(1,?)", (json.dumps({"nunu-seeds": seeds}),))
+        c.execute("INSERT INTO state(tg_id,data) VALUES(2,?)",
+                  (json.dumps({"nunu-seeds": seeds, "nunu-prefs": {"remind": False}}),))
+        c.execute("INSERT INTO state(tg_id,data) VALUES(3,?)",
+                  (json.dumps({"nunu-seeds": [{"r": "y", "d": "2026-10-01", "life": {"same": 1}}]}),))
+    r = nunu.reminders_due(date(2026, 11, 11))
+    assert [u for u, _ in r] == [1, 1, 3]
+    assert "Сегодня" in r[0][1] and "полить" in r[1][1] and "новые" in r[2][1]
+    assert nunu.reminders_due(date(2026, 11, 11)) == []
+    assert nunu.reminders_due(date(2026, 11, 15)) == []
+    assert len(nunu.reminders_due(date(2026, 11, 18))) == 2

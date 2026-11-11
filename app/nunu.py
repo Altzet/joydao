@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import secrets
+from datetime import date, datetime, timedelta, timezone
 import sqlite3
 from contextlib import closing
 from pathlib import Path
@@ -42,6 +43,10 @@ CREATE TABLE IF NOT EXISTS friends (a INTEGER NOT NULL, b INTEGER NOT NULL, crea
 CREATE TABLE IF NOT EXISTS wishes (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY (a, b));
 CREATE TABLE IF NOT EXISTS deeds (a INTEGER NOT NULL, b INTEGER NOT NULL, n INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (a, b));
+CREATE TABLE IF NOT EXISTS deed_ids (pid TEXT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, tg_id INTEGER NOT NULL, seed TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS reminders (tg_id INTEGER NOT NULL, kind TEXT NOT NULL, at TEXT NOT NULL,
+    PRIMARY KEY (tg_id, kind));
 """
 MIGRATE = ("ALTER TABLE games ADD COLUMN to_id INTEGER",  # партия конкретному другу с карты
            "ALTER TABLE plays ADD COLUMN boards REAL",    # доски моста за эту партию
@@ -97,8 +102,9 @@ def _answers(a: list, empty_ok: bool = False) -> str:
     raise HTTPException(422, "Нужно 10 ответов")
 
 
-def link(gid: str) -> str:
-    return f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}?startapp={gid}"
+def link(gid: str = "") -> str:
+    base = f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"
+    return f"{base}?startapp={gid}" if gid else base
 
 
 class StateIn(BaseModel):
@@ -109,6 +115,8 @@ class Story(BaseModel):
     q: str     # что случилось
     a: str     # как поступил или поступил бы
     real: bool  # так было на самом деле
+    o: list[str] = []  # другие варианты для угадывания (до 3): выбрал вариант — отметка ставится сама
+    only: bool = False  # партия только из своей ситуации, без 10 карточек
 
 
 class GameIn(BaseModel):
@@ -138,11 +146,16 @@ class MarkIn(BaseModel):
 
 @router.get("/state")
 def get_state(x_init_data: str | None = Header(default=None)):
+    """Состояние игрока + входящие семена (общие дела от друзей). Входящие отдаются один раз:
+    ponytail: если клиент не успел сохранить сад, семя потеряется — друг всё равно получил сообщение от бота."""
     u = _user(x_init_data)
     with closing(_db()) as c:
         r = c.execute("SELECT data FROM state WHERE tg_id=?", (u.id,)).fetchone()
+        inbox = [json.loads(x["seed"]) for x in c.execute("SELECT seed FROM inbox WHERE tg_id=? ORDER BY id", (u.id,))]
+        with c:
+            c.execute("DELETE FROM inbox WHERE tg_id=?", (u.id,))
         _seen(c, u)
-    return {"data": json.loads(r["data"]) if r else None, "name": u.first_name}
+    return {"data": json.loads(r["data"]) if r else None, "name": u.first_name, "inbox": inbox}
 
 
 @router.put("/state")
@@ -167,8 +180,10 @@ async def new_game(body: GameIn, x_init_data: str | None = Header(default=None))
     name = body.name.strip()[:30] or u.first_name
     story = None
     if body.story and body.story.q.strip() and body.story.a.strip():
-        story = json.dumps({"q": body.story.q.strip()[:400], "a": body.story.a.strip()[:250], "real": body.story.real},
-                           ensure_ascii=False)
+        a = body.story.a.strip()[:250]
+        o = list(dict.fromkeys(x.strip()[:250] for x in body.story.o if x.strip() and x.strip() != a))[:3]
+        story = json.dumps({"q": body.story.q.strip()[:400], "a": a, "real": body.story.real, "o": o,
+                            "only": body.story.only}, ensure_ascii=False)
     with closing(_db()) as c, c:
         c.execute("INSERT INTO games(id, owner, name, seed, mode, s, g, to_id, story, bottle) VALUES(?,?,?,?,?,?,?,?,?,?)",
                   (gid, u.id, name, body.seed, body.mode, s, g, body.to, story, 1 if body.bottle else None))
@@ -193,7 +208,10 @@ def _view(c: sqlite3.Connection, gid: str, uid: int) -> dict:
         out |= {"s": json.loads(r["s"]), "g": json.loads(r["g"])}
     if r["story"]:  # как поступил автор — только тем, кто уже угадал
         st = json.loads(r["story"])
-        out["story"] = st if mine or played else {"q": st["q"], "real": st["real"]}
+        hidden = {"q": st["q"], "real": st["real"], "only": st.get("only", False)}
+        if st.get("o"):  # варианты вперемешку: какой верный, не видно
+            hidden["c"] = secrets.SystemRandom().sample([st["a"], *st["o"]], len(st["o"]) + 1)
+        out["story"] = st if mine or played else hidden
     if played:
         me = next(p for p in plays if p["player"] == uid)
         out["my"] = {"name": me["name"], "s": json.loads(me["s"]), "g": json.loads(me["g"]),
@@ -224,13 +242,17 @@ async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=
         if r["owner"] == u.id:
             raise HTTPException(409, "Это твоя игра")
         guess = (body.guess or "").strip()[:250] if r["story"] else ""
+        st = json.loads(r["story"]) if r["story"] else {}
+        auto = 2 if guess and guess == st.get("a") else 0 if guess in (st.get("o") or []) else None
         name = body.name.strip()[:30] or u.first_name
         with c:
-            c.execute("INSERT OR REPLACE INTO plays(game_id, player, name, s, g, guess) VALUES(?,?,?,?,?,?)",
-                      (gid, u.id, name, _answers(body.s, empty_ok=r["mode"] == "hero"), _answers(body.g), guess or None))
+            c.execute("INSERT OR REPLACE INTO plays(game_id, player, name, s, g, guess, mark) VALUES(?,?,?,?,?,?,?)",
+                      (gid, u.id, name, _answers(body.s, empty_ok=r["mode"] == "hero"), _answers(body.g),
+                       guess or None, auto))
         view = _view(c, gid, u.id)
         _seen(c, u)
     text = (f"Твою бутылку выловил {name} и угадывал тебя 🍾 Посмотри, как он тебя понял" if r["bottle"]
+            else f"{name} угадывал твою ситуацию и {'угадал' if auto else 'не угадал'} 🌉" if auto is not None
             else f"{name} ответил в «Ну-ну» и угадывал твою ситуацию. Отметь, угадал ли ✍️" if guess
             else f"{name} ответил в «Ну-ну». Посмотри ваш мост 🌉")
     _bg(_notify(r["owner"], text, link(gid)))
@@ -298,14 +320,70 @@ def _pair_boards(c: sqlite3.Connection, a: int, b: int) -> float:
     return s + 3 * (d["n"] if d else 0)
 
 
+class DeedIn(BaseModel):
+    pid: str | None = None  # id общего дела: отметят оба — доски засчитаются один раз
+
+
+class PlanIn(BaseModel):
+    pid: str
+    text: str
+    due: str | None = None  # YYYY-MM-DD
+
+
+def _related(c: sqlite3.Connection, a: int, b: int) -> bool:
+    """Друзья — те, кто на карте друг у друга: приглашение или хоть одна партия (не бутылка)."""
+    return _friends(c, a, b) or c.execute(
+        "SELECT 1 FROM games g LEFT JOIN plays p ON p.game_id=g.id WHERE g.bottle IS NULL AND "
+        "((g.owner=? AND (g.to_id=? OR p.player=?)) OR (g.owner=? AND (g.to_id=? OR p.player=?))) LIMIT 1",
+        (a, b, b, b, a, a)).fetchone() is not None
+
+
 @router.post("/friend/{fid}/deed")
-def deed(fid: int, x_init_data: str | None = Header(default=None)):
-    """Сделали дело вместе в жизни: +3 доски общему мосту."""
+def deed(fid: int, body: DeedIn | None = None, x_init_data: str | None = Header(default=None)):
+    """Сделали дело вместе в жизни: +3 доски общему мосту (одно дело — один раз, даже если отметили оба)."""
     u = _user(x_init_data)
     a, b = sorted((u.id, fid))
     with closing(_db()) as c, c:
+        if body and body.pid:
+            try:
+                c.execute("INSERT INTO deed_ids(pid) VALUES(?)", (body.pid[:16],))
+            except sqlite3.IntegrityError:
+                return {"ok": True, "counted": False}
         c.execute("INSERT INTO deeds(a, b, n) VALUES(?,?,1) ON CONFLICT(a, b) DO UPDATE SET n=n+1", (a, b))
+    return {"ok": True, "counted": True}
+
+
+@router.post("/friend/{fid}/plan")
+async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(default=None)):
+    """Общее дело: другу — сообщение от бота и то же семя в его сад (появится при следующем открытии игры)."""
+    u = _user(x_init_data)
+    text, due = body.text.strip()[:300], (body.due or "")[:10] or None
+    if not text or not body.pid.strip():
+        raise HTTPException(422, "Пустое дело")
+    with closing(_db()) as c:
+        if not _related(c, u.id, fid):
+            raise HTTPException(404, "Друг не найден")
+        seed = {"c": "Удиви себя", "q": f"Общее дело · вдвоём: я и {u.first_name[:30]}", "r": text, "z": -1,
+                "d": date.today().isoformat(), "due": due, "life": None, "mine": False, "step": 1,
+                "with": u.first_name[:30], "fid": u.id, "pid": body.pid.strip()[:16]}
+        with c:
+            c.execute("INSERT INTO inbox(tg_id, seed) VALUES(?, ?)", (fid, json.dumps(seed, ensure_ascii=False)))
+        _seen(c, u)
+    _bg(_notify(fid, f"{u.first_name} зовёт тебя на общее дело 🤝\n\n{text}\n\nОно уже в твоём саду. "
+                     f"Когда сделаете, отметьте «Так и сделал» — ваш мост получит +3 доски", link()))
     return {"ok": True}
+
+
+_MONTHS = ("января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября",
+           "ноября", "декабря")
+
+
+def _ru_date(iso: str) -> str:
+    try:
+        d = date.fromisoformat(iso)
+    except ValueError:
+        return iso
+    return f"{d.day} {_MONTHS[d.month - 1]}"
 
 
 @router.post("/invite")
@@ -485,3 +563,59 @@ async def _notify(tg_id: int, text: str, url: str) -> None:
         log.info("Не отправил уведомление %s: %s", tg_id, e)
     finally:
         await bot.session.close()
+
+
+# ---------- напоминания: «сегодня ваше дело», «пора полить», «посади новые» ----------
+# Наука: напоминание в заранее выбранный день усиливает план «если — то» (Gollwitzer & Sheeran 2006),
+# а частые пуши раздражают и их отключают — поэтому про сад не чаще раза в неделю, и всё выключается в настройках.
+GARDEN_EVERY = 7  # ponytail: дней между напоминаниями про сад; подстроить по отпискам
+
+
+def reminders_due(today: date) -> list[tuple[int, str]]:
+    """Кому и что напомнить сегодня. Отметки пишутся сразу: одно и то же не придёт дважды."""
+    out, iso, week_ago = [], today.isoformat(), (today - timedelta(days=GARDEN_EVERY)).isoformat()
+    with closing(_db()) as c, c:
+        for r in c.execute("SELECT tg_id, data FROM state").fetchall():
+            try:
+                d = json.loads(r["data"])
+                seeds = [s for s in (d.get("nunu-seeds") or []) if isinstance(s, dict)]
+            except Exception:
+                continue
+            if (d.get("nunu-prefs") or {}).get("remind") is False or not seeds:
+                continue
+            uid, wait = r["tg_id"], [s for s in seeds if not s.get("life")]
+            for s in wait:
+                if s.get("due") == iso:
+                    kind = "due:" + str(s.get("pid") or s.get("r", ""))[:60]
+                    if c.execute("INSERT OR IGNORE INTO reminders VALUES(?,?,?)", (uid, kind, iso)).rowcount:
+                        out.append((uid, f"Сегодня твоё дело 📅\n\n{s.get('r', '')}\n\n"
+                                         "Когда сделаешь, отметь в саду «Так и сделал»."))
+            last = c.execute("SELECT at FROM reminders WHERE tg_id=? AND kind='garden'", (uid,)).fetchone()
+            if last and last["at"] > week_ago:
+                continue
+            old = [s for s in wait if str(s.get("d") or iso) <= week_ago]
+            if old:
+                text = (f"Пора полить семена 🌱 Неделю ждут отметки: {len(old)}. "
+                        "Загляни в сад: что из этого случилось в жизни?")
+            elif max(str(s.get("d") or iso) for s in seeds) <= week_ago:
+                text = "Сад неделю без новых семян 🌱 Сыграй партию или придумай, чем удивишь себя, — посадим новые."
+            else:
+                continue
+            c.execute("INSERT INTO reminders VALUES(?, 'garden', ?) ON CONFLICT(tg_id, kind) DO UPDATE SET at=excluded.at",
+                      (uid, iso))
+            out.append((uid, text))
+    return out
+
+
+async def remind_loop(hour_utc: int = 6) -> None:
+    """Раз в сутки после hour_utc (6 UTC = 9 утра по Москве). Перезапуск сервиса не дублирует: отметки в базе."""
+    while True:
+        now = datetime.now(timezone.utc)
+        if now.hour >= hour_utc:
+            try:
+                for uid, text in reminders_due(now.date()):
+                    await _notify(uid, text, link())
+                    await asyncio.sleep(0.05)
+            except Exception as e:
+                log.warning("Напоминания: %s", e)
+        await asyncio.sleep(3600)
