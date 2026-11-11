@@ -525,7 +525,7 @@ const artBottle=(x,y)=>`<g transform="rotate(-25 ${f1(x)} ${f1(y)})"><ellipse cx
 const isR=(z,b)=>Math.min(b+(b/9)*Math.sqrt((z[0]||0)+(z[1]||0)+(z[2]||0)),b*2.2);
 function artWorld(w,sel){const F=w.friends,n=F.length,slots=n+2,pos=[],me=[200,190,isR(w.me.island,46)];
 F.forEach((f,i)=>{const ring=i<8?0:1,k=ring?i-8:i,m=ring?n-8:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,60)*.9,t=f.island[0]+f.island[1]+f.island[2];
-const R=isR(f.island,28),D=me[2]+R+(ring?110:0)+110-Math.min(f.boards,60)*.8;pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
+const R=isR(f.island,28),D=me[2]+R+(ring?110:0)+150-108*Math.sqrt(Math.min(f.boards,60)/60);pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
 const at=k=>-Math.PI/2+k/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,ai=at(Math.min(n,8)),inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)],bi=at(Math.min(n,8)+1),bot=[200+DI*Math.cos(bi),190+DI*.82*Math.sin(bi)];
 const all=[me,...pos,[...inv,30],[...bot,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
 const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
