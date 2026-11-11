@@ -282,7 +282,7 @@ else if(!inN)h+=`<p class="note" style="margin:0">${{wait:"Все семена �
 const beds=[],bi={};seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>inView(x)&&(!onlyMine||x.mine)).forEach(([x,k])=>{const key=x.c+"|"+x.q+"|"+x.r+"|"+(x.with||"")+"|"+(x.due||"");
 if(bi[key]===undefined){bi[key]=beds.length;beds.push([x,k,[k]])}else{const g=beds[bi[key]];g[2].push(k);g[1]=k;if(x.mine)g[0]={...g[0],mine:true}}});
 beds.sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k,ks])=>{const st2=x.life?(x.life.same?"open":"fog"):"",n=ks.length;
-h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${esc(x.c)} · ${n>1?ks.map(i=>sd(seeds[i].d)).filter((d,i,a)=>a.indexOf(d)===i).slice(0,3).join(", ")+(n>3?"…":""):sd(x.d)}</span><span>${n>1?`<span class="tag p" title="одинаковые семена">грядка ×${n}</span> `:""}${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}</div>`:""}
+h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${esc(x.c)} · ${n>1?ks.map(i=>sd(seeds[i].d)).filter((d,i,a)=>a.indexOf(d)===i).slice(0,3).join(", ")+(n>3?"…":""):sd(x.d)}</span><span>${n>1?`<span class="tag p" title="одинаковые семена">грядка ×${n}</span> `:""}${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
 <div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${esc(x.r)}</b></div>
 ${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты и ${esc(x.with)} — +3 доски</div>`:""}${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
 `<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">Так и сделал</button><button class="n" data-k="${k}" data-s="0">Сделал иначе</button></div>`}</div>`});
@@ -307,9 +307,9 @@ return`На твоём острове больше всего ${top.map(k=>P[k])
 План по Голльвитцеру: что, когда (дата из календаря), где, и «если помеха — то действие». Дело с другом — друг узнаёт сразу */
 const sd=d=>d&&d.length>=10?d.slice(8,10)+"."+d.slice(5,7):d||"",fmtD=d=>{try{return new Date(d+"T12:00").toLocaleDateString("ru-RU",{weekday:"short",day:"numeric",month:"long"})}catch(e){return d}},today=()=>new Date().toISOString().slice(0,10);
 function stepWeek(fr){setNav("week");fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr,mateSel=fr?{id:curFid,name:fr}:null;
-const own={what:"",due:"",where:"",act:"",who:"",obs:""},ins=insight(),W=["Своё дело…",...SW],O=[...SO,"Свой вариант…"],FR=(W0()||{friends:[]}).friends||[];
+const own={what:"",due:"",at:"",where:"",act:"",who:"",obs:""},ins=insight(),W=["Своё дело…",...SW],O=[...SO,"Свой вариант…"],FR=(W0()||{friends:[]}).friends||[];
 const obs=()=>{const x=o<3?SO[o]:own.obs.trim()||"…";return x[0].toLowerCase()+x.slice(1)},ownAct=()=>w===0||o===3;
-const plan=()=>{const d=own.due?fmtD(own.due):"";if(w>0&&o<3)return(d?d+". ":"")+SP[w-1][o];
+const plan=()=>{const d=own.due?fmtD(own.due)+(own.at?" в "+own.at:""):"";if(w>0&&o<3)return(d?d+". ":"")+SP[w-1][o];
 const head=w===0?`«${own.what||"…"}»${d?" — "+d:""}${own.where.trim()?", "+own.where.trim():""}`:`${W[w]}${d?" — "+d:""}`;return`${head}. Если ${obs()}, то ${own.act.trim().replace(/[.!]$/,"")||"…"}${own.act.trim()?".":""}`};
 const mate=()=>mateSel?mateSel.name:own.who.trim();
 const bonus=()=>mateSel&&mateSel.id?`${mateSel.name} получит сообщение и это дело в свой сад. Когда отметите «Так и сделал», ваш мост получит +3 доски.`
@@ -319,8 +319,8 @@ const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" ma
 const draw=()=>{app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}
 <div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
 ${w===0?fld("ow",tg?"Что сделаем":"Что сделаю","Испечь пиццу в печи",own.what,80):""}
-<div class="zone">${w===0?"Когда":"Когда (по желанию)"}</div><input type="date" id="od" min="${today()}" value="${own.due}" style="flex:none;align-self:flex-start">
-${w===0?fld("on","Где и во сколько (по желанию)","У меня во дворе, в 18:00",own.where,60):""}
+<div class="zone">${w===0?"Когда":"Когда (по желанию)"}</div><div class="row" style="gap:8px"><input type="date" id="od" min="${today()}" value="${own.due}" style="flex:none"><input type="time" id="ot" value="${own.at}" aria-label="Во сколько напомнить" style="flex:none"></div>
+${w===0?fld("on","Где (по желанию)","У меня во дворе",own.where,60):""}
 <div class="zone">2. Что может помешать</div>${chips(O,"co",o)}
 ${o===3?fld("ob","Моя помеха","Устану после работы",own.obs,80):""}
 ${ownAct()?fld("oa","Если помешает, что я сделаю","Напишу ему первым, а не буду ждать",own.act,100):""}
@@ -331,17 +331,17 @@ ${tg&&!fr?(FR.length?`<div class="row" id="cf">${FR.map(f=>`<button class="${mat
 ${tg?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}
 <div class="err" id="er"></div>
 <div class="row"><button class="main-btn" id="pt">Посадить в сад</button><button class="n" id="bk">Назад</button></div></div>
-<p class="note">${own.due?"В этот день бот напомнит о деле.":"Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе»."} Не вышло — ничего страшного, семя подождёт.</p>`;
+<p class="note">${own.due?(own.at?"В этот день в "+own.at+" бот напомнит о деле.":"В этот день утром бот напомнит о деле. Хочешь в своё время — поставь час."):"Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе»."} Не вышло — ничего страшного, семя подождёт.</p>`;
 $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw()}};$("co").onclick=e=>{const b=e.target.closest("button");if(b){o=+b.dataset.k;draw()}};
-$("od").onchange=$("od").oninput=()=>{own.due=$("od").value&&$("od").value>=today()?$("od").value:"";$("pl").textContent=plan();$("er").textContent=""};
+$("od").onchange=$("od").oninput=()=>{own.due=$("od").value&&$("od").value>=today()?$("od").value:"";$("pl").textContent=plan();$("er").textContent=""};$("ot").onchange=()=>{own.at=$("ot").value||"";draw()};
 [["ow","what"],["on","where"],["ob","obs"],["oa","act"],["oc","who"]].forEach(([id,k])=>{const el=$(id);if(el)el.oninput=()=>{own[k]=el.value;$("pl").textContent=plan();$("er").textContent="";if($("bn"))$("bn").textContent=bonus()}});
 if($("cf"))$("cf").onclick=e=>{const b=e.target.closest("button");if(!b)return;const f=FR.find(f=>String(f.id)===b.dataset.f);mateSel=mateSel&&mateSel.id===f.id?null:{id:f.id,name:f.name};draw()};
 $("tg").onchange=()=>{tg=$("tg").checked;if(!tg&&!fr)mateSel=null;draw()};
 $("bk").onclick=()=>st.started?go():home();
-$("pt").onclick=()=>{const miss=w===0&&!own.what.trim()?"Напиши, что сделаешь":w===0&&!own.due?"Выбери день — так план сработает вернее":o===3&&!own.obs.trim()?"Напиши, что может помешать":ownAct()&&!own.act.trim()?"Напиши, что сделаешь, если помешает":"";if(miss){$("er").textContent=miss;return}
+$("pt").onclick=()=>{const miss=w===0&&!own.what.trim()?"Напиши, что сделаешь":w===0&&!own.due?"Выбери день — так план сработает вернее":own.at&&!own.due?"Выбери день — без него напоминание не придёт":o===3&&!own.obs.trim()?"Напиши, что может помешать":ownAct()&&!own.act.trim()?"Напиши, что сделаешь, если помешает":"";if(miss){$("er").textContent=miss;return}
 tg=$("tg").checked;const m=tg?mate():"",fid=tg&&mateSel&&mateSel.id||null,pid=Math.random().toString(36).slice(2,10),r=plan();
-seeds.push({c:"Удиви себя",q:(w>0?W[w]:"Своё дело")+" · помеха: "+obs()+(tg?" · вдвоём: я и "+(m||"друг"):""),r,z:-1,d:today(),due:own.due||null,life:null,mine:false,step:1,with:m,fid,pid});saveSeeds();
-if(fid&&API)API("/friend/"+fid+"/plan","POST",{pid,text:r.split(". Если ")[0],due:own.due||null}).catch(()=>{});garden()}};draw()}
+seeds.push({c:"Удиви себя",q:(w>0?W[w]:"Своё дело")+" · помеха: "+obs()+(tg?" · вдвоём: я и "+(m||"друг"):""),r,z:-1,d:today(),due:own.due||null,at:own.due&&own.at||null,tz:new Date().getTimezoneOffset(),life:null,mine:false,step:1,with:m,fid,pid});saveSeeds();
+if(fid&&API)API("/friend/"+fid+"/plan","POST",{pid,text:r.split(". Если ")[0],due:own.due||null,at:own.due&&own.at||null,tz:new Date().getTimezoneOffset()}).catch(()=>{});garden()}};draw()}
 /* вне Telegram: игра живёт в Telegram — там аккаунт, карта, друзья и сад на любом устройстве */
 function home(){if(API)return world();
 app.innerHTML=`<h1>Ну-ну</h1><div class="card"><p style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>

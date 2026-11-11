@@ -330,6 +330,8 @@ class PlanIn(BaseModel):
     pid: str
     text: str
     due: str | None = None  # YYYY-MM-DD
+    at: str | None = None  # HH:MM по времени того, кто зовёт
+    tz: int | None = None  # его getTimezoneOffset(), минуты
 
 
 def _related(c: sqlite3.Connection, a: int, b: int) -> bool:
@@ -366,7 +368,7 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
         if not _related(c, u.id, fid):
             raise HTTPException(404, "Друг не найден")
         seed = {"c": "Удиви себя", "q": f"Общее дело · вдвоём: я и {u.first_name[:30]}", "r": text, "z": -1,
-                "d": date.today().isoformat(), "due": due, "life": None, "mine": False, "step": 1,
+                "d": date.today().isoformat(), "due": due, "at": (body.at or "")[:5] or None, "tz": body.tz, "life": None, "mine": False, "step": 1,
                 "with": u.first_name[:30], "fid": u.id, "pid": body.pid.strip()[:16]}
         with c:
             c.execute("INSERT INTO inbox(tg_id, seed) VALUES(?, ?)", (fid, json.dumps(seed, ensure_ascii=False)))
@@ -622,8 +624,17 @@ async def _notify(tg_id: int, text: str, url: str) -> None:
 GARDEN_EVERY = 7  # ponytail: дней между напоминаниями про сад; подстроить по отпискам
 
 
-def reminders_due(today: date) -> list[tuple[int, str]]:
-    """Кому и что напомнить сегодня. Отметки пишутся сразу: одно и то же не придёт дважды."""
+def _when(s: dict) -> datetime | None:
+    """Момент напоминания в UTC (без tzinfo) для дела с часом: due + at по времени игрока (tz = getTimezoneOffset)."""
+    try:
+        return datetime.fromisoformat(f"{s['due']}T{s['at']}") + timedelta(minutes=int(s.get("tz") or 0))
+    except Exception:
+        return None
+
+
+def reminders_due(today: date, now: datetime | None = None, daily: bool = True) -> list[tuple[int, str]]:
+    """Кому и что напомнить. daily — утренний проход (дела без часа и сад); now — минутный проход для дел с часом.
+    Отметки пишутся сразу: одно и то же не придёт дважды."""
     out, iso, week_ago = [], today.isoformat(), (today - timedelta(days=GARDEN_EVERY)).isoformat()
     with closing(_db()) as c, c:
         for r in c.execute("SELECT tg_id, data FROM state").fetchall():
@@ -636,11 +647,18 @@ def reminders_due(today: date) -> list[tuple[int, str]]:
                 continue
             uid, wait = r["tg_id"], [s for s in seeds if not s.get("life")]
             for s in wait:
-                if s.get("due") == iso:
-                    kind = "due:" + str(s.get("pid") or s.get("r", ""))[:60]
-                    if c.execute("INSERT OR IGNORE INTO reminders VALUES(?,?,?)", (uid, kind, iso)).rowcount:
-                        out.append((uid, f"Сегодня твоё дело 📅\n\n{s.get('r', '')}\n\n"
-                                         "Когда сделаешь, отметь в саду «Так и сделал»."))
+                w = _when(s) if s.get("due") and s.get("at") else None
+                if w:  # дело с часом: в его минуту (и не позже суток — если сервер лежал)
+                    if not (now and w <= now < w + timedelta(days=1)):
+                        continue
+                elif not (daily and s.get("due") == iso):
+                    continue
+                kind = "due:" + str(s.get("pid") or s.get("r", ""))[:60]
+                if c.execute("INSERT OR IGNORE INTO reminders VALUES(?,?,?)", (uid, kind, iso)).rowcount:
+                    out.append((uid, f"{'Пора: твоё дело ⏰' if w else 'Сегодня твоё дело 📅'}\n\n{s.get('r', '')}\n\n"
+                                     "Когда сделаешь, отметь в саду «Так и сделал»."))
+            if not daily:
+                continue
             last = c.execute("SELECT at FROM reminders WHERE tg_id=? AND kind='garden'", (uid,)).fetchone()
             if last and last["at"] > week_ago:
                 continue
@@ -659,14 +677,15 @@ def reminders_due(today: date) -> list[tuple[int, str]]:
 
 
 async def remind_loop(hour_utc: int = 6) -> None:
-    """Раз в сутки после hour_utc (6 UTC = 9 утра по Москве). Перезапуск сервиса не дублирует: отметки в базе."""
+    """Раз в минуту: дела с часом — в их минуту; дела без часа и сад — после hour_utc (6 UTC = 8 утра в Киеве).
+    Перезапуск сервиса не дублирует: отметки в базе."""
+    # ponytail: каждую минуту читаем всю таблицу state — хватит на тысячи игроков; дальше — индекс по due
     while True:
         now = datetime.now(timezone.utc)
-        if now.hour >= hour_utc:
-            try:
-                for uid, text in reminders_due(now.date()):
-                    await _notify(uid, text, link())
-                    await asyncio.sleep(0.05)
-            except Exception as e:
-                log.warning("Напоминания: %s", e)
-        await asyncio.sleep(3600)
+        try:
+            for uid, text in reminders_due(now.date(), now.replace(tzinfo=None), daily=now.hour >= hour_utc):
+                await _notify(uid, text, link())
+                await asyncio.sleep(0.05)
+        except Exception as e:
+            log.warning("Напоминания: %s", e)
+        await asyncio.sleep(60)

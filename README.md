@@ -4,7 +4,7 @@
 
 **Строй мосты с людьми. По шагу в день.**
 
-«Ну-ну» — игра в Telegram о том, насколько хорошо вы с друзьями знаете друг друга. У каждого свой остров, между друзьями растут мосты, а раз в неделю ты ставишь себе маленькое дело и отмечаешь, сделал ли его.
+«Ну-ну» — игра в Telegram о том, насколько хорошо вы с друзьями знаете друг друга. У каждого свой остров, между друзьями растут мосты, а маленькие дела ты ставишь себе хоть каждый день — бот напомнит в нужный час. Это и игра, и заметки, и дневник.
 
 ▶ **Играть:** [t.me/JOYDAO_bot/nunu](https://t.me/JOYDAO_bot/nunu) · канал [@joydao](https://t.me/joydao) · общий чат [@joydao_club](https://t.me/joydao_club)
 
@@ -14,7 +14,7 @@
 
 - 🏝 **Твой остров.** Отвечаешь на карточки-сцены, и остров растёт из ответов: цветы — когда идёшь к людям, деревья — когда уходишь в себя, камни — когда стоишь за себя. Это состояния, а не оценки.
 - 🌉 **Мосты.** Отвечаешь о себе и угадываешь друга. Поняли друг друга — мост крепнет: канатный → подвесной → дощатый → каменный. Чем крепче мост, тем ближе остров друга на карте.
-- 🌱 **«Чем удивишь себя на этой неделе?»** Маленькое дело в формате «если…, то…» — одно или вместе с другом. Бот напомнит, а сделанное распускается на острове.
+- 🌱 **«Чем удивишь себя?»** Маленькое дело в формате «если…, то…» — хоть каждый день, одному или вместе с другом. Бот напомнит в выбранный день и час, а сделанное распускается на острове. Сад хранит все дела — это и заметки, и дневник.
 - 👥 **Компания.** Одна ссылка или QR-код на всех: «угадайте меня».
 - ✍️ **Своя ситуация.** Расскажи случай из жизни, а друг угадает, как ты поступил.
 - 🍾 **Бутылка в море.** Партия с незнакомцем. Мост появляется, только если этого хотят оба.
@@ -56,7 +56,7 @@ cp .env.example .env        # впишите BOT_TOKEN и WEBAPP_URL
 
 ```
 static/nunu.html   игра: один файл, vanilla JS, рисованный SVG
-app/nunu.py        API игры: партии, мосты, приглашения, бутылки, напоминания
+app/nunu.py        API игры: партии, мосты, приглашения, бутылки, напоминания по дню и часу
 app/pause.py       бот «Ну-ну»: профиль, кнопка «Играть»
 app/main.py        точка входа
 tests/             pytest
@@ -70,11 +70,11 @@ tests/             pytest
 
 **Build bridges with people. One step a day.**
 
-*Nu-nu* is a Telegram game about how well you and your friends really know each other. Everyone has an island; bridges grow between friends; and once a week you set yourself one small thing to do and mark whether you did it.
+*Nu-nu* is a Telegram game about how well you and your friends really know each other. Everyone has an island; bridges grow between friends; and you set yourself small things to do — every day if you like — and the bot reminds you at the hour you pick. A game, a notebook and a diary in one.
 
 - 🏝 **Your island** grows from your answers: flowers when you move toward people, trees when you step back, rocks when you stand your ground. States, not grades.
 - 🌉 **Bridges.** Answer about yourself and guess your friend. Understand each other and the bridge gets stronger: rope → suspension → planks → stone.
-- 🌱 **"How will you surprise yourself this week?"** One small *if–then* plan, alone or with a friend. The bot reminds you; what you did blooms on your island.
+- 🌱 **"How will you surprise yourself?"** Small *if–then* plans, as often as every day, alone or with a friend. The bot reminds you on the day and at the hour you choose; what you did blooms on your island.
 - 👥 **Party mode:** one link or QR code — everyone guesses you.
 - 🍾 **Message in a bottle:** play with a stranger; a bridge appears only if both want it.
 

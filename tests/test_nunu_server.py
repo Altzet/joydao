@@ -254,3 +254,19 @@ def test_meet_friends(tmp_path, monkeypatch):
     assert [f["id"] for f in c.get("/nunu/api/world", headers=evgen).json()["friends"]] == [1]
     assert c.post(f"/nunu/api/meet/{mid}/accept", headers=olya).json() == {"friend": {"id": 2, "name": "Евген"}, "bridge": True}
     assert sorted(f["id"] for f in c.get("/nunu/api/world", headers=evgen).json()["friends"]) == [1, 3]
+
+
+def test_timed_reminder(tmp_path, monkeypatch):
+    """Дело с часом: в свою минуту по времени игрока, один раз; утренний проход его не трогает."""
+    from datetime import date, datetime
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    # 18:30 в Киеве (UTC+2, getTimezoneOffset = -120) = 16:30 UTC
+    seeds = [{"r": "Пицца в печи", "d": "2026-11-11", "life": None, "due": "2026-11-11", "at": "18:30", "tz": -120, "pid": "t1"}]
+    with nunu.closing(nunu._db()) as c, c:
+        c.execute("INSERT INTO state(tg_id,data) VALUES(1,?)", (json.dumps({"nunu-seeds": seeds}),))
+    d = date(2026, 11, 11)
+    assert nunu.reminders_due(d) == []  # утром — рано
+    assert nunu.reminders_due(d, datetime(2026, 11, 11, 16, 29), daily=False) == []
+    r = nunu.reminders_due(d, datetime(2026, 11, 11, 16, 30), daily=False)
+    assert len(r) == 1 and "Пора" in r[0][1]
+    assert nunu.reminders_due(d, datetime(2026, 11, 11, 16, 31), daily=False) == []
