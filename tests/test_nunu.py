@@ -19,3 +19,10 @@ def test_nunu_stage1():
     for marker in ("const C0=[", "const C1=[", "const DEEP=[", "Проехали", "function bridge(", "function stepWeek(", "Чем удивишь себя"):
         assert marker in t
     assert "очков из" not in t
+
+
+def test_my_plot():
+    """«Мой участок» (раздел «Динамическое равновесие»): вкладка в меню, анкета уходит на сервер вместе с садом."""
+    t = TestClient(api.app).get("/nunu").text
+    for marker in ('["plot","Участок"', "function plotHome(", '"nunu-plot":plot', "DeviceOrientation", "LocationManager"):
+        assert marker in t

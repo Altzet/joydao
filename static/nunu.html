@@ -56,7 +56,10 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .g{background:var(--sk);color:var(--sk-fg);border-color:var(--sk-b)}
 .n{background:var(--card);color:var(--fg);border-color:var(--line)}.n:hover{border-color:var(--muted)}
 .main-btn{background:var(--acc);color:var(--acc-fg);border-color:var(--acc);font-weight:500;align-self:flex-start;padding:11px 18px}
-input,textarea{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);flex:1;min-width:0}textarea{resize:vertical;width:100%}
+input,textarea,select{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);flex:1;min-width:0}textarea{resize:vertical;width:100%}
+/* «Мой участок»: поля сеткой, длинные — во всю ширину */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.pf{display:flex;flex-direction:column;gap:4px;min-width:0}.pf.w{grid-column:1/-1}.pf .zone{margin:0}.pf select,.pf input{width:100%}
+.prow{display:flex;align-items:center;gap:8px;width:100%}
 .err{font-size:0.8125rem;color:#C0392B;min-height:1em}
 .pass{text-align:center;align-items:center;padding:40px 20px}
 .res{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
@@ -237,7 +240,7 @@ app.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{prefs.acc=x.dataset.a
 $("rm-on").onclick=()=>{prefs.remind=true;save2()};$("rm-off").onclick=()=>{prefs.remind=false;save2()};
 $("fs-").onclick=()=>{prefs.fs=FS[Math.max(0,i-1)];save2()};$("fs+").onclick=()=>{prefs.fs=FS[Math.min(FS.length-1,i+1)];save2()}}
 const r_dark=()=>document.documentElement.dataset.theme==="dark";
-function push(){if(!API)return;clearTimeout(pushT);pushT=setTimeout(()=>API("/state","PUT",{data:{nunu2:st,"nunu-seeds":seeds,"nunu-bridges":bridges,"nunu-prefs":prefs}}).catch(()=>{}),800)}
+function push(){if(!API)return;clearTimeout(pushT);pushT=setTimeout(()=>API("/state","PUT",{data:{nunu2:st,"nunu-seeds":seeds,"nunu-bridges":bridges,"nunu-prefs":prefs,"nunu-plot":plot}}).catch(()=>{}),800)}
 /* ответ = индекс варианта; у сцен 0-1 сад, 2-3 лес, 4-5 скалы; 6 = «Проехали» */
 const PASS=6,opt=(s,x)=>x===PASS?"Проехали":Array.isArray(x)?x.map(k=>s.o[k]).join(" и "):s.o[x],Z=(s,x)=>s.z&&x<PASS?x>>1:-1;
 let st=ls.get("nunu2")||{name:"",s:[],g:[],friend:null},draft=null;
@@ -266,6 +269,7 @@ if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")gu
 function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<button class="main-btn" id="mp">На карту</button>`:""}<button class="${API?"n":"main-btn"}" id="sw">Удиви себя</button>${M!=="guess"?`<button class="n" id="gd">Мой сад: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=()=>stepWeek(curFid&&st.friend?st.friend.name:"");if(M!=="guess")$("gd").onclick=garden;if(API)$("mp").onclick=world}
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
+let plot=ls.get("nunu-plot")||{};const savePlot=()=>ls.set("nunu-plot",plot);
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS||t.lv===0)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
 let onlyMine=false;
 /* сад: по умолчанию — что ждёт в земле; распустившееся и проросшее иначе — по нажатию на квадрат */
@@ -313,8 +317,8 @@ return`На твоём острове больше всего ${top.map(k=>P[k])
 /* «Удиви себя»: своё дело первым — свои цели выполняются охотнее навязанных (Sheldon & Elliot 1999).
 План по Голльвитцеру: что, когда (дата из календаря), где, и «если помеха — то действие». Дело с другом — друг узнаёт сразу */
 const sd=d=>d&&d.length>=10?d.slice(8,10)+"."+d.slice(5,7):d||"",fmtD=d=>{try{return new Date(d+"T12:00").toLocaleDateString("ru-RU",{weekday:"short",day:"numeric",month:"long"})}catch(e){return d}},today=()=>new Date().toISOString().slice(0,10);
-function stepWeek(fr){setNav("week");fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr,mateSel=fr?{id:curFid,name:fr}:null;
-const own={what:"",due:"",at:"",where:"",act:"",who:"",obs:""},ins=insight(),W=["Своё дело…",...SW],O=[...SO,"Свой вариант…"],FR=(W0()||{friends:[]}).friends||[];
+function stepWeek(fr,what){setNav("week");fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr,mateSel=fr?{id:curFid,name:fr}:null;
+const own={what:typeof what==="string"?what:"",due:"",at:"",where:"",act:"",who:"",obs:""},ins=insight(),W=["Своё дело…",...SW],O=[...SO,"Свой вариант…"],FR=(W0()||{friends:[]}).friends||[];
 const obs=()=>{const x=o<3?SO[o]:own.obs.trim()||"…";return x[0].toLowerCase()+x.slice(1)},ownAct=()=>w===0||o===3;
 const plan=()=>{const d=own.due?fmtD(own.due)+(own.at?" в "+own.at:""):own.at?"в "+own.at:"";if(w>0&&o<3)return(d?d+". ":"")+SP[w-1][o];
 const head=w===0?`«${own.what||"…"}»${d?" — "+d:""}${own.where.trim()?", "+own.where.trim():""}`:`${W[w]}${d?" — "+d:""}`;return`${head}. Если ${obs()}, то ${own.act.trim().replace(/[.!]$/,"")||"…"}${own.act.trim()?".":""}`};
@@ -550,8 +554,80 @@ return g+`</svg>`}
 /* ===== механика карты ===== */
 let W=null,curFid=null,focus=null;const W0=()=>W;
 /* меню: всегда под рукой; «Назад» в шапке Telegram ведёт на карту; новый экран — сверху */
+/* «Мой участок» — раздел проекта «Динамическое равновесие» в боте (решение 12.11): анкета исходных данных участка.
+Живёт в том же JSON игрока (ключ nunu-plot), сервер не менялся. Принцип: ни одно улучшение не уводит другой поток в минус.
+Поле: [ключ, подпись, тип (text|num|sel|dir), варианты или подсказка]. Раздел: f — поля, t — строки таблицы (r — строки с готовыми названиями), l — список планов */
+const DIRS=["север","северо-восток","восток","юго-восток","юг","юго-запад","запад","северо-запад"],dir8=a=>DIRS[Math.round((((a%360)+360)%360)/45)%8];
+const PF=[
+["site","1. Участок и стороны света","Из этого раздела строится макет и расчёт солнца, поэтому он самый важный. Все расстояния — в метрах. Точка 0 — один угол участка; две стороны, что сходятся в нём, — А и Б. Диагональ нужна, если участок не прямоугольный.",
+{f:[["map","Координаты или ссылка на Google Карты","text","https://maps.app.goo.gl/…"],["shape","Форма","sel",["Прямоугольник","Трапеция","Г-образный","Другая"]],
+["a","Сторона А, м","num"],["b","Сторона Б, м","num"],["c","Сторона В, м","num","напротив А"],["d","Сторона Г, м","num","напротив Б"],
+["diag","Диагональ, м","num","от точки 0"],["area","Площадь, соток","num","из документов"],["face","Куда смотрит сторона А","dir"],
+["slope","Уклон","text","Ровный или куда и насколько понижение"],["gate","Въезд и калитка","text","Сторона и сколько метров от точки 0"],
+["soil","Грунт","sel",["Чернозём","Суглинок","Глина","Песок","Каменистый"]]]}],
+["shade","2. Что затеняет участок","Всё высокое за забором или у границы: соседние дома, большие деревья, глухие заборы. Один этаж — примерно 3 м, конёк одноэтажного дома — 6–7 м.",
+{t:[["what","Что","text"],["side","За стороной","sel",["А","Б","В","Г","все"]],["h","Высота, м","num"],["dist","От границы, м","num"],["w","Ширина, м","num","вдоль границы"]],seed:[{what:"Забор по периметру",side:"все",dist:"0"}]}],
+["build","3. Постройки","По строке на постройку, включая недостроенное. «От А» и «От Б» — расстояние от этих сторон до ближайшего угла постройки.",
+{t:[["what","Постройка","text"],["l","Длина, м","num"],["w","Ширина, м","num"],["h","Высота, м","num","до конька"],["fa","От А, м","num"],["fb","От Б, м","num"],
+["roof","Крыша: тип и куда скат","text"],["mat","Материал","text"],["heat","Как отапливается","text"]],seed:[{what:"Дом"},{what:"Беседка"},{what:"Печь"}]}],
+["beds","4. Грядки, деревья и посадки","И то, что есть, и то, что планируешь. Для дерева — диаметр кроны и высота, расстояния — до ствола.",
+{t:[["what","Что","text"],["type","Тип","sel",["Обычная","Тёплая","Высокая","Теплица","Дерево","Кусты"]],["size","Длина × ширина, м","text","4 × 1,2"],["h","Высота, м","num"],
+["fa","От А, м","num"],["fb","От Б, м","num"],["grow","Что растёт","text"],["plan","Есть или план","sel",["Есть","План"]]],seed:[{what:"Грядка",type:"Тёплая"}]}],
+["ext","5. Внешние ресурсы","Всё, что приходит снаружи, — точка отсчёта автономности. Расход бери из счетов; зиму и лето отдельно.",
+{r:["Электричество, кВт·ч","Газ, м³","Вода, м³","Канализация или септик","Дрова или уголь (покупные), м³","Интернет","Вывоз мусора","Покупная еда"],
+t:[["has","Есть?","sel",["Да","Нет"]],["win","Зимой в месяц","num"],["sum","Летом в месяц","num"],["uah","Грн в месяц","num"]]}],
+["own","6. Свои ресурсы сейчас","Что участок уже даёт сам. Даже примерная цифра лучше пустой клетки.",
+{r:["Дождевая вода","Урожай","Дрова со своего участка","Компост","Солнечная энергия"],t:[["src","Источник","text"],["year","Сколько в год","text"],["note","Примечание","text"]]}],
+["plans","7. Планы и идеи","Что хочешь построить или изменить. Любой план можно посадить в сад — бот напомнит в выбранный день.",{l:1}]];
+const pRows=(k,d)=>plot[k]||(plot[k]=d.seed?JSON.parse(JSON.stringify(d.seed)):d.r?d.r.map(()=>({})):d.l?[]:{});
+const pHas=(o,skip)=>Object.entries(o||{}).some(([q,v])=>q!==skip&&String(v).trim());
+/* сколько заполнено: [сделано, всего]; у таблиц без готовых строк «всего» нет — показываем число строк с данными */
+function pDone(k,d){const v=plot[k]||(d.f?{}:[]);if(d.f)return[d.f.filter(x=>String(v[x[0]]||"").trim()).length,d.f.length];
+if(d.l)return[v.length,0];if(d.r)return[v.filter(r=>pHas(r)).length,d.r.length];return[v.filter(r=>pHas(r,"what")).length,0]}
+function pSet(p,k,v){const[s,i]=p.split(".");(i==null?plot[s]:plot[s][+i])[k]=v;savePlot()}
+const pIn=(p,f,v)=>{const[k,lab,ty,o]=f,id="pf-"+p.replace(".","-")+"-"+k,val=v==null?"":String(v),opts=ty==="dir"?DIRS:o;
+const ctl=ty==="sel"||ty==="dir"?`<select id="${id}" data-p="${p}" data-k="${k}"><option value="">—</option>${opts.map(x=>`<option${x===val?" selected":""}>${esc(x)}</option>`).join("")}</select>`
+:`<input id="${id}" data-p="${p}" data-k="${k}"${ty==="num"?' inputmode="decimal" data-num="1" maxlength="10"':' maxlength="160"'} placeholder="${esc(ty==="num"||ty==="text"?o||"":"")}" value="${esc(val)}">`;
+return`<div class="pf${ty==="text"||ty==="dir"?" w":""}"><label class="zone" for="${id}">${esc(lab)}</label>${ctl}
+${ty==="dir"?`<p class="note" style="margin:0">Встань у стороны А спиной к участку, телефон держи ровно, верхом от себя.</p><button class="n" data-cmp="${id}" style="align-self:flex-start">Определить компасом</button>`:""}
+${k==="map"?`<button class="n" data-gps="${id}" style="align-self:flex-start">Я на участке — взять координаты</button>`:""}<span class="err" data-e="${id}"></span></div>`};
+/* компас Telegram (Bot API 8.0). ⚠ Знак угла: по W3C alpha растёт против часовой, курс = 360 − alpha; на реальном телефоне сверить с компасом */
+function compass(cb){const D=TG&&TG.DeviceOrientation;if(!D||!TG.isVersionAtLeast("8.0"))return cb(null,"Компас работает в Telegram 8.0 и новее. Выбери сторону вручную.");
+D.start({refresh_rate:100,need_absolute:true},ok=>{if(!ok)return cb(null,"Телефон не дал компас. Выбери сторону вручную.");
+setTimeout(()=>{const a=D.alpha,abs=D.absolute;D.stop();if(a==null||!abs)return cb(null,"Компас не нашёл север. Выбери сторону вручную.");cb((360-a*180/Math.PI+360)%360)},1200)})}
+function gps(cb){const L=TG&&TG.LocationManager;if(!L||!TG.isVersionAtLeast("8.0"))return cb(null,"Геопозиция работает в Telegram 8.0 и новее. Вставь ссылку из Google Карт.");
+const get=()=>L.getLocation(d=>d?cb(d):cb(null,L.isAccessRequested&&!L.isAccessGranted?"Нет доступа к геопозиции: разреши его в настройках бота.":"Не получилось определить место."));
+L.isInited?get():L.init(get)}
+function plotHome(){setNav("plot");
+app.innerHTML=`<h1>Мой участок</h1><div class="card"><p style="margin:0">Исходные данные для макета участка и учёта ресурсов. Заполняй по разделам, в любом темпе: всё сохраняется само.</p>
+<p class="note" style="margin:0">Принцип: берём столько, сколько участок даёт без истощения. Ни одно улучшение не уводит другой поток в минус.</p></div>
+<div class="card">${PF.map(([k,t,,d],i)=>{const[a,b]=pDone(k,d);return`<button class="n prow" data-s="${i}"><span style="flex:1">${esc(t)}</span><span class="tag ${b?a>=b?"open":"fog":a?"open":"fog"}">${b?a+" из "+b:a}</span></button>`}).join("")}</div>`;
+app.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>plotSec(+b.dataset.s))}
+function plotSec(i){setNav("plot");const[k,title,hint,d]=PF[i],v=pRows(k,d);let body;
+if(d.f)body=`<div class="card"><div class="pgrid">${d.f.map(f=>pIn(k,f,v[f[0]])).join("")}</div></div>`;
+else if(d.l)body=`<div class="card"><div class="row"><input id="pl" maxlength="120" placeholder="Бочка под водосток у дома"><button class="main-btn" id="pla">Добавить</button></div><span class="err" id="ple"></span>
+${v.length?v.map((t,j)=>`<div class="prow"><span style="flex:1">${esc(t)}</span><button class="t" data-sow="${j}">В сад</button><button class="n" data-del="${j}" aria-label="Убрать план">×</button></div>`).join(""):`<p class="note" style="margin:0">Пока пусто.</p>`}</div>`;
+else body=v.map((r,j)=>`<div class="card"><h2>${esc(d.r?d.r[j]:r.what||"Строка "+(j+1))}</h2><div class="pgrid">${d.t.map(f=>pIn(k+"."+j,f,r[f[0]])).join("")}</div>
+${d.r?"":`<button class="n" data-del="${j}" style="align-self:flex-start">Убрать строку</button>`}</div>`).join("")+(d.r?"":`<button class="main-btn" id="padd">Добавить строку</button>`);
+app.innerHTML=`<button class="n" id="pback" style="align-self:flex-start">← Мой участок</button><h1>${esc(title)}</h1><p class="note" style="margin:0">${esc(hint)}</p>${body}
+<div class="row">${i>0?`<button class="n" id="pprev">← Назад</button>`:""}${i<PF.length-1?`<button class="main-btn" id="pnext">Дальше: ${esc(PF[i+1][1].replace(/^\d+\. /,""))}</button>`:""}</div>`;
+$("pback").onclick=plotHome;if($("pprev"))$("pprev").onclick=()=>plotSec(i-1);if($("pnext"))$("pnext").onclick=()=>plotSec(i+1);
+const err=id=>app.querySelector(`[data-e="${id}"]`);
+app.querySelectorAll("[data-p]").forEach(x=>x.oninput=x.onchange=()=>{const val=x.value.trim(),ok=!x.dataset.num||val===""||/^\d+([.,]\d+)?$/.test(val);
+err(x.id).textContent=ok?"":"Только число, например 12,5";if(ok)pSet(x.dataset.p,x.dataset.k,val)});
+app.querySelectorAll("[data-cmp]").forEach(b=>b.onclick=()=>{const s=$(b.dataset.cmp),e=err(s.id);b.disabled=true;e.style.color="";e.textContent="";b.textContent="Держи телефон ровно…";
+compass((deg,msg)=>{b.disabled=false;b.textContent="Определить компасом";if(deg==null){e.textContent=msg;return}
+s.value=dir8(deg);pSet("site","face",s.value);pSet("site","faceDeg",Math.round(deg));e.style.color="var(--muted)";e.textContent=`${Math.round(deg)}° — ${dir8(deg)}. Сверь с компасом телефона.`})});
+app.querySelectorAll("[data-gps]").forEach(b=>b.onclick=()=>{const s=$(b.dataset.gps),e=err(s.id);b.disabled=true;e.style.color="";e.textContent="";
+gps((g,msg)=>{b.disabled=false;if(!g){e.textContent=msg;return}s.value=g.latitude.toFixed(6)+", "+g.longitude.toFixed(6);pSet("site","map",s.value);
+e.style.color="var(--muted)";e.textContent=g.horizontal_accuracy?`Точность ±${Math.round(g.horizontal_accuracy)} м.`:"Готово."})});
+app.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Точно убрать?";return}v.splice(+b.dataset.del,1);savePlot();plotSec(i)});
+app.querySelectorAll("[data-sow]").forEach(b=>b.onclick=()=>stepWeek("",v[+b.dataset.sow]));
+if($("padd"))$("padd").onclick=()=>{v.push({});savePlot();plotSec(i);const c=app.querySelectorAll(".card");c[c.length-1].scrollIntoView({block:"center"})};
+if($("pla")){const add=()=>{const t=$("pl").value.trim();if(!t){$("ple").textContent="Напиши план";return}v.push(t);savePlot();plotSec(i)};$("pla").onclick=add;$("pl").onkeydown=e=>{if(e.key==="Enter")add()};$("pl").oninput=()=>$("ple").textContent=""}}
 const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],
 ["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],["bottle","Бутылка","M10 2h4v3l1.5 2.5V20a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V7.5L10 5z",()=>W?drawW("bottle"):world("bottle")],
+["plot","Участок","M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M12 9v3",()=>plotHome()],
 ["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];
 const nav={cur:undefined};
 function setNav(s){if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
@@ -717,7 +793,7 @@ st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mo
 :{name:st.name||tgName||"Друг",seed:v.seed,...(v.story&&v.story.only?{s:P10(),g:P10(),only:1}:{s:[],g:[]}),mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,pending:1},story:v.story||null,bottle:v.bottle};save()}
 async function boot(){if(!API)return home();busy("Загружаю твой остров…");
 try{const r=await API("/state"),d=r.data;tgName=r.name||"";
-if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-bridges"])bridges=d["nunu-bridges"];if(d["nunu-prefs"]){prefs={...prefs,...d["nunu-prefs"]};ls.set("nunu-prefs",prefs);applyPrefs()}}else push();
+if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-bridges"])bridges=d["nunu-bridges"];if(d["nunu-plot"])plot=d["nunu-plot"];if(d["nunu-prefs"]){prefs={...prefs,...d["nunu-prefs"]};ls.set("nunu-prefs",prefs);applyPrefs()}}else push();
 /* общие дела от друзей: ложатся в сад, если такого ещё нет */
 if(r.inbox&&r.inbox.length){r.inbox.forEach(x=>{if(!seeds.some(y=>y.pid&&y.pid===x.pid))seeds.push(x)});saveSeeds()}
 const sp=(TG.initDataUnsafe||{}).start_param;
