@@ -60,7 +60,8 @@ MIGRATE = ("ALTER TABLE games ADD COLUMN to_id INTEGER",  # партия кон�
            "ALTER TABLE plays ADD COLUMN guess TEXT",     # догадка друга своими словами
            "ALTER TABLE plays ADD COLUMN mark INTEGER",   # автор отметил: 2 угадал, 1 почти, 0 нет
            "ALTER TABLE games ADD COLUMN bottle INTEGER",  # бутылка в море: угадывают незнакомцы
-           "ALTER TABLE games ADD COLUMN reported INTEGER")  # жалоба: бутылка больше не ловится
+           "ALTER TABLE games ADD COLUMN reported INTEGER",  # жалоба: бутылка больше не ловится
+           "ALTER TABLE state ADD COLUMN rev INTEGER NOT NULL DEFAULT 0")  # версия состояния: устройства не затирают друг друга  # жалоба: бутылка больше не ловится
 BOTTLE_CATCHES = 5  # ponytail: столько незнакомцев могут выловить одну бутылку; подстроить по данным
 STORY_BOARDS = {2: 1.0, 1: 0.5}  # своя ситуация: угадал — доска, почти — верёвочка
 
@@ -115,6 +116,7 @@ def link(gid: str = "") -> str:
 
 class StateIn(BaseModel):
     data: dict
+    base: int | None = None  # версия, от которой шли правки; None — старый клиент (пишет как раньше)
 
 
 class Story(BaseModel):
@@ -151,29 +153,45 @@ class MarkIn(BaseModel):
 
 
 @router.get("/state")
-def get_state(x_init_data: str | None = Header(default=None)):
-    """Состояние игрока + входящие семена (общие дела от друзей). Входящие отдаются один раз:
-    ponytail: если клиент не успел сохранить сад, семя потеряется — друг всё равно получил сообщение от бота."""
+def get_state(since: int | None = None, x_init_data: str | None = Header(default=None)):
+    """Состояние игрока + версия + входящие семена (общие дела от друзей). Входящие отдаются один раз:
+    ponytail: если клиент не успел сохранить сад, семя потеряется — друг всё равно получил сообщение от бота.
+    since=версия у клиента: если не менялось, данные не шлём (опрос раз в 15 с с телефона)."""
     u = _user(x_init_data)
     with closing(_db()) as c:
-        r = c.execute("SELECT data FROM state WHERE tg_id=?", (u.id,)).fetchone()
+        r = c.execute("SELECT data, rev FROM state WHERE tg_id=?", (u.id,)).fetchone()
         inbox = [json.loads(x["seed"]) for x in c.execute("SELECT seed FROM inbox WHERE tg_id=? ORDER BY id", (u.id,))]
         with c:
             c.execute("DELETE FROM inbox WHERE tg_id=?", (u.id,))
         _seen(c, u)
-    return {"data": json.loads(r["data"]) if r else None, "name": u.first_name, "inbox": inbox}
+    rev = r["rev"] if r else 0
+    if since is not None and since == rev:
+        return {"same": True, "rev": rev, "name": u.first_name, "inbox": inbox}
+    return {"data": json.loads(r["data"]) if r else None, "rev": rev, "name": u.first_name, "inbox": inbox}
 
 
 @router.put("/state")
 def put_state(body: StateIn, x_init_data: str | None = Header(default=None)):
+    """Сохранить всё состояние. Если base не совпал с версией на сервере — другое устройство успело раньше:
+    409 с его данными, клиент сольёт правки и пришлёт снова. Так ни одно действие не затирается."""
     u = _user(x_init_data)
     data = json.dumps(body.data, ensure_ascii=False)
     if len(data) > 300_000:
         raise HTTPException(413, "Слишком большой сад")
-    with closing(_db()) as c, c:
-        c.execute("INSERT INTO state(tg_id, data) VALUES(?, ?) ON CONFLICT(tg_id) DO UPDATE "
-                  "SET data=excluded.data, updated_at=datetime('now')", (u.id, data))
-    return {"ok": True}
+    with closing(_db()) as c:
+        c.execute("BEGIN IMMEDIATE")  # проверка версии и запись — одним шагом
+        try:
+            r = c.execute("SELECT data, rev FROM state WHERE tg_id=?", (u.id,)).fetchone()
+            rev = r["rev"] if r else 0
+            if body.base is not None and body.base != rev:
+                raise HTTPException(409, {"rev": rev, "data": json.loads(r["data"]) if r else None})
+            c.execute("INSERT INTO state(tg_id, data, rev) VALUES(?, ?, 1) ON CONFLICT(tg_id) DO UPDATE "
+                      "SET data=excluded.data, rev=state.rev+1, updated_at=datetime('now')", (u.id, data))
+            c.commit()
+        except BaseException:
+            c.rollback()
+            raise
+    return {"ok": True, "rev": rev + 1}
 
 
 @router.post("/game")

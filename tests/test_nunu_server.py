@@ -30,7 +30,7 @@ def test_game_by_link(tmp_path, monkeypatch):
 
     assert c.get("/nunu/api/state").status_code == 401  # без Telegram не пускаем
     assert c.put("/nunu/api/state", json={"data": {"seeds": [1]}}, headers=anton).status_code == 200
-    assert c.get("/nunu/api/state", headers=anton).json() == {"data": {"seeds": [1]}, "name": "Антон", "inbox": []}
+    assert c.get("/nunu/api/state", headers=anton).json() == {"data": {"seeds": [1]}, "rev": 1, "name": "Антон", "inbox": []}
 
     g = c.post("/nunu/api/game", json={"name": "Антон", "seed": 5, "mode": "duo", "s": [0] * 10, "g": [1] * 10},
                headers=anton).json()
@@ -299,3 +299,16 @@ def test_slope(monkeypatch):
     r = c.post("/nunu/api/slope", json={"q": "https://maps.app.goo.gl/cz1cRvGeCRHZYRr48"}, headers=init_data(1, "А")).json()
     assert r["lat"] == 48.4391 and r["src"] == "SRTM 30 м" and abs(r["pct"] - 3) < 0.1 and abs(r["az"]) % 360 < 1  # вниз на север
     assert c.post("/nunu/api/slope", json={"q": "нет"}, headers=init_data(1, "А")).status_code == 422
+
+
+def test_state_versions(tmp_path, monkeypatch):
+    """Два устройства: устаревшая копия не затирает свежую — 409 с данными сервера; без изменений — без данных."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    c, me = TestClient(pause.app), init_data(7, "Я")
+    assert c.get("/nunu/api/state", headers=me).json()["rev"] == 0
+    assert c.put("/nunu/api/state", json={"data": {"a": 1}, "base": 0}, headers=me).json()["rev"] == 1  # телефон
+    assert c.put("/nunu/api/state", json={"data": {"a": 2}, "base": 1}, headers=me).json()["rev"] == 2  # телефон ещё
+    r = c.put("/nunu/api/state", json={"data": {"b": 1}, "base": 1}, headers=me)  # ноутбук со старой версией
+    assert r.status_code == 409 and r.json()["detail"] == {"rev": 2, "data": {"a": 2}}
+    assert c.get("/nunu/api/state?since=2", headers=me).json() == {"same": True, "rev": 2, "name": "Я", "inbox": []}
+    assert c.get("/nunu/api/state?since=1", headers=me).json()["data"] == {"a": 2}

@@ -253,7 +253,47 @@ app.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{prefs.acc=x.dataset.a
 $("rm-on").onclick=()=>{prefs.remind=true;save2()};$("rm-off").onclick=()=>{prefs.remind=false;save2()};
 $("fs-").onclick=()=>{prefs.fs=FS[Math.max(0,i-1)];save2()};$("fs+").onclick=()=>{prefs.fs=FS[Math.min(FS.length-1,i+1)];save2()}}
 const r_dark=()=>document.documentElement.dataset.theme==="dark";
-function push(){if(!API)return;clearTimeout(pushT);pushT=setTimeout(()=>API("/state","PUT",{data:{nunu2:st,"nunu-seeds":seeds,"nunu-bridges":bridges,"nunu-prefs":prefs,"nunu-plot":plot}}).catch(()=>{}),800)}
+/* ===== синхронизация между устройствами (12.11) =====
+У состояния на сервере есть версия rev. Сохранение несёт base — версию, от которой шли правки. Если другое устройство
+успело раньше, сервер отвечает 409 со своими данными, и правки сливаются трёхсторонне (base · моё · сервер):
+что изменил я — моё, что изменил другой — его; объекты карты, семена и строки анкеты — поштучно по id, удалённое не
+воскресает. Пока приложение открыто — опрос раз в 15 с и при возвращении в него; при сворачивании — сохранение сразу.
+Несохранённое живёт в localStorage с пометкой nunu-dirty и сливается при следующем открытии: действие не теряется. */
+const raw=(k,v)=>{try{v===undefined?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let sync=ls.get("nunu-sync")||{rev:null,base:null},dirty=!!ls.get("nunu-dirty"),pushing=false,again=false;
+const mine=()=>({nunu2:st,"nunu-seeds":seeds,"nunu-bridges":bridges,"nunu-prefs":prefs,"nunu-plot":plot}),J=x=>JSON.stringify(x===undefined?null:x);
+const idOf=x=>typeof x==="string"?"t:"+x:x&&typeof x==="object"&&!Array.isArray(x)?(x.id||x.pid||x.oid||(x.q!=null&&x.d?["s",x.d,x.c,x.q,x.r].join("|"):null)):null;
+function keyed(a){const m=new Map(),n={};for(const x of a){let k=idOf(x);if(k==null)return null;n[k]=(n[k]||0)+1;if(n[k]>1)k+="#"+n[k];m.set(k,x)}return m}
+function merge3(b,l,s){if(J(l)===J(b))return s;if(J(s)===J(b)||J(s)===J(l))return l;
+if(Array.isArray(l)&&Array.isArray(s)){const B=keyed(Array.isArray(b)?b:[]),L=keyed(l),S=keyed(s);if(!B||!L||!S)return l;const out=[];
+for(const[k,v]of S){if(L.has(k))out.push(merge3(B.get(k),L.get(k),v));else if(!B.has(k)||J(B.get(k))!==J(v))out.push(v)}  /* у меня удалено, а там не менялось — не воскрешаем */
+for(const[k,v]of L)if(!S.has(k)&&!B.has(k))out.push(v);return out}  /* добавлено у меня */
+if(l&&s&&typeof l==="object"&&typeof s==="object"&&!Array.isArray(l)&&!Array.isArray(s)){const bb=b&&typeof b==="object"&&!Array.isArray(b)?b:{},o={};
+for(const k of new Set([...Object.keys(s),...Object.keys(l),...Object.keys(bb)])){const v=merge3(bb[k],l[k],s[k]);if(v!==undefined)o[k]=v}return o}
+return l}  /* одно и то же поле изменили оба — моё (последнее действие на этом устройстве) */
+function mergeAll(b,l,s){if(!s)return l;const m=merge3(b||{},l,s),B=(l&&l["nunu-bridges"])||{},S=s["nunu-bridges"]||{};
+m["nunu-bridges"]={...S,...B};for(const k in S)m["nunu-bridges"][k]=Math.max(+B[k]||0,+S[k]||0);return m}  /* доски моста только растут */
+function adopt(d){if(!d)return;st=d.nunu2||{name:"",s:[],g:[],friend:null};seeds=d["nunu-seeds"]||[];bridges=d["nunu-bridges"]||{};plot=d["nunu-plot"]||{};
+prefs={theme:"auto",acc:"teal",fs:1,...(d["nunu-prefs"]||{})};raw("nunu2",st);raw("nunu-seeds",seeds);raw("nunu-bridges",bridges);raw("nunu-plot",plot);raw("nunu-prefs",prefs);applyPrefs()}
+const setSync=(rev,base)=>{sync={rev,base};raw("nunu-sync",sync)},setDirty=v=>{dirty=v;raw("nunu-dirty",v?1:undefined)};
+function rerender(){const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;
+if(nav.cur==="plot"&&$("pm")){if(PS.sel&&!pO(PS.sel))PS.sel=null;if(PS.seed!=null&&!seeds[PS.seed])PS.seed=null;pDraw();pPanel();const c=$("pslope");if(c)c.innerHTML=pSlopeChip()}
+else if(nav.cur==="garden")garden()}
+function takeInbox(inbox){if(!inbox||!inbox.length)return false;let n=0;inbox.forEach(x=>{if(!seeds.some(y=>y.pid&&y.pid===x.pid)){seeds.push(x);n++}});if(n){raw("nunu-seeds",seeds);setDirty(true)}return n>0}
+function push(){if(!API)return;setDirty(true);clearTimeout(pushT);pushT=setTimeout(flush,600)}
+function flush(leaving){if(!API||sync.rev==null)return;if(pushing){again=true;return}clearTimeout(pushT);pushing=true;const data=JSON.parse(J(mine())),body=J({data,base:sync.rev});
+fetch("/nunu/api/state",{method:"PUT",headers:{"X-Init-Data":TG.initData,"Content-Type":"application/json"},body,keepalive:!!leaving&&body.length<60000})
+.then(async r=>{const j=await r.json().catch(()=>({}));pushing=false;
+if(r.ok){setSync(j.rev,data);if(J(mine())===J(data))setDirty(false)}
+else if(r.status===409&&j.detail){const s=j.detail.data;adopt(mergeAll(sync.base,mine(),s));setSync(j.detail.rev,s);rerender();again=true}
+if(again){again=false;if(dirty)flush()}}).catch(()=>{pushing=false})}  /* нет сети — останется dirty, уйдёт при следующем опросе */
+function pull(){if(!API||pushing||sync.rev==null)return;API("/state?since="+sync.rev).then(r=>{const got=takeInbox(r.inbox);
+if(!r.same&&r.data!==undefined){const s=r.data;adopt(dirty?mergeAll(sync.base,mine(),s):s);setSync(r.rev,s);if(got)takeInbox([]);rerender()}else if(got)rerender();
+if(dirty)flush()}).catch(()=>{})}
+setInterval(()=>{if(document.visibilityState==="visible")pull()},15000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){if(dirty)flush(true)}else pull()});
+addEventListener("pagehide",()=>{if(dirty)flush(true)});
+try{TG&&TG.onEvent("activated",pull);TG&&TG.onEvent("deactivated",()=>{if(dirty)flush(true)})}catch(e){}
 /* ответ = индекс варианта; у сцен 0-1 сад, 2-3 лес, 4-5 скалы; 6 = «Проехали» */
 const PASS=6,opt=(s,x)=>x===PASS?"Проехали":Array.isArray(x)?x.map(k=>s.o[k]).join(" и "):s.o[x],Z=(s,x)=>s.z&&x<PASS?x>>1:-1;
 let st=ls.get("nunu2")||{name:"",s:[],g:[],friend:null},draft=null;
@@ -1147,9 +1187,10 @@ st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mo
 :{name:st.name||tgName||"Друг",seed:v.seed,...(v.story&&v.story.only?{s:P10(),g:P10(),only:1}:{s:[],g:[]}),mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,pending:1},story:v.story||null,bottle:v.bottle};save()}
 async function boot(){if(!API)return home();busy("Загружаю твой остров…");
 try{const r=await API("/state"),d=r.data;tgName=r.name||"";
-if(d){if(d.nunu2)st=d.nunu2;if(d["nunu-seeds"])seeds=d["nunu-seeds"];if(d["nunu-bridges"])bridges=d["nunu-bridges"];if(d["nunu-plot"])plot=d["nunu-plot"];if(d["nunu-prefs"]){prefs={...prefs,...d["nunu-prefs"]};ls.set("nunu-prefs",prefs);applyPrefs()}}else push();
+/* на этом устройстве остались несохранённые действия — сливаем их с сервером, иначе берём серверное */
+if(d){adopt(dirty&&sync.base?mergeAll(sync.base,mine(),d):dirty?mergeAll({},mine(),d):d);setSync(r.rev,d)}else{setSync(r.rev||0,null);setDirty(true)}
 /* общие дела от друзей: ложатся в сад, если такого ещё нет */
-if(r.inbox&&r.inbox.length){r.inbox.forEach(x=>{if(!seeds.some(y=>y.pid&&y.pid===x.pid))seeds.push(x)});saveSeeds()}
+takeInbox(r.inbox);if(dirty)flush();
 const sp=(TG.initDataUnsafe||{}).start_param;
 if(sp&&sp[0]==="m"){const r=await API("/meet/"+sp+"/accept","POST");if(r.bridge){focus=r.friend.id;return world()}
 card(`<h2>Приглашение принято</h2><p style="margin:0">Мост появится, когда ${esc(r.friend.name)} тоже откроет приглашение. Бот напишет тебе.</p><button class="main-btn" id="mp">На карту</button>`);$("mp").onclick=world;return}
