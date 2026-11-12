@@ -1020,7 +1020,7 @@ if($("shr")){$("shr").oninput=()=>{PS.hr=+$("shr").value;pDraw();$("shr").nextEl
 $("hm0").onclick=()=>{PS.hideMob=false;pDraw();pPanel()};$("hm1").onclick=()=>{PS.hideMob=true;pDraw();pPanel()};}
 
 const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],
-["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],["bottle","Бутылка","M10 2h4v3l1.5 2.5V20a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V7.5L10 5z",()=>W?drawW("bottle"):world("bottle")],
+["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],
 ["plot","Участок","M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M12 9v3",()=>plotMap()],
 ["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];
 const nav={cur:undefined};
@@ -1086,7 +1086,7 @@ const mid=()=>[mv.x+mv.w/2,mv.y+mv.h/2];
 $("zi").onclick=()=>{const[c,d]=mid();flyTo(c,d,Math.max(mv.w/1.6,base.w/5))};$("zo").onclick=()=>{const[c,d]=mid();flyTo(c,d,Math.min(mv.w*1.6,base.w*1.6))};
 $("zm").onclick=()=>focus(0)}
 function world(pick){pick=typeof pick==="string"?pick:null;busy("Плыву к твоему острову…");API("/world").then(w=>{W=w;w.friends.forEach(f=>bridges["id:"+f.id]=f.boards);ls.set("nunu-bridges",bridges);const fi=focus?W.friends.findIndex(f=>f.id===focus):-1;focus=null;if(pick)return drawW(pick);const s=(fi>=0?fi:W.friends.findIndex(f=>f.turn==="me"||f.mark))+1;drawW(s,s?String(s):undefined)},()=>oops(world))}
-function drawW(sel,fly){setNav(sel==="bottle"?"bottle":"map");document.body.classList.add("on-map");const z=W.me.island,fs=TG&&TG.requestFullscreen&&TG.isVersionAtLeast&&TG.isVersionAtLeast("8.0");
+function drawW(sel,fly){setNav("map");document.body.classList.add("on-map");const z=W.me.island,fs=TG&&TG.requestFullscreen&&TG.isVersionAtLeast&&TG.isVersionAtLeast("8.0");
 app.innerHTML=`<div id="mapw">${artWorld(W,sel)}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="К моему острову">◎</button>${fs?`<button id="fs" aria-label="Во весь экран">⛶</button>`:""}</div>
 <div class="card" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
 if(sel===0&&fly==null)$("sh").classList.add("min");  /* открыли карту: видно всё море, карточка свёрнута */
