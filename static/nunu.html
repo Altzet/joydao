@@ -64,7 +64,11 @@ input,textarea,select{font:inherit;padding:9px 12px;border-radius:10px;border:1p
 #pm .fix{transform-box:view-box}#pm .lb{font:500 12px var(--body);fill:#2A2216;paint-order:stroke;stroke:#FFF8E7;stroke-width:3px;stroke-linejoin:round;text-anchor:middle;dominant-baseline:central}
 #pm .lb.dm{fill:#3B2F1A;font-size:11px}#pm .lb.sd{fill:#5A4128;font-size:11px}#pm .em{font-size:18px;text-anchor:middle;dominant-baseline:central}#pm .t1 .lb{display:none}#pm .t0{display:none}
 #pm [data-o],#pm [data-sd],#pm [data-h]{cursor:pointer}
-.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.seg button{text-align:center;padding:7px 2px;font-size:.8125rem;line-height:1.25}.seg2{display:grid;grid-template-columns:1.7fr 1fr;gap:8px}.seg2 button{text-align:center;align-self:stretch}
+.seg2{display:grid;grid-template-columns:1.7fr 1fr;gap:8px}.seg2 button{text-align:center;align-self:stretch}
+.pmode{position:absolute;left:10px;top:96px;display:flex;flex-direction:column;gap:8px}
+.pmode button{width:44px;height:44px;border-radius:12px;border:0;background:rgba(255,248,231,.8);color:#3B2F1A;font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.pmode button[aria-pressed="true"]{background:var(--acc);color:var(--acc-fg);box-shadow:0 0 0 2px #fff}
+.pw #sh.min{max-height:84px}.pi{min-width:42px;min-height:44px;text-align:center;padding:4px;flex:none}
 .pcomp{position:absolute;left:10px;top:10px;pointer-events:none}.pscale{position:absolute;left:10px;top:60px;font-size:11px;color:#3B2F1A;background:rgba(255,248,231,.78);border-radius:6px;padding:2px 6px;pointer-events:none}
 .pscale i{display:block;height:5px;border:2px solid #3B2F1A;border-top:0;margin-top:1px}
 @media (prefers-reduced-motion:no-preference){#pm .pop{animation:pop .9s ease-out}@keyframes pop{0%{transform:scale(.2)}60%{transform:scale(1.35)}100%{transform:scale(1)}}}
@@ -757,14 +761,16 @@ function pComp(){const th=pTheta();return`<svg viewBox="-22 -22 44 44" width="44
 
 /* ---------- экран ---------- */
 function plotMap(opt){opt=opt||{};setNav("plot");document.body.classList.add("on-map");pSync();if(opt.fresh!=null){PS.fresh=opt.fresh;PS.seed=opt.fresh;PS.sel=null}
-app.innerHTML=`<div id="mapw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="pu" aria-label="Отменить">↶</button></div>
-<div class="pcomp" aria-hidden="true">${pComp()}</div><div class="pscale" id="pscale"></div>
-<div class="card" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
+app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="pu" aria-label="Отменить">↶</button></div>
+<div class="pcomp" aria-hidden="true">${pComp()}</div><div class="pscale" id="pscale"></div><div class="pmode" id="pmode" role="toolbar" aria-label="Режимы карты"></div>
+<div class="card min" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
 fitMap();pPanel();pCtl();$("grab").onclick=()=>$("sh").classList.toggle("min");
+$("sh").addEventListener("click",e=>{const s=$("sh");if(s.classList.contains("min")&&!e.target.closest("button,input,select,label,a"))s.classList.remove("min")});
 if(opt.fresh!=null){try{TG&&TG.HapticFeedback&&TG.HapticFeedback.notificationOccurred("success")}catch(e){}setTimeout(()=>{PS.fresh=null},1400)}}
 function pCtl(){const svg=$("pm"),{W,H}=pDim(),pad=Math.max(2.5,Math.max(W,H)*.12),base={x:-pad,y:-pad,w:W+2*pad,h:H+2*pad};
 const fit=()=>{const r=svg.getBoundingClientRect(),sh=$("sh"),cw=r.width||360,ch=r.height||600,vis=sh&&!sh.classList.contains("min")?Math.max(.35,Math.min(1,(sh.getBoundingClientRect().top-r.top-8)/ch)):1,
-k=Math.min(cw/base.w,ch*vis/base.h),w=cw/k,h=ch/k;return{x:base.x-(w-base.w)/2,y:base.y-(ch*vis/k-base.h)/2,w,h,W,H}};
+L=62,k=Math.min((cw-L-8)/base.w,ch*vis/base.h),w=cw/k,h=ch/k;  /* слева место под кнопки режимов */
+return{x:base.x-(L+(cw-L-base.w*k)/2)/k,y:base.y-(ch*vis-base.h*k)/2/k,w,h,W,H}};
 if(!pv||pv.W!==W||pv.H!==H)pv=fit();
 const set=v=>{const cx=Math.min(Math.max(v.x+v.w/2,base.x),base.x+base.w),cy=Math.min(Math.max(v.y+v.h/2,base.y),base.y+base.h);
 pv={x:cx-v.w/2,y:cy-v.h/2,w:v.w,h:v.h,W,H};svg.setAttribute("viewBox",`${pv.x.toFixed(2)} ${pv.y.toFixed(2)} ${pv.w.toFixed(2)} ${pv.h.toFixed(2)}`);pLbl()};
@@ -798,7 +804,7 @@ P.set(e.pointerId,cur)};
 const up=e=>{if(!P.has(e.pointerId))return;P.delete(e.pointerId);clearTimeout(lp);if(!G)return;const g=G;
 if(g.mode==="pinch"){if(!P.size)G=null;return}G=null;
 if(g.moved){if(g.mode==="obj"||g.mode==="h"){pBack(g.o);pSave();pDraw();pPanel()}
-if(g.mode==="rect"){if(PS.rect&&PS.rect.w>=.2&&PS.rect.h>=.2){PS.pal=true;PS.sel=null;PS.seed=null}else PS.rect=null;pDraw();pPanel()}return}
+if(g.mode==="rect"){if(PS.rect&&PS.rect.w>=.2&&PS.rect.h>=.2){PS.pal=true;PS.sel=null;PS.seed=null;$("sh").classList.remove("min")}else PS.rect=null;pDraw();pPanel()}return}
 if(g.mode==="done")return;pTap(g.pt0,g.target)};
 svg.onpointerup=up;svg.onpointercancel=e=>{P.delete(e.pointerId);clearTimeout(lp);G=null};
 svg.addEventListener("wheel",e=>{e.preventDefault();const p=toSvg(e.clientX,e.clientY);zoomAt(p[0],p[1],Math.exp(-e.deltaY*.0015))},{passive:false});
@@ -809,31 +815,37 @@ $("pu").onclick=()=>{const h=PS.hist.pop();if(!h)return;pM().objs=JSON.parse(h);
 PS.mid=mid;PS.fly=flyTo;PS.dbl=(p)=>{const now=Date.now();if(now-lastTap<320){zoomAt(p[0],p[1],1.8);lastTap=0;return true}lastTap=now;return false}}
 function pTap(pt,t){const sp=pt.map(psnap),sd=t.closest&&t.closest("[data-sd]"),oe=t.closest&&t.closest("[data-o]");
 if(PS.place!=null){const o=oe&&pO(oe.dataset.o);if(PS.place==="new"){PS.place=null;return pPlantAt(pt,o)}const x=seeds[PS.place];x.loc=pLoc(pt,o);x.place=o?o.n:"Участок";saveSeeds();PS.seed=PS.place;PS.place=null;pDraw();pPanel();return}
+if(PS.tool==="plant"&&!sd)return pPlantAt(pt,oe&&pO(oe.dataset.o));
 if(PS.tool==="line"){(PS.draft||(PS.draft=[])).push(sp);pDraw();pPanel();return}
 if(PS.tool==="measure"){PS.meas=!PS.meas||PS.meas.length>1?[sp]:[PS.meas[0],sp];pDraw();pPanel();return}
 if(sd){PS.seed=+sd.dataset.sd;PS.sel=null;PS.pal=false}
 else if(oe){if(PS.sel!==oe.dataset.o)PS.unlock=false;PS.sel=oe.dataset.o;PS.seed=null;PS.pal=false;const o=pO(PS.sel),s=$("pm");
 if(o&&!o.pts&&PS.fly&&s){const k=Math.min(s.clientWidth/pv.w,s.clientHeight/pv.h);if(Math.min(o.w,o.h)*k<44)PS.fly(o.x+o.w/2,o.y+o.h/2+Math.max(o.w,o.h)*1.2,Math.max(Math.max(o.w,o.h)*4,4))}}
 else{if(PS.dbl&&PS.dbl(pt))return;PS.sel=null;PS.seed=null}
-$("sh").classList.remove("min");pDraw();pPanel()}
+pDraw();pPanel()}
 function pLoc(pt,o){const l={x:psnap(pt[0]),y:psnap(pt[1])};if(o){const b=o.pts?o.pts[0]:[o.x,o.y];l.o=o.id;l.dx=psnap(pt[0]-b[0]);l.dy=psnap(pt[1]-b[1])}return l}
-function pPlantAt(pt,o){try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred("medium")}catch(e){}stepWeek("","",{...pLoc(pt,o),name:o?o.n:""})}
+function pPlantAt(pt,o){PS.tool="move";try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred("medium")}catch(e){}stepWeek("","",{...pLoc(pt,o),name:o?o.n:""})}
 /* новое — не на чужое место: ищем свободное по спирали от центра экрана */
 function pFree(w,h,cx,cy){const hit=(x,y)=>pM().objs.some(o=>!o.pts&&x<o.x+o.w&&x+w>o.x&&y<o.y+o.h&&y+h>o.y),st=Math.max(w,h)/2+.4;
 for(let r=0;r<14;r++)for(let i=0;i<Math.max(1,r*6);i++){const a=i/Math.max(1,r*6)*2*Math.PI,x=psnap(cx-w/2+Math.cos(a)*r*st),y=psnap(cy-h/2+Math.sin(a)*r*st);if(!hit(x,y))return[x,y]}
 return[psnap(cx-w/2),psnap(cy-h/2)]}
-function pAdd(k,box){const K=PK[k]||PK.own,c=K[2]==="c",[cx,cy]=PS.mid?PS.mid():[5,5],w=box?(c?Math.max(box.w,box.h):box.w):K[3],h=box?(c?Math.max(box.w,box.h):box.h):K[4];
+function pAdd(k,box){const s0=$("sh");if(s0)s0.classList.add("min");const K=PK[k]||PK.own,c=K[2]==="c",[cx,cy]=PS.mid?PS.mid():[5,5],w=box?(c?Math.max(box.w,box.h):box.w):K[3],h=box?(c?Math.max(box.w,box.h):box.h):K[4];
 pHist();let[px,py]=box?[box.x,box.y]:pFree(w,h,cx,cy);const o={id:pid(),k,n:K[0],x:px,y:py,w,h,hh:K[5],fix:K[6]};pM().objs.push(o);pLink(o);
-PS.sel=o.id;PS.seed=null;PS.pal=false;PS.rect=null;PS.tool="move";PS.unlock=!o.fix;pSave();pDraw();pPanel();return o}
+PS.sel=o.id;PS.seed=null;PS.pal=false;PS.rect=null;PS.tool="move";PS.unlock=!o.fix;const sh=$("sh");if(sh)sh.classList.add("min");pSave();pDraw();pPanel();return o}
 function pLineDone(k){const d=PS.draft;if(!d||d.length<2)return;pHist();const K=PK[k],o={id:pid(),k,n:K[0],pts:d,lw:K[3],hh:K[5],fix:K[6]};pM().objs.push(o);
 PS.draft=null;PS.tool="move";PS.sel=o.id;pSave();pDraw();pPanel()}
 
 /* ---------- нижняя карточка ---------- */
-function pPanel(){const pn=$("pn");if(!pn)return;const chip=(id,t,on,cls)=>`<button class="${on?"t":"n"}${cls?" "+cls:""}" id="${id}" aria-pressed="${!!on}">${t}</button>`;
-const tools=`<div class="seg" role="group" aria-label="Инструменты">${chip("tmv","✋<br>Двигать",PS.tool==="move")}${chip("trc","▭<br>Чертить",PS.tool==="rect")}${chip("tln","╱<br>Линия",PS.tool==="line")}${chip("tms","📏<br>Рулетка",PS.tool==="measure")}</div>`;
-const wireTools=()=>{const T={tmv:"move",trc:"rect",tln:"line",tms:"measure"};Object.keys(T).forEach(id=>{const b=$(id);if(b)b.onclick=()=>{PS.tool=T[id];PS.draft=null;PS.meas=null;PS.rect=null;PS.sel=null;PS.seed=null;PS.pal=false;pDraw();pPanel()}})};
+/* режимы — кнопками на карте; карточка внизу свёрнута до одной строки: что происходит и главное действие */
+const PMODE=[["move","✋","Двигать и выбирать"],["plant","🌱","Посадить: нажми на место"],["add","＋","Добавить объект"],["rect","▭","Чертить рамку"],["line","╱","Линия: дорожка, забор, труба"],["measure","📏","Рулетка"]];
+function pModes(){const b=$("pmode");if(!b)return;b.innerHTML=PMODE.map(([k,i,l])=>`<button data-m="${k}" aria-label="${l}" title="${l}" aria-pressed="${k==="add"?!!PS.pal:!PS.pal&&PS.place==null&&PS.tool===k}">${i}</button>`).join("");
+b.querySelectorAll("[data-m]").forEach(x=>x.onclick=()=>pMode(x.dataset.m))}
+function pMode(m){const again=m!=="add"&&m!=="move"&&PS.tool===m&&!PS.pal;PS.draft=PS.meas=PS.rect=PS.own=null;PS.sel=PS.seed=PS.place=null;PS.unlock=false;const sh=$("sh");
+if(m==="add"){PS.pal=!PS.pal;PS.tool="move";if(sh)sh.classList.toggle("min",!PS.pal)}else{PS.pal=false;PS.tool=again?"move":m;if(sh)sh.classList.add("min")}
+pDraw();pPanel()}
+function pPanel(){const pn=$("pn");if(!pn)return;pModes();const chip=(id,t,on,cls)=>`<button class="${on?"t":"n"}${cls?" "+cls:""}" id="${id}" aria-pressed="${!!on}">${t}</button>`;
 let h="";
-if(PS.place!=null){const x=PS.place==="new"?null:seeds[PS.place];h=`<h2>${x?"Куда пересадить?":"Где посадить?"}</h2><p style="margin:0">Нажми на место на карте${x?`: «${esc(x.r.slice(0,60))}»`:""}. Можно прямо на грядку, печь или дерево.</p><button class="n" id="pcx" style="align-self:flex-start">Отмена</button>`;
+if(PS.place!=null){const x=PS.place==="new"?null:seeds[PS.place];h=`<div class="prow"><span style="flex:1">🌱 ${x?"Нажми, куда пересадить":"Нажми на место — посадишь там"}</span><button class="n" id="pcx">Отмена</button></div>${x?`<p class="note" style="margin:0">«${esc(x.r.slice(0,80))}»</p>`:""}<p class="note" style="margin:0">Можно прямо на грядку, печь или дерево.</p>`;
 pn.innerHTML=h;$("pcx").onclick=()=>{PS.place=null;pPanel()};return}
 if(PS.pal){h=`<div class="row" style="justify-content:space-between;align-items:center"><h2>${PS.rect?"Что ты начертил?":"Добавить на участок"}</h2><button class="n" id="pcx">Отмена</button></div>
 ${PS.rect?`<p class="note" style="margin:0">${pm1(PS.rect.w)} × ${pm1(PS.rect.h)} м. Выбери, что это.</p>`:`<p class="note" style="margin:0">Появится в центре экрана — потом перетащи и задай размер.</p>`}
@@ -841,31 +853,35 @@ ${PG.filter(g=>g[0]!=="l"||!PS.rect).map(([g,t])=>`<div class="zone">${t}</div><
 <div class="zone">Своё</div>${PS.own?`<div class="pgrid"><div class="pf w"><label class="zone" for="own-n">Что это</label><input id="own-n" maxlength="40" placeholder="Летний душ" value="${esc(PS.own.n)}"></div></div>
 <div class="row">${chip("own-r","▭ Прямоугольник",PS.own.c===0)}${chip("own-c","○ Круг",PS.own.c===1)}</div><div class="row">${chip("own-f","Стационарное",PS.own.f===1)}${chip("own-m","Переносное",PS.own.f===0)}</div>
 <span class="err" id="own-e"></span><button class="main-btn" id="own-ok">Добавить</button>`:`<button class="n" id="own" style="align-self:flex-start">✳️ Своё…</button>`}`;
-pn.innerHTML=h;$("pcx").onclick=()=>{PS.pal=false;PS.rect=null;PS.own=null;pDraw();pPanel()};
-pn.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{const k=b.dataset.pk;if(PK[k][2]==="l"){PS.pal=false;PS.tool="line";PS.draft=[];PS.lineK=k;pPanel();return}pAdd(k,PS.rect)});
+pn.innerHTML=h;$("pcx").onclick=()=>{PS.pal=false;PS.rect=null;PS.own=null;$("sh").classList.add("min");pDraw();pPanel()};
+pn.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{const k=b.dataset.pk;if(PK[k][2]==="l"){PS.pal=false;PS.tool="line";PS.draft=[];PS.lineK=k;$("sh").classList.add("min");pPanel();return}pAdd(k,PS.rect)});
 if($("own"))$("own").onclick=()=>{PS.own={n:"",c:0,f:0};pPanel()};
 if(PS.own){$("own-n").oninput=()=>{PS.own.n=$("own-n").value;$("own-e").textContent=""};$("own-r").onclick=()=>{PS.own.c=0;pPanel()};$("own-c").onclick=()=>{PS.own.c=1;pPanel()};
 $("own-f").onclick=()=>{PS.own.f=1;pPanel()};$("own-m").onclick=()=>{PS.own.f=0;pPanel()};
 $("own-ok").onclick=()=>{const n=PS.own.n.trim();if(!n){$("own-e").textContent="Напиши, что это";return}const o=pAdd("own",PS.rect);o.n=n.slice(0,40);o.fix=PS.own.f;o.k=PS.own.c?"ownc":"own";
 if(PS.own.c){o.w=o.h=Math.max(o.w,o.h)}PS.own=null;PS.unlock=!o.fix;pSave();pDraw();pPanel()}}
 return}
-if(PS.tool==="line"){const d=PS.draft||[];h=`<h2>Линия: дорожка, забор, труба</h2><p style="margin:0">Нажимай на карту — каждое нажатие ставит точку. ${d.length>1?`Длина ${pm1(pLen(d))} м.`:""}</p>
-${d.length>1?`<div class="zone">Это…</div><div class="row">${["path","fence","pipe"].map(k=>`<button class="${PS.lineK===k?"t":"n"}" data-lk="${k}">${PK[k][1]} ${PK[k][0]}</button>`).join("")}</div>`:""}
-<div class="row">${d.length?`<button class="n" id="lnu">Убрать точку</button>`:""}<button class="n" id="lnx">Отмена</button></div>${tools}`;
-pn.innerHTML=h;wireTools();pn.querySelectorAll("[data-lk]").forEach(b=>b.onclick=()=>pLineDone(b.dataset.lk));
-if($("lnu"))$("lnu").onclick=()=>{d.pop();pDraw();pPanel()};$("lnx").onclick=()=>{PS.draft=null;PS.tool="move";pDraw();pPanel()};return}
-if(PS.tool==="measure"){const d=PS.meas||[];h=`<h2>Рулетка</h2><p style="margin:0">${d.length>1?`<b style="font-weight:500;font-size:1.25rem">${pm1(Math.hypot(d[1][0]-d[0][0],d[1][1]-d[0][1]))} м</b> между точками. Нажми снова — новый замер.`:d.length?"Теперь нажми вторую точку.":"Нажми на две точки на карте."}</p>${tools}`;pn.innerHTML=h;wireTools();return}
-if(PS.tool==="rect"){h=`<h2>Чертить</h2><p style="margin:0">Проведи пальцем по карте — получится рамка с размерами. Потом выбери, что это: грядка, сарай или своё.</p>${tools}`;pn.innerHTML=h;wireTools();return}
+if(PS.tool==="line"){const d=PS.draft||(PS.draft=[]);h=`<div class="prow"><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">╱ ${d.length<2?"Ставь точки на карте":pm1(pLen(d))+" м"}</span>
+${d.length>1?["path","fence","pipe"].map(k=>`<button class="n pi" data-lk="${k}" aria-label="${PK[k][0]}" title="${PK[k][0]}">${PK[k][1]}</button>`).join(""):""}<button class="n pi" id="lnx" aria-label="Выйти из линии">✕</button></div>
+<p class="note" style="margin:0">Каждое нажатие ставит точку. Потом выбери: 👣 дорожка, 🧱 забор или 〰️ шланг, труба.</p>${d.length?`<button class="n" id="lnu" style="align-self:flex-start">↶ Убрать последнюю точку</button>`:""}`;
+pn.innerHTML=h;pn.querySelectorAll("[data-lk]").forEach(b=>b.onclick=()=>pLineDone(b.dataset.lk));
+if($("lnu"))$("lnu").onclick=()=>{d.pop();pDraw();pPanel()};$("lnx").onclick=()=>pMode("move");return}
+if(PS.tool==="measure"){const d=PS.meas||[];h=`<div class="prow"><span style="flex:1">📏 ${d.length>1?`<b style="font-weight:500;font-size:1.25rem">${pm1(Math.hypot(d[1][0]-d[0][0],d[1][1]-d[0][1]))} м</b>`:d.length?"Нажми вторую точку":"Нажми две точки на карте"}</span><button class="n pi" id="msx" aria-label="Выйти из рулетки">✕</button></div>
+<p class="note" style="margin:0">Нажми снова — новый замер.</p>`;pn.innerHTML=h;$("msx").onclick=()=>pMode("move");return}
+if(PS.tool==="rect"){h=`<div class="prow"><span style="flex:1">▭ Проведи пальцем — получится рамка</span><button class="n pi" id="rcx" aria-label="Выйти из черчения">✕</button></div>
+<p class="note" style="margin:0">Потом выбери, что это: грядка, сарай или своё.</p>`;pn.innerHTML=h;$("rcx").onclick=()=>pMode("move");return}
+if(PS.tool==="plant"){h=`<div class="prow"><span style="flex:1">🌱 Нажми на место — там вырастет намерение</span><button class="n pi" id="plx" aria-label="Выйти из посадки">✕</button></div>
+<p class="note" style="margin:0">Можно прямо на грядку, печь или дерево — семя будет расти рядом с ними.</p>`;pn.innerHTML=h;$("plx").onclick=()=>pMode("move");return}
 if(PS.seed!=null&&seeds[PS.seed]){const k=PS.seed,x=seeds[k],L=x.life;
-h=`<span class="who">${L?L.same?"🌸 Распустилось":"🌿 Проросло иначе":pDue(x)?"💧 Пора":"🌱 Семя в земле"}${x.place?" · 📍 "+esc(x.place):""}</span>
+h=`<div class="prow"><span class="who" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${L?L.same?"🌸 Распустилось":"🌿 Проросло иначе":pDue(x)?"💧 Пора":"🌱 Семя в земле"}${x.place?" · 📍 "+esc(x.place):""}</span><button class="n pi" id="sx" aria-label="Закрыть">✕</button></div>
 <p style="margin:0"><b style="font-weight:500">${esc(x.r)}</b></p>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
 ${x.with?`<p class="note" style="margin:0">Вместе: ${esc(x.with)}</p>`:""}
 ${L?`<div class="tag ${L.same?"open":"fog"}" style="align-self:flex-start">${L.d}: ${esc(L.note||(L.same?"так и сделал":"сделал иначе"))}</div>`:
 `<input id="snt" placeholder="Что было в жизни (можно пусто)" maxlength="200"><div class="row"><button class="p" id="sy">Так и сделал</button><button class="n" id="sn">Сделал иначе</button></div>`}
-<div class="row"><button class="n" id="smv">Пересадить</button><button class="n" id="srm">Убрать с участка</button><button class="n" id="sx">Закрыть</button></div>`;
+<div class="row"><button class="n" id="smv">Пересадить</button><button class="n" id="srm">Убрать с участка</button></div>`;
 pn.innerHTML=h;const mk=s=>{markSeed(k,s,$("snt").value);PS.fresh=k;pDraw();pPanel();setTimeout(()=>{PS.fresh=null},1400)};
 if($("sy"))$("sy").onclick=()=>mk(true);if($("sn"))$("sn").onclick=()=>mk(false);
-$("smv").onclick=()=>{PS.place=k;pPanel()};$("sx").onclick=()=>{PS.seed=null;pDraw();pPanel()};
+$("smv").onclick=()=>{PS.place=k;$("sh").classList.add("min");pPanel()};$("sx").onclick=()=>{PS.seed=null;pDraw();pPanel()};
 $("srm").onclick=()=>{const b=$("srm");if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Точно? Семя останется в саду";return}x.loc=null;saveSeeds();PS.seed=null;pDraw();pPanel()};return}
 const o=PS.sel&&pO(PS.sel);
 if(o){const K=pK(o),c=K[2]==="c",here=seeds.filter(x=>x.loc&&x.loc.o===o.id).length,fld=(id,lab,v,ph)=>`<div class="pf"><label class="zone" for="${id}">${lab}</label><input id="${id}" inputmode="decimal" maxlength="7" value="${v==null?"":pm1(v)}" placeholder="${ph||""}"><span class="err" data-e="${id}"></span></div>`;
@@ -896,19 +912,18 @@ h=`<div class="row" style="justify-content:space-between;align-items:center"><h2
 ${dueN.length?`<button class="n" id="pdue" style="text-align:left">💧 Пора: <b style="font-weight:500">${esc(dueN[0][0].r.slice(0,70))}</b>${dueN.length>1?` и ещё ${dueN.length-1}`:""}</button>`:""}
 ${real?"":`<div class="pgrid"><p class="note pf w" style="margin:0">Впиши стороны участка — карта станет в настоящем масштабе.</p><div class="pf"><label class="zone" for="sa">Сторона А, м</label><input id="sa" inputmode="decimal" maxlength="7" placeholder="30"></div><div class="pf"><label class="zone" for="sb">Сторона Б, м</label><input id="sb" inputmode="decimal" maxlength="7" placeholder="20"></div></div>`}
 <div class="seg2"><button class="main-btn" id="psd">🌱 Посадить намерение</button><button class="n" id="pad">＋ Объект</button></div>
-<p class="note" style="margin:0">Долгое нажатие на карте — посадить прямо там. Нажми на объект — изменить.</p>
+<p class="note" style="margin:0">Режимы — кнопками слева на карте. Долгое нажатие — посадить прямо там, нажатие на объект — изменить.</p>
 ${tray.length?`<div class="zone">Семена из сада ждут места — нажми и выбери, где им расти</div><div class="row">${tray.map(([x,k])=>`<button class="n" data-tr="${k}">🌱 ${esc(x.r.slice(0,34))}${x.r.length>34?"…":""}</button>`).join("")}</div>`:""}
-${tools}
 <button class="n" id="pmo" aria-expanded="${!!PS.more}" style="align-self:flex-start">${PS.more?"Скрыть ▴":"Солнце, слои, анкета ▾"}</button>${PS.more?`
 <div class="zone">Солнце и тени</div><div class="row">${chip("su-","Выкл",!PS.sun)}${chip("su-w","Зима",PS.sun==="w")}${chip("su-m","Весна, осень",PS.sun==="m")}${chip("su-s","Лето",PS.sun==="s")}</div>
 ${PS.sun?`<div class="row" style="align-items:center"><input type="range" id="shr" min="6" max="20" step=".5" value="${PS.hr}" style="flex:1" aria-label="Час"><span style="min-width:52px;text-align:right">${String(Math.floor(PS.hr)).padStart(2,"0")}:${PS.hr%1?"30":"00"}</span></div>
 <p class="note" style="margin:0">${sun.el>2?`Солнце на ${Math.round(sun.el)}° над горизонтом, тень в ${pm1(sun.len)} раза длиннее предмета.`:"Солнце за горизонтом."} Время солнечное (полдень — солнце на юге)${th==null?". Сторона света не задана — считаю, что сторона А смотрит на север":""}${pLat()==null?"; широта 48,4°":""}.</p>`:""}
 <div class="row">${chip("hm0","Переносное видно",!PS.hideMob)}${chip("hm1","Только стационарное",PS.hideMob)}</div>
 <button class="n" id="pq" style="align-self:flex-start">📋 Анкета участка</button>`:""}`;
-pn.innerHTML=h;wireTools();
-$("psd").onclick=()=>{PS.place="new";$("sh").classList.remove("min");pPanel()};$("pad").onclick=()=>{PS.pal=true;PS.rect=null;pPanel()};$("pmo").onclick=()=>{PS.more=!PS.more;pPanel()};
+pn.innerHTML=h;
+$("psd").onclick=()=>pMode("plant");$("pad").onclick=()=>pMode("add");$("pmo").onclick=()=>{PS.more=!PS.more;pPanel()};
 if($("pdue"))$("pdue").onclick=()=>{PS.seed=dueN[0][1];pDraw();pPanel()};
-pn.querySelectorAll("[data-tr]").forEach(b=>b.onclick=()=>{PS.place=+b.dataset.tr;pPanel()});
+pn.querySelectorAll("[data-tr]").forEach(b=>b.onclick=()=>{PS.place=+b.dataset.tr;$("sh").classList.add("min");pPanel()});
 if($("sa")){const sv=()=>{const a=pnum($("sa").value),b=pnum($("sb").value);if(a>0&&b>0&&a<2000&&b<2000){plot.site=plot.site||{};plot.site.a=pm1(a);plot.site.b=pm1(b);pSave();plotMap()}};$("sa").onchange=sv;$("sb").onchange=sv}
 if(!PS.more)return;$("pq").onclick=plotHome;
 ["","w","m","s"].forEach(k=>$("su-"+k).onclick=()=>{PS.sun=k;pDraw();pPanel()});
