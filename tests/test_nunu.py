@@ -24,5 +24,6 @@ def test_nunu_stage1():
 def test_my_plot():
     """«Мой участок» (раздел «Динамическое равновесие»): вкладка в меню, анкета уходит на сервер вместе с садом."""
     t = TestClient(api.app).get("/nunu").text
-    for marker in ('["plot","Участок"', "function plotHome(", '"nunu-plot":plot', "DeviceOrientation", "LocationManager"):
+    for marker in ('["plot","Участок"', "function plotHome(", '"nunu-plot":plot', "DeviceOrientation", "LocationManager",
+                   "function plotMap(", "function pSun(", "function markSeed(", "loc?plotMap({fresh:"):
         assert marker in t
