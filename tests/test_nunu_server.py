@@ -270,3 +270,32 @@ def test_timed_reminder(tmp_path, monkeypatch):
     r = nunu.reminders_due(d, datetime(2026, 11, 11, 16, 30), daily=False)
     assert len(r) == 1 and "Пора" in r[0][1]
     assert nunu.reminders_due(d, datetime(2026, 11, 11, 16, 31), daily=False) == []
+
+
+def test_slope(monkeypatch):
+    """Уклон участка: плоскость по сетке высот; короткая ссылка Google Карт раскрывается в координаты."""
+    pct, az, rms = nunu.slope_fit([(e, n, 100 + 0.02 * e - 0.01 * n) for e in (-60, 0, 60) for n in (-60, 0, 60)])
+    assert abs(pct - 2.236) < 0.01 and abs(az - 296.6) < 0.2 and rms < 1e-9  # растёт на восток → вниз на запад-северо-запад
+    assert nunu._coords("48.439200, 22.717800") == (48.4392, 22.7178)
+    assert nunu._coords("просто текст") is None
+    calls = []
+
+    def fake(url, timeout=8):
+        calls.append(url)
+        if "goo.gl" in url:
+            return "https://www.google.com/maps/place/X/@48.4392,22.7178,17z/data=!3d48.4391!4d22.7177", b""
+        if "eudem25m" in url:  # Украины нет в EU-DEM → берём SRTM
+            return url, json.dumps({"results": [{"elevation": None}] * 25}).encode()
+        locs = [tuple(map(float, p.split(","))) for p in url.split("locations=")[1].split("&")[0].split("|")]
+        return url, json.dumps({"results": [{"elevation": 120 - (la - 48.4391) * 111320 * 0.03} for la, lo in locs]}).encode()
+
+    async def no_sleep(*a):
+        pass
+    monkeypatch.setattr(nunu, "_get", fake)
+    monkeypatch.setattr(nunu.asyncio, "sleep", no_sleep)
+    nunu._slope_cache.clear()
+    c = TestClient(pause.app)
+    assert c.post("/nunu/api/slope", json={"q": "x"}).status_code == 401
+    r = c.post("/nunu/api/slope", json={"q": "https://maps.app.goo.gl/cz1cRvGeCRHZYRr48"}, headers=init_data(1, "А")).json()
+    assert r["lat"] == 48.4391 and r["src"] == "SRTM 30 м" and abs(r["pct"] - 3) < 0.1 and abs(r["az"]) % 360 < 1  # вниз на север
+    assert c.post("/nunu/api/slope", json={"q": "нет"}, headers=init_data(1, "А")).status_code == 422

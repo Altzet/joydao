@@ -69,6 +69,7 @@ input,textarea,select{font:inherit;padding:9px 12px;border-radius:10px;border:1p
 .pmode button{width:44px;height:44px;border-radius:12px;border:0;background:rgba(255,248,231,.8);color:#3B2F1A;font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
 .pmode button[aria-pressed="true"]{background:var(--acc);color:var(--acc-fg);box-shadow:0 0 0 2px #fff}
 .pw #sh.min{max-height:84px}.pi{min-width:42px;min-height:44px;text-align:center;padding:4px;flex:none}
+.pslope{position:absolute;left:60px;top:22px;display:flex;align-items:center;gap:4px;font-size:11px;color:#1F4E66;background:rgba(255,248,231,.85);border-radius:10px;padding:3px 8px 3px 4px;pointer-events:none}.pslope:empty{display:none}
 .pcomp{position:absolute;left:10px;top:10px;pointer-events:none}.pscale{position:absolute;left:10px;top:60px;font-size:11px;color:#3B2F1A;background:rgba(255,248,231,.78);border-radius:6px;padding:2px 6px;pointer-events:none}
 .pscale i{display:block;height:5px;border:2px solid #3B2F1A;border-top:0;margin-top:1px}
 @media (prefers-reduced-motion:no-preference){#pm .pop{animation:pop .9s ease-out}@keyframes pop{0%{transform:scale(.2)}60%{transform:scale(1.35)}100%{transform:scale(1)}}}
@@ -577,7 +578,7 @@ const PF=[
 {f:[["map","Координаты или ссылка на Google Карты","text","https://maps.app.goo.gl/…"],["shape","Форма","sel",["Прямоугольник","Трапеция","Г-образный","Другая"]],
 ["a","Сторона А, м","num"],["b","Сторона Б, м","num"],["c","Сторона В, м","num","напротив А"],["d","Сторона Г, м","num","напротив Б"],
 ["diag","Диагональ, м","num","от точки 0"],["area","Площадь, соток","num","из документов"],["face","Куда смотрит сторона А","dir"],
-["slope","Уклон","text","Ровный или куда и насколько понижение"],["gate","Въезд и калитка","text","Сторона и сколько метров от точки 0"],
+["slope","Уклон","text","Ровный или куда и насколько понижение"],["gate","Въезд и калитка","text","Ставится на карте: ＋ → Въезд и калитка"],
 ["soil","Грунт","sel",["Чернозём","Суглинок","Глина","Песок","Каменистый"]]]}],
 ["shade","2. Что затеняет участок","Всё высокое за забором или у границы: соседние дома, большие деревья, глухие заборы. Один этаж — примерно 3 м, конёк одноэтажного дома — 6–7 м.",
 {t:[["what","Что","text"],["side","За стороной","sel",["А","Б","В","Г","все"]],["h","Высота, м","num"],["dist","От границы, м","num"],["w","Ширина, м","num","вдоль границы"]],seed:[{what:"Забор по периметру",side:"все",dist:"0"}]}],
@@ -598,13 +599,13 @@ const pHas=(o,skip)=>Object.entries(o||{}).some(([q,v])=>q!==skip&&String(v).tri
 /* сколько заполнено: [сделано, всего]; у таблиц без готовых строк «всего» нет — показываем число строк с данными */
 function pDone(k,d){const v=plot[k]||(d.f?{}:[]);if(d.f)return[d.f.filter(x=>String(v[x[0]]||"").trim()).length,d.f.length];
 if(d.l)return[v.length,0];if(d.r)return[v.filter(r=>pHas(r)).length,d.r.length];return[v.filter(r=>pHas(r,"what")).length,0]}
-function pSet(p,k,v){const[s,i]=p.split(".");(i==null?plot[s]:plot[s][+i])[k]=v;savePlot()}
+function pSet(p,k,v){const[s,i]=p.split(".");if(s==="site"&&k==="map"&&plot.site)delete plot.site.ll;(i==null?plot[s]:plot[s][+i])[k]=v;savePlot()}
 const pIn=(p,f,v)=>{const[k,lab,ty,o]=f,id="pf-"+p.replace(".","-")+"-"+k,val=v==null?"":String(v),opts=ty==="dir"?DIRS:o;
 const ctl=ty==="sel"||ty==="dir"?`<select id="${id}" data-p="${p}" data-k="${k}"><option value="">—</option>${opts.map(x=>`<option${x===val?" selected":""}>${esc(x)}</option>`).join("")}</select>`
 :`<input id="${id}" data-p="${p}" data-k="${k}"${ty==="num"?' inputmode="decimal" data-num="1" maxlength="10"':' maxlength="160"'} placeholder="${esc(ty==="num"||ty==="text"?o||"":"")}" value="${esc(val)}">`;
 return`<div class="pf${ty==="text"||ty==="dir"?" w":""}"><label class="zone" for="${id}">${esc(lab)}</label>${ctl}
 ${ty==="dir"?`<p class="note" style="margin:0">Встань у стороны А спиной к участку, телефон держи ровно, верхом от себя.</p><button class="n" data-cmp="${id}" style="align-self:flex-start">Определить компасом</button>`:""}
-${k==="map"?`<button class="n" data-gps="${id}" style="align-self:flex-start">Я на участке — взять координаты</button>`:""}<span class="err" data-e="${id}"></span></div>`};
+${k==="map"?`<button class="n" data-gps="${id}" style="align-self:flex-start">Я на участке — взять координаты</button>`:""}${k==="slope"?`<button class="n" data-slp="${id}" style="align-self:flex-start">🛰 Взять из данных рельефа</button>`:""}<span class="err" data-e="${id}"></span></div>`};
 /* компас Telegram (Bot API 8.0). ⚠ Знак угла: по W3C alpha растёт против часовой, курс = 360 − alpha; на реальном телефоне сверить с компасом */
 function compass(cb){const D=TG&&TG.DeviceOrientation;if(!D||!TG.isVersionAtLeast("8.0"))return cb(null,"Компас работает в Telegram 8.0 и новее. Выбери сторону вручную.");
 D.start({refresh_rate:100,need_absolute:true},ok=>{if(!ok)return cb(null,"Телефон не дал компас. Выбери сторону вручную.");
@@ -612,6 +613,12 @@ setTimeout(()=>{const a=D.alpha,abs=D.absolute;D.stop();if(a==null||!abs)return 
 function gps(cb){const L=TG&&TG.LocationManager;if(!L||!TG.isVersionAtLeast("8.0"))return cb(null,"Геопозиция работает в Telegram 8.0 и новее. Вставь ссылку из Google Карт.");
 const get=()=>L.getLocation(d=>d?cb(d):cb(null,L.isAccessRequested&&!L.isAccessGranted?"Нет доступа к геопозиции: разреши его в настройках бота.":"Не получилось определить место."));
 L.isInited?get():L.init(get)}
+/* уклон по открытым данным рельефа (сервер спрашивает Open Topo Data: EU-DEM 25 м или SRTM 30 м) */
+const pSlopeNote=r=>`По ${r.src}: высота ≈${pm1(r.z)} м над морем. Это общий наклон местности вокруг (сетка ±60 м) — мелкие бугры модель не видит; точнее покажет шланг с водой или уровень.`;
+function pSlope(cb){const s=plot.site||{},q=String(s.ll||s.map||"").trim();if(!q)return cb(null,"Сначала координаты: «Я на участке» или ссылка на точку в Google Картах.");if(!API)return cb(null,"Работает в Telegram.");
+API("/slope","POST",{q}).then(r=>{const site=plot.site=plot.site||{},L=Math.max(pnum(site.a)||0,pnum(site.b)||0);site.ll=r.lat+", "+r.lon;Object.assign(site,{slopePct:r.pct,slopeAz:r.az,slopeSrc:r.src,elev:r.z});
+site.slope=r.pct<.5?`Почти ровный (≈${pm1(r.pct)} %)`:`Понижение на ${dir8(r.az)}, ≈${pm1(r.pct)} %${L?` — на ${pm1(L)} м это ≈${pm1(L*r.pct/100)} м`:""}`;savePlot();cb(r)},
+st=>cb(null,st===422?"Не нашёл координаты: нажми «Я на участке» или вставь ссылку на точку в Google Картах.":"Сервис рельефа не ответил. Попробуй позже."))}
 function plotHome(){setNav("plot");
 app.innerHTML=`<button class="n" id="pmap" style="align-self:flex-start">← Карта участка</button><h1>Анкета участка</h1><div class="card"><p style="margin:0">Исходные данные для макета участка и учёта ресурсов. Заполняй по разделам, в любом темпе: всё сохраняется само.</p>
 <p class="note" style="margin:0">Принцип: берём столько, сколько участок даёт без истощения. Ни одно улучшение не уводит другой поток в минус.</p></div>
@@ -634,7 +641,10 @@ compass((deg,msg)=>{b.disabled=false;b.textContent="Определить ком�
 s.value=dir8(deg);pSet("site","face",s.value);pSet("site","faceDeg",Math.round(deg));e.style.color="var(--muted)";e.textContent=`${Math.round(deg)}° — ${dir8(deg)}. Сверь с компасом телефона.`})});
 app.querySelectorAll("[data-gps]").forEach(b=>b.onclick=()=>{const s=$(b.dataset.gps),e=err(s.id);b.disabled=true;e.style.color="";e.textContent="";
 gps((g,msg)=>{b.disabled=false;if(!g){e.textContent=msg;return}s.value=g.latitude.toFixed(6)+", "+g.longitude.toFixed(6);pSet("site","map",s.value);
-e.style.color="var(--muted)";e.textContent=g.horizontal_accuracy?`Точность ±${Math.round(g.horizontal_accuracy)} м.`:"Готово."})});
+e.style.color="var(--muted)";e.textContent=g.horizontal_accuracy?`Точность ±${Math.round(g.horizontal_accuracy)} м.`:"Готово.";
+const sl=$("pf-site-slope");if(sl&&plot.site.slopePct==null)pSlope(r=>{if(r)sl.value=plot.site.slope})})});
+app.querySelectorAll("[data-slp]").forEach(b=>b.onclick=()=>{const s=$(b.dataset.slp),e=err(s.id);b.disabled=true;b.textContent="Спрашиваю рельеф…";e.style.color="";e.textContent="";
+pSlope((r,msg)=>{b.disabled=false;b.textContent="🛰 Взять из данных рельефа";if(!r){e.textContent=msg;return}s.value=plot.site.slope;e.style.color="var(--muted)";e.textContent=pSlopeNote(r)})});
 app.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Точно убрать?";return}v.splice(+b.dataset.del,1);savePlot();plotSec(i)});
 app.querySelectorAll("[data-sow]").forEach(b=>b.onclick=()=>stepWeek("",v[+b.dataset.sow]));
 if($("padd"))$("padd").onclick=()=>{v.push({});savePlot();plotSec(i);const c=app.querySelectorAll(".card");c[c.length-1].scrollIntoView({block:"center"})};
@@ -648,7 +658,7 @@ pid=()=>Math.random().toString(36).slice(2,9),psnap=x=>Math.round(x*10)/10;
 /* каталог: ключ → [название, значок, форма r|c|l, ширина, глубина, высота, стационарное, группа, вид] */
 const PK={house:["Дом","🏠","r",8,6,6,1,"b","house"],gazebo:["Беседка","⛱️","r",3,3,3,1,"b","roof"],oven:["Печь","🔥","r",1.5,1.5,2,1,"b","oven"],
 shed:["Сарай","🛖","r",3,2.5,2.5,1,"b","roof"],greenhouse:["Теплица","🌱","r",6,3,2.5,1,"b","glass"],canopy:["Навес","⛺","r",4,3,2.5,1,"b","roof"],
-wc:["Туалет","🚪","r",1.2,1.2,2.2,1,"b","roof"],garage:["Гараж","🚗","r",6,4,3,1,"b","roof"],
+wc:["Туалет","🚽","r",1.2,1.2,2.2,1,"b","roof"],garage:["Гараж","🚗","r",6,4,3,1,"b","roof"],
 well:["Колодец","💧","c",1.2,1.2,.8,1,"w","water"],septic:["Септик","⚫","r",2,2,0,1,"w","septic"],barrel:["Бочка для воды","🛢️","c",.8,.8,1,0,"w","water"],
 solar:["Солнечная панель","☀️","r",1.7,1,1,1,"w","solar"],
 bed:["Грядка","🥬","r",4,1.2,.2,1,"g","bed"],warmbed:["Тёплая грядка","🥕","r",4,1.2,.5,1,"g","bed"],raised:["Высокая грядка","🍅","r",3,1,.8,1,"g","bed"],
@@ -657,9 +667,10 @@ tree:["Дерево","🌳","c",4,4,6,1,"t","tree"],fruit:["Плодовое д�
 grill:["Мангал","🍖","r",1,.5,.9,0,"m","mob"],table:["Стол","🍽️","r",1.6,.9,.8,0,"m","mob"],bench:["Лавка","🪑","r",1.5,.5,.5,0,"m","mob"],
 woodpile:["Поленница","🪵","r",2,.6,1.5,0,"m","wood"],hive:["Улей","🐝","r",.5,.5,.6,0,"m","mob"],pot:["Кадка","🪴","c",.6,.6,.6,0,"m","mob"],
 hammock:["Гамак","🌙","r",3,1,1,0,"m","mob"],swing:["Качели","🎠","r",2,1.5,2,0,"m","mob"],
+gate:["Въезд, ворота","🚗","e",3.5,0,0,1,"e","gate"],wicket:["Калитка","🚪","e",1,0,0,1,"e","gate"],
 path:["Дорожка","👣","l",.8,0,0,1,"l","path"],fence:["Забор","🧱","l",.1,0,1.8,1,"l","fence"],pipe:["Шланг или труба","〰️","l",.05,0,0,0,"l","pipe"],
 own:["Своё","✳️","r",1,1,1,0,"m","own"],ownc:["Своё","✳️","c",1,1,1,0,"m","own"]};
-const PG=[["b","Постройки"],["w","Вода и энергия"],["g","Грядки и компост"],["t","Деревья и кусты"],["m","Переносное"],["l","Линии"]];
+const PG=[["e","Въезд и калитка"],["b","Постройки"],["w","Вода и энергия"],["g","Грядки и компост"],["t","Деревья и кусты"],["m","Переносное"],["l","Линии"]];
 const PC={house:["#EBCDA4","#8A5A2B"],roof:["#DDBE92","#7A5530"],oven:["#D27A57","#6B2E1A"],glass:["#D5ECF1","#4A8BA0"],water:["#A5D5EA","#2E7FA3"],
 septic:["#C4C0B6","#5F5E5A"],solar:["#3E5486","#1E2A48"],bed:["#8E6C46","#5A4128"],flowers:["#F5CADA","#B0567A"],compost:["#A07F52","#5F4526"],
 tree:["#6FAE5A","#3B6D2B"],bush:["#86C470","#3B6D2B"],mob:["#EFE4CC","#7A6A4E"],wood:["#C9A06F","#6B4A2B"],own:["#E5E0F7","#5A4FC4"],
@@ -670,7 +681,7 @@ const pM=()=>plot.map||(plot.map={objs:[]}),pO=id=>pM().objs.find(o=>o.id===id),
 pDim=()=>{const s=plot.site||{},a=pnum(s.a),b=pnum(s.b);return{W:a||30,H:b||20,real:!!(a&&b)}};
 /* сторона А «наружу» — куда смотрит; по компасу, если ручной выбор с ним не расходится */
 function pTheta(){const s=plot.site||{};if(!s.face)return null;return s.faceDeg!=null&&dir8(s.faceDeg)===s.face?s.faceDeg:DIRS.indexOf(s.face)*45}
-function pLat(){const m=String((plot.site||{}).map||"").match(/(-?\d{1,2}[.]\d+)\s*,\s*(-?\d{1,3}[.]\d+)/);return m?+m[1]:null}
+function pLat(){const s=plot.site||{},m=String(s.ll||s.map||"").match(/(-?\d{1,2}[.]\d+)\s*,\s*(-?\d{1,3}[.]\d+)/);return m?+m[1]:null}
 /* направление по сторонам света → вектор на карте: верх карты = θ */
 const pDir=(az,th)=>{const r=(az-th)*Math.PI/180;return[Math.sin(r),-Math.cos(r)]};
 /* солнце: высота и азимут по широте, склонению сезона и солнечному часу (формулы небесной механики) */
@@ -683,7 +694,7 @@ for(const p of P.reverse()){while(up.length>1&&cr(up[up.length-2],up[up.length-1
 const pOut=o=>pK(o)[2]==="c"?[...Array(16)].map((_,i)=>[o.x+o.w/2+o.w/2*Math.cos(i*Math.PI/8),o.y+o.h/2+o.h/2*Math.sin(i*Math.PI/8)]):[[o.x,o.y],[o.x+o.w,o.y],[o.x+o.w,o.y+o.h],[o.x,o.y+o.h]];
 const pLen=p=>p.slice(1).reduce((s,q,i)=>s+Math.hypot(q[0]-p[i][0],q[1]-p[i][1]),0);
 /* где стоит семя: привязано к объекту — едет вместе с ним */
-function pSeedPos(x){const l=x.loc;if(!l)return null;const o=l.o&&pO(l.o);if(o&&!o.pts)return[o.x+l.dx,o.y+l.dy];if(o&&o.pts)return[o.pts[0][0]+l.dx,o.pts[0][1]+l.dy];return[l.x,l.y]}
+function pSeedPos(x){const l=x.loc;if(!l)return null;const o=l.o&&pO(l.o);if(o){const b=pBase(o);return[b[0]+l.dx,b[1]+l.dy]}return[l.x,l.y]}
 const pToday=()=>today(),pDue=x=>!x.life&&x.due&&x.due<=pToday();
 /* анкета ⇄ карта: постройки и грядки с размерами из анкеты появляются на карте; сдвиг на карте пишется обратно в анкету */
 const PB={"дом":"house","беседка":"gazebo","печь":"oven","сарай":"shed","теплица":"greenhouse","навес":"canopy","гараж":"garage","туалет":"wc","баня":"shed"},
@@ -698,10 +709,23 @@ function pLink(o){const g=pK(o)[7];if(o.pts||!"bgt".includes(g))return;const t=g
 r={what:o.n,oid:o.id};if(t==="beds")r.type=({warmbed:"Тёплая",raised:"Высокая",tree:"Дерево",fruit:"Дерево",bush:"Кусты"})[o.k]||"Обычная";
 rows.push(r);pBack(o)}
 function pHist(){PS.hist.push(JSON.stringify(pM().objs));if(PS.hist.length>40)PS.hist.shift()}
-const pSave=()=>{savePlot()};
+/* въезд и калитка стоят на границе: сторона (А–Г), сколько метров от угла, ширина */
+const pEdgeLen=s=>{const{W,H}=pDim();return s==="А"||s==="В"?W:H},pEdgeFrom=s=>s==="А"||s==="В"?"Б":"А";
+function pEdgeSeg(o){const{W,H}=pDim(),L=pEdgeLen(o.side),a=Math.max(0,Math.min(o.at,L-o.w)),b=a+Math.min(o.w,L);
+return o.side==="А"?[[a,0],[b,0]]:o.side==="В"?[[a,H],[b,H]]:o.side==="Б"?[[0,a],[0,b]]:[[W,a],[W,b]]}
+function pNearSide(p,w){const{W,H}=pDim(),s=[["А",Math.abs(p[1])],["В",Math.abs(p[1]-H)],["Б",Math.abs(p[0])],["Г",Math.abs(p[0]-W)]].sort((a,b)=>a[1]-b[1])[0][0],
+L=pEdgeLen(s),along=s==="А"||s==="В"?p[0]:p[1];return[s,psnap(Math.min(Math.max(along-w/2,0),Math.max(0,L-w)))]}
+const pBase=o=>o.pts?o.pts[0]:o.side?pEdgeSeg(o)[0]:[o.x,o.y];
+function pGateTxt(){const g=pM().objs.filter(o=>o.side);if(!g.length)return;plot.site=plot.site||{};
+plot.site.gate=g.map(o=>`${o.n}: сторона ${o.side}, ${pm1(o.at)} м от стороны ${pEdgeFrom(o.side)}, ширина ${pm1(o.w)} м`).join("; ")}
+const pSave=()=>{pGateTxt();savePlot()};
 
 /* ---------- рисунок ---------- */
 function pObjSvg(o,sel){const K=pK(o),[f,s]=PC[K[8]]||PC.own,mob=!o.fix,da=mob?' stroke-dasharray="5 4"':"",ve=' vector-effect="non-scaling-stroke"';
+if(o.side){const[a,b]=pEdgeSeg(o),N={А:[0,-1],В:[0,1],Б:[-1,0],Г:[1,0]}[o.side],m=[(a[0]+b[0])/2,(a[1]+b[1])/2],gt=o.k==="gate",cl=gt?"#B5482A":"#D2803A";
+return`<g data-o="${o.id}"><line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="transparent" stroke-width="26"${ve} pointer-events="stroke"/>
+<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#F4EBD6" stroke-width="7"${ve}/><line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${cl}" stroke-width="3"${ve} stroke-dasharray="${gt?"6 3":"3 3"}"/>
+<g class="fix" style="transform:translate(${m[0]}px,${m[1]}px) scale(var(--s))"><g transform="translate(${N[0]*22} ${N[1]*20})"><circle r="14" fill="#FFF8E7" stroke="${cl}" stroke-width="2"/><text class="em" style="font-size:15px">${K[1]}</text></g></g></g>`}
 if(o.pts){const pts=o.pts.map(p=>p.join(",")).join(" ");let g;
 if(o.k==="path")g=`<polyline points="${pts}" fill="none" stroke="${s}" stroke-width="${(o.lw||.8)+.1}" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${pts}" fill="none" stroke="${f}" stroke-width="${o.lw||.8}" stroke-linecap="round" stroke-linejoin="round"/>`;
 else if(o.k==="fence")g=`<polyline points="${pts}" fill="none" stroke="${s}" stroke-width="3"${ve} stroke-linecap="round"/><polyline points="${pts}" fill="none" stroke="#E8D6B5" stroke-width="1.2"${ve} stroke-dasharray="2 7"/>`;
@@ -732,10 +756,11 @@ g+=`<g id="pg1" stroke="#fff" stroke-opacity=".28" stroke-width="1"${ve}>${g1.re
 g+=`<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="#6B4A2B" stroke-width="2.5"${ve}/>`;
 const vis=m.objs.filter(o=>o.fix||!PS.hideMob||o.id===PS.sel),sun=pSun(),th=pTheta()??0;
 if(sun&&sun.len){const[dx,dy]=pDir(sun.az+180,th);g+=`<g fill="#1E2A30" fill-opacity=".22">${vis.filter(o=>!o.pts&&(o.hh||0)>0).map(o=>{const L=o.hh*sun.len,P=pOut(o);return`<polygon points="${pHull(P.concat(P.map(p=>[p[0]+dx*L,p[1]+dy*L]))).map(p=>p.map(f1).join(",")).join(" ")}"/>`}).join("")}</g>`}
-const ord=o=>o.pts?0:pK(o)[7]==="t"?1:pK(o)[7]==="g"?2:o.fix?3:4;  /* кроны снизу: под деревом можно достать печь или бочку */
+const ord=o=>o.side?5:o.pts?0:pK(o)[7]==="t"?1:pK(o)[7]==="g"?2:o.fix?3:4;  /* кроны снизу: под деревом можно достать печь или бочку */
 g+=vis.slice().sort((a,b)=>ord(a)-ord(b)).map(o=>pObjSvg(o)).join("");
 const sl=PS.sel&&pO(PS.sel);
-if(sl&&!sl.pts){const{x,y,w,h}=sl;g+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${pK(sl)[2]==="c"?w/2:.1}" fill="none" stroke="var(--acc)" stroke-width="2.5"${ve} stroke-dasharray="6 4" pointer-events="none"/>`;
+if(sl&&sl.side){const[a,b]=pEdgeSeg(sl),N={А:[0,-1],В:[0,1],Б:[-1,0],Г:[1,0]}[sl.side];g+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--acc)" stroke-width="12"${ve} stroke-opacity=".45" stroke-linecap="round" pointer-events="none"/><g class="fix" style="transform:translate(${(a[0]+b[0])/2}px,${(a[1]+b[1])/2}px) scale(var(--s))" pointer-events="none"><text class="lb dm" x="${-N[0]*14}" y="${-N[1]*16}" style="text-anchor:${N[0]<0?"start":N[0]>0?"end":"middle"}">${pm1(sl.at)} м от ${pEdgeFrom(sl.side)} · ${pm1(sl.w)} м</text></g>`}
+if(sl&&!sl.pts&&!sl.side){const{x,y,w,h}=sl;g+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${pK(sl)[2]==="c"?w/2:.1}" fill="none" stroke="var(--acc)" stroke-width="2.5"${ve} stroke-dasharray="6 4" pointer-events="none"/>`;
 const dim=(x1,y1,x2,y2,t)=>Math.hypot(x2-x1,y2-y1)>.05?`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#3B2F1A" stroke-width="1.2"${ve} stroke-dasharray="3 3" pointer-events="none"/><g class="fix" style="transform:translate(${(x1+x2)/2}px,${(y1+y2)/2}px) scale(var(--s))" pointer-events="none"><text class="lb dm">${t}</text></g>`:"";
 g+=dim(x+w/2,0,x+w/2,y,pm1(y)+" м от А")+dim(0,y+h/2,x,y+h/2,pm1(x)+" м от Б");
 g+=`<g class="fix" style="transform:translate(${x+w/2}px,${y}px) scale(var(--s))" pointer-events="none"><text class="lb dm" y="-10">${pK(sl)[2]==="c"?"Ø "+pm1(w):pm1(w)+" × "+pm1(h)} м</text></g>`;
@@ -757,15 +782,18 @@ function pLbl(){const s=$("pm");if(!s||!pv)return;const k=Math.min(s.clientWidth
 s.querySelectorAll("[data-lw]").forEach(e=>{const w=+e.dataset.lw*k;e.classList.toggle("t1",w<58);e.classList.toggle("t0",w<15)});
 const g1=$("pg1");if(g1)g1.style.display=k>12?"":"none";
 const sc=$("pscale");if(sc){const want=90/k,n=[.5,1,2,5,10,20,50,100].find(v=>v>=want*.6)||100;sc.innerHTML=`${pm1(n)} м<i style="width:${n*k}px"></i>`}}
+/* куда стекает вода: стрелка вниз по склону в осях карты */
+function pSlopeChip(){const s=plot.site||{};if(s.slopePct==null)return"";if(s.slopePct<.5)return`<span>≈ ровно</span>`;const a=s.slopeAz-(pTheta()??0);
+return`<svg viewBox="-9 -9 18 18" width="18" height="18" aria-hidden="true"><g transform="rotate(${a})"><path d="M0 7V-6M-4-2L0-7L4-2" stroke="#2E7FA3" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span>вниз ${pm1(s.slopePct)} %</span>`}
 function pComp(){const th=pTheta();return`<svg viewBox="-22 -22 44 44" width="44" height="44"><circle r="20" fill="rgba(255,248,231,.85)"/><g transform="rotate(${-(th??0)})"><path d="M0-16L5 0H-5Z" fill="#B5482A"/><path d="M0 16L5 0H-5Z" fill="#7A6A4E"/><text y="-6" x="9" font-size="9" fill="#3B2F1A" font-family="system-ui">С</text></g>${th==null?`<text y="18" text-anchor="middle" font-size="8" fill="#B5482A">?</text>`:""}</svg>`}
 
 /* ---------- экран ---------- */
 function plotMap(opt){opt=opt||{};setNav("plot");document.body.classList.add("on-map");pSync();if(opt.fresh!=null){PS.fresh=opt.fresh;PS.seed=opt.fresh;PS.sel=null}
 app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="pu" aria-label="Отменить">↶</button></div>
-<div class="pcomp" aria-hidden="true">${pComp()}</div><div class="pscale" id="pscale"></div><div class="pmode" id="pmode" role="toolbar" aria-label="Режимы карты"></div>
+<div class="pcomp" aria-hidden="true">${pComp()}</div><div class="pslope" id="pslope">${pSlopeChip()}</div><div class="pscale" id="pscale"></div><div class="pmode" id="pmode" role="toolbar" aria-label="Режимы карты"></div>
 <div class="card min" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
 fitMap();pPanel();pCtl();$("grab").onclick=()=>$("sh").classList.toggle("min");
-$("sh").addEventListener("click",e=>{const s=$("sh");if(s.classList.contains("min")&&!e.target.closest("button,input,select,label,a"))s.classList.remove("min")});
+$("sh").addEventListener("click",e=>{const s=e.currentTarget;if(s.classList.contains("min")&&!e.target.closest("button,input,select,label,a"))s.classList.remove("min")});
 if(opt.fresh!=null){try{TG&&TG.HapticFeedback&&TG.HapticFeedback.notificationOccurred("success")}catch(e){}setTimeout(()=>{PS.fresh=null},1400)}}
 function pCtl(){const svg=$("pm"),{W,H}=pDim(),pad=Math.max(2.5,Math.max(W,H)*.12),base={x:-pad,y:-pad,w:W+2*pad,h:H+2*pad};
 const fit=()=>{const r=svg.getBoundingClientRect(),sh=$("sh"),cw=r.width||360,ch=r.height||600,vis=sh&&!sh.classList.contains("min")?Math.max(.35,Math.min(1,(sh.getBoundingClientRect().top-r.top-8)/ch)):1,
@@ -786,7 +814,7 @@ if(P.size===2){const[a,c]=[...P.values()];G={mode:"pinch",pd:Math.hypot(a.x-c.x,
 if(P.size>2)return;const pt=toSvg(e.clientX,e.clientY),t=e.target,oe=t.closest&&t.closest("[data-o]"),o=oe&&pO(oe.dataset.o),sl=PS.sel&&pO(PS.sel);
 G={pt0:pt,c0:{x:e.clientX,y:e.clientY},moved:false,target:t};
 if(t.closest&&t.closest("[data-h]")&&sl){G.mode="h";G.o=sl}
-else if(o&&sl&&o.id===sl.id&&(!o.fix||PS.unlock)){G.mode="obj";G.o=o;G.ox=o.x;G.oy=o.y;G.pts=o.pts&&o.pts.map(p=>[...p])}
+else if(o&&sl&&o.id===sl.id&&(!o.fix||PS.unlock||o.side)){G.mode="obj";G.o=o;G.ox=o.x;G.oy=o.y;G.pts=o.pts&&o.pts.map(p=>[...p])}
 else if(PS.tool==="rect"&&!PS.place)G.mode="rect";
 else G.mode="pan";
 if(PS.tool==="move"&&!PS.place&&!(t.closest&&t.closest("[data-sd]"))&&G.mode==="pan")lp=setTimeout(()=>{if(G&&!G.moved&&P.size===1){G.mode="done";pPlantAt(pt,o)}},550)};
@@ -796,7 +824,7 @@ if(G.pd)zoomAt(m0[0],m0[1],d/G.pd);G.pd=d;const m1=toSvg((q1.x+q2.x)/2,(q1.y+q2.
 if(!G.moved){if(Math.hypot(cur.x-G.c0.x,cur.y-G.c0.y)<7){return}G.moved=true;clearTimeout(lp);try{svg.setPointerCapture(e.pointerId)}catch(x){}if(G.mode==="obj"||G.mode==="h")pHist()}
 const pt=toSvg(cur.x,cur.y);
 if(G.mode==="pan"){const a=toSvg(prev.x,prev.y);set({...pv,x:pv.x-(pt[0]-a[0]),y:pv.y-(pt[1]-a[1])})}
-else if(G.mode==="obj"){const dx=pt[0]-G.pt0[0],dy=pt[1]-G.pt0[1],o=G.o;if(o.pts)o.pts=G.pts.map(p=>[psnap(p[0]+dx),psnap(p[1]+dy)]);
+else if(G.mode==="obj"){const dx=pt[0]-G.pt0[0],dy=pt[1]-G.pt0[1],o=G.o;if(o.side){[o.side,o.at]=pNearSide(pt,o.w)}else if(o.pts)o.pts=G.pts.map(p=>[psnap(p[0]+dx),psnap(p[1]+dy)]);
 else{let x=psnap(G.ox+dx),y=psnap(G.oy+dy);[[0,"x",0],[W-o.w,"x",1],[0,"y",0],[H-o.h,"y",1]].forEach(([v,k])=>{if(Math.abs((k==="x"?x:y)-v)<.25)k==="x"?x=v:y=v});o.x=x;o.y=y}pDrawSoon()}
 else if(G.mode==="h"){const o=G.o;if(pK(o)[2]==="c"){const d=Math.max(.2,psnap(Math.max(pt[0]-o.x,pt[1]-o.y)));o.w=o.h=d}else{o.w=Math.max(.2,psnap(pt[0]-o.x));o.h=Math.max(.2,psnap(pt[1]-o.y))}pDrawSoon()}
 else if(G.mode==="rect"){const a=G.pt0.map(psnap),b=pt.map(psnap);PS.rect={x:Math.min(a[0],b[0]),y:Math.min(a[1],b[1]),w:psnap(Math.abs(b[0]-a[0])),h:psnap(Math.abs(b[1]-a[1]))};pDrawSoon()}
@@ -820,16 +848,18 @@ if(PS.tool==="line"){(PS.draft||(PS.draft=[])).push(sp);pDraw();pPanel();return}
 if(PS.tool==="measure"){PS.meas=!PS.meas||PS.meas.length>1?[sp]:[PS.meas[0],sp];pDraw();pPanel();return}
 if(sd){PS.seed=+sd.dataset.sd;PS.sel=null;PS.pal=false}
 else if(oe){if(PS.sel!==oe.dataset.o)PS.unlock=false;PS.sel=oe.dataset.o;PS.seed=null;PS.pal=false;const o=pO(PS.sel),s=$("pm");
-if(o&&!o.pts&&PS.fly&&s){const k=Math.min(s.clientWidth/pv.w,s.clientHeight/pv.h);if(Math.min(o.w,o.h)*k<44)PS.fly(o.x+o.w/2,o.y+o.h/2+Math.max(o.w,o.h)*1.2,Math.max(Math.max(o.w,o.h)*4,4))}}
+if(o&&!o.pts&&!o.side&&PS.fly&&s){const k=Math.min(s.clientWidth/pv.w,s.clientHeight/pv.h);if(Math.min(o.w,o.h)*k<44)PS.fly(o.x+o.w/2,o.y+o.h/2+Math.max(o.w,o.h)*1.2,Math.max(Math.max(o.w,o.h)*4,4))}}
 else{if(PS.dbl&&PS.dbl(pt))return;PS.sel=null;PS.seed=null}
 pDraw();pPanel()}
-function pLoc(pt,o){const l={x:psnap(pt[0]),y:psnap(pt[1])};if(o){const b=o.pts?o.pts[0]:[o.x,o.y];l.o=o.id;l.dx=psnap(pt[0]-b[0]);l.dy=psnap(pt[1]-b[1])}return l}
+function pLoc(pt,o){const l={x:psnap(pt[0]),y:psnap(pt[1])};if(o){const b=pBase(o);l.o=o.id;l.dx=psnap(pt[0]-b[0]);l.dy=psnap(pt[1]-b[1])}return l}
 function pPlantAt(pt,o){PS.tool="move";try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred("medium")}catch(e){}stepWeek("","",{...pLoc(pt,o),name:o?o.n:""})}
 /* новое — не на чужое место: ищем свободное по спирали от центра экрана */
 function pFree(w,h,cx,cy){const hit=(x,y)=>pM().objs.some(o=>!o.pts&&x<o.x+o.w&&x+w>o.x&&y<o.y+o.h&&y+h>o.y),st=Math.max(w,h)/2+.4;
 for(let r=0;r<14;r++)for(let i=0;i<Math.max(1,r*6);i++){const a=i/Math.max(1,r*6)*2*Math.PI,x=psnap(cx-w/2+Math.cos(a)*r*st),y=psnap(cy-h/2+Math.sin(a)*r*st);if(!hit(x,y))return[x,y]}
 return[psnap(cx-w/2),psnap(cy-h/2)]}
-function pAdd(k,box){const s0=$("sh");if(s0)s0.classList.add("min");const K=PK[k]||PK.own,c=K[2]==="c",[cx,cy]=PS.mid?PS.mid():[5,5],w=box?(c?Math.max(box.w,box.h):box.w):K[3],h=box?(c?Math.max(box.w,box.h):box.h):K[4];
+function pAdd(k,box){const s0=$("sh");if(s0)s0.classList.add("min");if((PK[k]||[])[2]==="e"){const K=PK[k],m=PS.mid?PS.mid():[0,0],[side,at]=pNearSide(m,K[3]);pHist();
+const o={id:pid(),k,n:K[0],side,at,w:K[3],hh:0,fix:1};pM().objs.push(o);PS.sel=o.id;PS.seed=null;PS.pal=false;PS.rect=null;PS.tool="move";PS.unlock=true;pSave();pDraw();pPanel();return o}
+const K=PK[k]||PK.own,c=K[2]==="c",[cx,cy]=PS.mid?PS.mid():[5,5],w=box?(c?Math.max(box.w,box.h):box.w):K[3],h=box?(c?Math.max(box.w,box.h):box.h):K[4];
 pHist();let[px,py]=box?[box.x,box.y]:pFree(w,h,cx,cy);const o={id:pid(),k,n:K[0],x:px,y:py,w,h,hh:K[5],fix:K[6]};pM().objs.push(o);pLink(o);
 PS.sel=o.id;PS.seed=null;PS.pal=false;PS.rect=null;PS.tool="move";PS.unlock=!o.fix;const sh=$("sh");if(sh)sh.classList.add("min");pSave();pDraw();pPanel();return o}
 function pLineDone(k){const d=PS.draft;if(!d||d.length<2)return;pHist();const K=PK[k],o={id:pid(),k,n:K[0],pts:d,lw:K[3],hh:K[5],fix:K[6]};pM().objs.push(o);
@@ -849,7 +879,7 @@ if(PS.place!=null){const x=PS.place==="new"?null:seeds[PS.place];h=`<div class="
 pn.innerHTML=h;$("pcx").onclick=()=>{PS.place=null;pPanel()};return}
 if(PS.pal){h=`<div class="row" style="justify-content:space-between;align-items:center"><h2>${PS.rect?"Что ты начертил?":"Добавить на участок"}</h2><button class="n" id="pcx">Отмена</button></div>
 ${PS.rect?`<p class="note" style="margin:0">${pm1(PS.rect.w)} × ${pm1(PS.rect.h)} м. Выбери, что это.</p>`:`<p class="note" style="margin:0">Появится в центре экрана — потом перетащи и задай размер.</p>`}
-${PG.filter(g=>g[0]!=="l"||!PS.rect).map(([g,t])=>`<div class="zone">${t}</div><div class="row">${Object.entries(PK).filter(([k,v])=>v[7]===g&&!k.startsWith("own")).map(([k,v])=>`<button class="n" data-pk="${k}">${v[1]} ${esc(v[0])}</button>`).join("")}</div>`).join("")}
+${PG.filter(g=>!(PS.rect&&"le".includes(g[0]))).map(([g,t])=>`<div class="zone">${t}</div><div class="row">${Object.entries(PK).filter(([k,v])=>v[7]===g&&!k.startsWith("own")).map(([k,v])=>`<button class="n" data-pk="${k}">${v[1]} ${esc(v[0])}</button>`).join("")}</div>`).join("")}
 <div class="zone">Своё</div>${PS.own?`<div class="pgrid"><div class="pf w"><label class="zone" for="own-n">Что это</label><input id="own-n" maxlength="40" placeholder="Летний душ" value="${esc(PS.own.n)}"></div></div>
 <div class="row">${chip("own-r","▭ Прямоугольник",PS.own.c===0)}${chip("own-c","○ Круг",PS.own.c===1)}</div><div class="row">${chip("own-f","Стационарное",PS.own.f===1)}${chip("own-m","Переносное",PS.own.f===0)}</div>
 <span class="err" id="own-e"></span><button class="main-btn" id="own-ok">Добавить</button>`:`<button class="n" id="own" style="align-self:flex-start">✳️ Своё…</button>`}`;
@@ -884,6 +914,22 @@ if($("sy"))$("sy").onclick=()=>mk(true);if($("sn"))$("sn").onclick=()=>mk(false)
 $("smv").onclick=()=>{PS.place=k;$("sh").classList.add("min");pPanel()};$("sx").onclick=()=>{PS.seed=null;pDraw();pPanel()};
 $("srm").onclick=()=>{const b=$("srm");if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Точно? Семя останется в саду";return}x.loc=null;saveSeeds();PS.seed=null;pDraw();pPanel()};return}
 const o=PS.sel&&pO(PS.sel);
+if(o&&o.side){const K=pK(o),here=seeds.filter(x=>x.loc&&x.loc.o===o.id).length,num=(id,lab,v)=>`<div class="pf"><label class="zone" for="${id}">${lab}</label><input id="${id}" inputmode="decimal" maxlength="7" value="${pm1(v)}"><span class="err" data-e="${id}"></span></div>`;
+h=`<div class="prow"><span style="font-size:1.6rem" aria-hidden="true">${K[1]}</span><input id="onm" maxlength="40" value="${esc(o.n)}" aria-label="Название"><button class="n pi" id="ox" aria-label="Закрыть">✕</button></div>
+<div class="zone">Сторона участка</div><div class="row">${["А","Б","В","Г"].map(s=>chip("es-"+s,s,o.side===s)).join("")}</div>
+<div class="pgrid">${num("oat","От стороны "+pEdgeFrom(o.side)+", м",o.at)}${num("ow","Ширина, м",o.w)}</div>
+<p class="note" style="margin:0">Тяни по карте — встанет на ближайшую сторону.</p>
+<div class="row"><button class="n" id="odup">Копия</button><button class="n" id="odel">Удалить</button></div>
+<button class="main-btn" id="osd">🌱 Посадить намерение у: ${esc(o.n)}</button>${here?`<p class="note" style="margin:0">Здесь уже ${here} ${pl(here,["семя","семени","семян"])}.</p>`:""}`;
+pn.innerHTML=h;$("ox").onclick=()=>{PS.sel=null;pDraw();pPanel()};
+$("onm").onchange=()=>{const v=$("onm").value.trim();if(!v)return;pHist();o.n=v.slice(0,40);pSave();pDraw()};
+["А","Б","В","Г"].forEach(s=>$("es-"+s).onclick=()=>{pHist();o.side=s;o.at=psnap(Math.min(o.at,Math.max(0,pEdgeLen(s)-o.w)));pSave();pDraw();pPanel()});
+[["oat","at"],["ow","w"]].forEach(([id,k])=>{const e=$(id);e.onchange=()=>{const v=pnum(e.value),L=pEdgeLen(o.side),ok=v!=null&&v>=(k==="w"?.3:0)&&v<=L;
+pn.querySelector(`[data-e="${id}"]`).textContent=ok?"":`Число от ${k==="w"?"0,3":"0"} до ${pm1(L)}`;if(!ok)return;pHist();o[k]=psnap(v);o.at=psnap(Math.min(o.at,Math.max(0,L-o.w)));pSave();pDraw()}});
+$("odup").onclick=()=>{pHist();const n={...o,id:pid(),at:psnap(Math.min(o.at+o.w+.5,Math.max(0,pEdgeLen(o.side)-o.w)))};pM().objs.push(n);PS.sel=n.id;pSave();pDraw();pPanel()};
+$("odel").onclick=()=>{const b=$("odel");if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Точно удалить?";return}pHist();pM().objs=pM().objs.filter(x=>x!==o);
+seeds.forEach(x=>{if(x.loc&&x.loc.o===o.id){const p=pSeedPos(x);x.loc={x:p[0],y:p[1]}}});if(!pM().objs.some(x=>x.side)&&plot.site)plot.site.gate="";PS.sel=null;saveSeeds();pSave();pDraw();pPanel()};
+$("osd").onclick=()=>{const[a,b]=pEdgeSeg(o);pPlantAt([(a[0]+b[0])/2,(a[1]+b[1])/2],o)};return}
 if(o){const K=pK(o),c=K[2]==="c",here=seeds.filter(x=>x.loc&&x.loc.o===o.id).length,fld=(id,lab,v,ph)=>`<div class="pf"><label class="zone" for="${id}">${lab}</label><input id="${id}" inputmode="decimal" maxlength="7" value="${v==null?"":pm1(v)}" placeholder="${ph||""}"><span class="err" data-e="${id}"></span></div>`;
 h=`<div class="row" style="align-items:center;flex-wrap:nowrap"><span style="font-size:1.6rem" aria-hidden="true">${K[1]}</span><input id="onm" maxlength="40" value="${esc(o.n)}" aria-label="Название"><button class="n" id="ox" aria-label="Закрыть">✕</button></div>
 <div class="pgrid">${o.pts?`<div class="pf"><span class="zone">Длина</span><b style="font-weight:500">${pm1(pLen(o.pts))} м</b></div>${o.k==="path"?fld("olw","Ширина, м",o.lw):""}`:
@@ -900,7 +946,7 @@ const ok=v!=null&&(k==="x"||k==="y"?Math.abs(v)<1000:v>=0&&v<1000&&(k==="hh"||v>
 $("ofx").onclick=()=>{pHist();o.fix=1;PS.unlock=false;pSave();pDraw();pPanel()};$("omb").onclick=()=>{pHist();o.fix=0;pSave();pDraw();pPanel()};
 if($("omv"))$("omv").onclick=()=>{PS.unlock=!PS.unlock;pPanel()};
 if($("orot"))$("orot").onclick=()=>{pHist();const cx=o.x+o.w/2,cy=o.y+o.h/2;[o.w,o.h]=[o.h,o.w];o.x=psnap(cx-o.w/2);o.y=psnap(cy-o.h/2);pBack(o);pSave();pDraw();pPanel()};
-$("odup").onclick=()=>{pHist();const n=JSON.parse(JSON.stringify(o));n.id=pid();if(n.pts)n.pts=n.pts.map(p=>[p[0]+1,p[1]+1]);else{n.x+=.5;n.y+=.5}pM().objs.push(n);pLink(n);PS.sel=n.id;pSave();pDraw();pPanel()};
+$("odup").onclick=()=>{pHist();const n=JSON.parse(JSON.stringify(o));n.id=pid();if(n.side)n.at=psnap(Math.min(n.at+n.w+.5,pEdgeLen(n.side)-n.w));else if(n.pts)n.pts=n.pts.map(p=>[p[0]+1,p[1]+1]);else{n.x+=.5;n.y+=.5}pM().objs.push(n);pLink(n);PS.sel=n.id;pSave();pDraw();pPanel()};
 $("odel").onclick=()=>{const b=$("odel");if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent=pRow(o)[1]?"Точно? И строку в анкете":"Точно удалить?";return}
 pHist();const[t,r]=pRow(o);if(r)plot[t].splice(plot[t].indexOf(r),1);pM().objs=pM().objs.filter(x=>x!==o);seeds.forEach(x=>{if(x.loc&&x.loc.o===o.id){const p=pSeedPos(x);x.loc={x:p[0],y:p[1]}}});
 PS.sel=null;saveSeeds();pSave();pDraw();pPanel()};
@@ -919,6 +965,8 @@ ${tray.length?`<div class="zone">Семена из сада ждут места 
 ${PS.sun?`<div class="row" style="align-items:center"><input type="range" id="shr" min="6" max="20" step=".5" value="${PS.hr}" style="flex:1" aria-label="Час"><span style="min-width:52px;text-align:right">${String(Math.floor(PS.hr)).padStart(2,"0")}:${PS.hr%1?"30":"00"}</span></div>
 <p class="note" style="margin:0">${sun.el>2?`Солнце на ${Math.round(sun.el)}° над горизонтом, тень в ${pm1(sun.len)} раза длиннее предмета.`:"Солнце за горизонтом."} Время солнечное (полдень — солнце на юге)${th==null?". Сторона света не задана — считаю, что сторона А смотрит на север":""}${pLat()==null?"; широта 48,4°":""}.</p>`:""}
 <div class="row">${chip("hm0","Переносное видно",!PS.hideMob)}${chip("hm1","Только стационарное",PS.hideMob)}</div>
+<div class="zone">Уклон</div><p style="margin:0">${esc((plot.site||{}).slope||"Не задан")}</p>${(plot.site||{}).slopeSrc?`<p class="note" style="margin:0">По ${esc(plot.site.slopeSrc)} — общий наклон местности вокруг, не микрорельеф.</p>`:""}
+<button class="n" id="pslb" style="align-self:flex-start">🛰 ${(plot.site||{}).slopePct!=null?"Обновить":"Взять"} из данных рельефа</button><span class="err" id="psle"></span>
 <button class="n" id="pq" style="align-self:flex-start">📋 Анкета участка</button>`:""}`;
 pn.innerHTML=h;
 $("psd").onclick=()=>pMode("plant");$("pad").onclick=()=>pMode("add");$("pmo").onclick=()=>{PS.more=!PS.more;pPanel()};
@@ -926,6 +974,7 @@ if($("pdue"))$("pdue").onclick=()=>{PS.seed=dueN[0][1];pDraw();pPanel()};
 pn.querySelectorAll("[data-tr]").forEach(b=>b.onclick=()=>{PS.place=+b.dataset.tr;$("sh").classList.add("min");pPanel()});
 if($("sa")){const sv=()=>{const a=pnum($("sa").value),b=pnum($("sb").value);if(a>0&&b>0&&a<2000&&b<2000){plot.site=plot.site||{};plot.site.a=pm1(a);plot.site.b=pm1(b);pSave();plotMap()}};$("sa").onchange=sv;$("sb").onchange=sv}
 if(!PS.more)return;$("pq").onclick=plotHome;
+$("pslb").onclick=()=>{const b=$("pslb");b.disabled=true;b.textContent="Спрашиваю рельеф…";pSlope((r,msg)=>{if(!r){b.disabled=false;b.textContent="🛰 Взять из данных рельефа";$("psle").textContent=msg;return}$("pslope").innerHTML=pSlopeChip();pPanel()})};
 ["","w","m","s"].forEach(k=>$("su-"+k).onclick=()=>{PS.sun=k;pDraw();pPanel()});
 if($("shr")){$("shr").oninput=()=>{PS.hr=+$("shr").value;pDraw();$("shr").nextElementSibling.textContent=`${String(Math.floor(PS.hr)).padStart(2,"0")}:${PS.hr%1?"30":"00"}`};$("shr").onchange=pPanel}
 $("hm0").onclick=()=>{PS.hideMob=false;pDraw();pPanel()};$("hm1").onclick=()=>{PS.hideMob=true;pDraw();pPanel()};}

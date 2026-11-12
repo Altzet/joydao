@@ -9,7 +9,11 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
+import re
 import secrets
+import urllib.parse
+import urllib.request
 from datetime import date, datetime, timedelta, timezone
 import sqlite3
 from contextlib import closing
@@ -558,6 +562,92 @@ def _island(c: sqlite3.Connection, uid: int) -> dict:
             if isinstance(s.get("life"), dict) and s["life"].get("same"):
                 b[s["z"]] += 1
     return {"island": z, "bloom": b}
+
+
+# ---------- «Мой участок»: уклон по открытым данным рельефа ----------
+# Open Topo Data (api.opentopodata.org): EU-DEM 25 м, иначе SRTM 30 м; публичный API — до 100 точек, 1 запрос в секунду,
+# 1000 в день, CORS не обещан, поэтому ходит сервер. Модель рельефа усредняет высоту по ячейке 25–30 м: это общий
+# наклон местности вокруг участка, а не микрорельеф. ponytail: кэш в памяти, до перезапуска; хватит, пока игроков мало.
+_slope_cache: dict = {}
+_LL = re.compile(r"(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})")
+_GMAPS = re.compile(r"^https://(maps\.app\.goo\.gl|goo\.gl/maps|(www\.)?google\.[a-z.]{2,6}/maps)/")
+DEM = (("eudem25m", "EU-DEM 25 м"), ("srtm30m", "SRTM 30 м"))
+
+
+def _get(url: str, timeout: float = 8) -> tuple[str, bytes]:
+    req = urllib.request.Request(url, headers={"User-Agent": "joydao-nunu/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.geturl(), r.read(400_000)
+
+
+def _coords(q: str):
+    """Координаты из «48.43, 22.71» или из ссылки Google Карт (короткую раскрываем на сервере)."""
+    m = _LL.search(q)
+    if m:
+        return float(m[1]), float(m[2])
+    if not _GMAPS.match(q):
+        return None
+    final, body = _get(q)
+    for s in (urllib.parse.unquote(final), urllib.parse.unquote(body.decode("utf-8", "ignore"))):
+        m = (re.search(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)", s) or re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", s)
+             or re.search(r"[?&](?:q|ll|query|center)=(-?\d+\.\d+),\+?(-?\d+\.\d+)", s))
+        if m:
+            return float(m[1]), float(m[2])
+    return None
+
+
+def slope_fit(pts: list[tuple[float, float, float]]) -> tuple[float, float, float]:
+    """Плоскость z = a·восток + b·север + c методом наименьших квадратов → (уклон %, куда понижение °от севера, разброс м)."""
+    n = len(pts)
+    me, mn, mz = (sum(p[i] for p in pts) / n for i in range(3))
+    ee = sum((p[0] - me) ** 2 for p in pts)
+    nn = sum((p[1] - mn) ** 2 for p in pts)
+    en = sum((p[0] - me) * (p[1] - mn) for p in pts)
+    ez = sum((p[0] - me) * (p[2] - mz) for p in pts)
+    nz = sum((p[1] - mn) * (p[2] - mz) for p in pts)
+    d = ee * nn - en * en
+    a, b = (ez * nn - nz * en) / d, (nz * ee - ez * en) / d
+    rms = math.sqrt(sum((p[2] - (mz + a * (p[0] - me) + b * (p[1] - mn))) ** 2 for p in pts) / n)
+    return math.hypot(a, b) * 100, (math.degrees(math.atan2(-a, -b)) + 360) % 360, rms
+
+
+class SlopeIn(BaseModel):
+    q: str
+
+
+@router.post("/slope")
+async def slope(body: SlopeIn, x_init_data: str | None = Header(default=None)):
+    _user(x_init_data)
+    try:
+        ll = await asyncio.to_thread(_coords, body.q.strip()[:600])
+    except Exception:
+        ll = None
+    if not ll or not (-60 <= ll[0] <= 60 and -180 <= ll[1] <= 180):
+        raise HTTPException(422, "Не нашёл координаты. Нажми «Я на участке» или вставь ссылку на точку в Google Картах.")
+    key = (round(ll[0], 4), round(ll[1], 4))
+    if key in _slope_cache:
+        return _slope_cache[key]
+    grid = [(e, n) for n in (-60, -30, 0, 30, 60) for e in (-60, -30, 0, 30, 60)]  # 5×5 точек, шаг 30 м ≈ ячейка модели
+    k = 111_320
+    locs = "|".join(f"{ll[0] + n / k:.6f},{ll[1] + e / (k * math.cos(math.radians(ll[0]))):.6f}" for e, n in grid)
+    zs, src = None, None
+    for i, (ds, name) in enumerate(DEM):
+        if i:
+            await asyncio.sleep(1.1)  # публичный API: не чаще раза в секунду
+        try:
+            _, raw = await asyncio.to_thread(_get, f"https://api.opentopodata.org/v1/{ds}?locations={locs}&interpolation=bilinear")
+            res = [r.get("elevation") for r in json.loads(raw).get("results", [])]
+        except Exception:
+            continue
+        if len(res) == len(grid) and all(z is not None for z in res):
+            zs, src = res, name
+            break
+    if not zs:
+        raise HTTPException(502, "Сервис рельефа сейчас не отвечает. Попробуй позже.")
+    pct, az, rms = slope_fit([(e, n, z) for (e, n), z in zip(grid, zs)])
+    out = {"lat": round(ll[0], 6), "lon": round(ll[1], 6), "z": round(zs[12], 1), "pct": round(pct, 1), "az": round(az), "rms": round(rms, 1), "src": src}
+    _slope_cache[key] = out
+    return out
 
 
 @router.get("/world")
