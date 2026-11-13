@@ -898,7 +898,7 @@ function pComp(){const th=pTheta();return`<svg viewBox="-22 -22 44 44" width="44
 
 /* ---------- экран ---------- */
 function plotMap(opt){opt=opt||{};setNav("plot");document.body.classList.add("on-map");pSync();if(opt.fresh!=null){PS.fresh=opt.fresh;PS.seed=opt.fresh;PS.sel=null}
-app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="pu" aria-label="Отменить">↶</button></div>
+app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="p3b" aria-label="Пройтись в 3D" style="font-size:14px;font-weight:600">3D</button><button id="pu" aria-label="Отменить">↶</button></div>
 <div class="pcomp" aria-hidden="true">${pComp()}</div><div id="patt" style="position:absolute;right:62px;top:12px;font-size:10px;color:#3B2F1A;background:rgba(255,248,231,.8);border-radius:6px;padding:1px 6px;pointer-events:none"${pSatOn()?"":" hidden"}>© Esri, Maxar</div><div class="pslope" id="pslope">${pSlopeChip()}</div><div class="pscale" id="pscale"></div><div class="pmode" id="pmode" role="toolbar" aria-label="Режимы карты"></div>
 <div class="card min" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
 fitMap();pPanel();pCtl();pModeFit();addEventListener("resize",pModeFit);$("grab").onclick=()=>$("sh").classList.toggle("min");
@@ -954,7 +954,7 @@ svg.onpointerup=up;svg.onpointercancel=e=>{P.delete(e.pointerId);clearTimeout(lp
 svg.addEventListener("wheel",e=>{e.preventDefault();const p=toSvg(e.clientX,e.clientY);zoomAt(p[0],p[1],Math.exp(-e.deltaY*.0015))},{passive:false});
 const mid=()=>{const r=svg.getBoundingClientRect(),sh=$("sh"),b=sh&&!sh.classList.contains("min")?Math.max(r.top+80,sh.getBoundingClientRect().top):r.bottom;return toSvg(r.left+r.width/2,(r.top+b)/2)};  /* центр видимой части над карточкой */
 $("zi").onclick=()=>{const[c,d]=mid();zoomAt(c,d,1.6)};$("zo").onclick=()=>{const[c,d]=mid();zoomAt(c,d,1/1.6)};
-$("zm").onclick=()=>{const f=fit();flyTo(f.x+f.w/2,f.y+f.h/2,f.w)};
+$("p3b").onclick=()=>plot3d();$("zm").onclick=()=>{const f=fit();flyTo(f.x+f.w/2,f.y+f.h/2,f.w)};
 $("pu").onclick=()=>{const k=pDim().key;if(!pUndo()){try{TG.HapticFeedback.notificationOccurred("warning")}catch(e){}return}if(pDim().key!==k)return plotMap();pSatDraw();pDraw();pPanel()};
 PS.mid=mid;PS.fly=flyTo;PS.dbl=(p)=>{const now=Date.now();if(now-lastTap<320){zoomAt(p[0],p[1],1.8);lastTap=0;return true}lastTap=now;return false}}
 function pTap(pt,t){const sp=pt.map(psnap),sd=t.closest&&t.closest("[data-sd]"),oe=t.closest&&t.closest("[data-o]");
@@ -980,6 +980,94 @@ pHist();let[px,py]=box?[box.x,box.y]:pFree(w,h,cx,cy);const o={id:pid(),k,n:K[0]
 PS.sel=o.id;PS.seed=null;PS.pal=false;PS.rect=null;PS.tool="move";PS.unlock=!o.fix;const sh=$("sh");if(sh)sh.classList.add("min");pSave();pDraw();pPanel();return o}
 function pLineDone(k){const d=PS.draft;if(!d||d.length<2)return;pHist();const K=PK[k],o={id:pid(),k,n:K[0],pts:d,lw:K[3],hh:K[5],fix:K[6]};pM().objs.push(o);
 PS.draft=null;PS.tool="move";PS.sel=o.id;pSave();pDraw();pPanel()}
+
+/* ===== 3D-участок, ступень 1 (13.11): прогулка от первого лица по сцене, собранной из чертежа. Метры: X — как x карты,
+Z — как y карты, Y — вверх. Three.js грузится с CDN только при входе в 3D. Солнце — по сегодняшней дате и часу (как pSun).
+ponytail: рельеф плоский (уклон не учтён), снимок не кладётся на землю, столкновения — только с постройками, водой и стволами. */
+const P3D="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js";let p3=null;
+function p3Sun(hr){const R=Math.PI/180,d0=new Date(),doy=Math.floor((d0-new Date(d0.getFullYear(),0,0))/864e5),D=23.44*Math.sin(2*Math.PI*(284+doy)/365)*R,f=(pLat()??48.4)*R,H=15*(hr-12)*R;
+const el=Math.asin(Math.sin(f)*Math.sin(D)+Math.cos(f)*Math.cos(D)*Math.cos(H)),az=(Math.atan2(Math.sin(H),Math.cos(H)*Math.sin(f)-Math.tan(D)*Math.cos(f))/R+180+360)%360;return{el:el/R,az}}
+const p3Hr=()=>{const n=new Date(),ll=pLL();return Math.round(((n.getUTCHours()+n.getUTCMinutes()/60+(ll?ll[1]:22.7)/15)%24)*2)/2};  /* солнечное время ≈ UTC + долгота/15 */
+async function plot3d(){setNav("plot");nav.back=()=>plotMap();document.body.classList.add("on-map");
+app.innerHTML=`<div id="mapw" class="pw" style="background:#BFE3F2;touch-action:none"><canvas id="c3" style="width:100%;height:100%;display:block;touch-action:none"></canvas>
+<div class="mctl"><button id="x3" aria-label="Назад к карте">✕</button></div><div id="stk" hidden style="position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(255,255,255,.18);pointer-events:none"><i style="position:absolute;left:34px;top:34px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9)"></i></div>
+<div style="position:absolute;left:50%;top:45%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none"></div>
+<div id="h3" style="position:absolute;left:10px;top:10px;right:64px;font-size:12px;color:#14324A;background:rgba(255,255,255,.75);border-radius:10px;padding:5px 9px;pointer-events:none">Левая половина — идти, правая — смотреть. Нажми на предмет.</div>
+<div class="card" id="sh" style="position:absolute;left:8px;right:8px;bottom:8px;margin:0;padding:10px 14px;gap:8px"><div class="row" style="align-items:center;flex-wrap:nowrap"><span>☀️</span><input type="range" id="t3" min="4" max="22" step=".25" style="flex:1" aria-label="Час"><b id="tv" style="font-weight:500;min-width:48px;text-align:right"></b></div><div id="o3"></div></div></div>`;
+fitMap();$("x3").onclick=()=>plotMap();$("o3").innerHTML=`<p class="note" style="margin:0">Строю участок…</p>`;
+let T;try{T=await import(P3D)}catch(e){$("o3").innerHTML=`<p class="err" style="margin:0">Не загрузился 3D-движок. Проверь интернет и открой снова.</p>`;return}
+if(!$("c3"))return;p3Stop();p3=p3Scene(T)}
+function p3Stop(){if(!p3)return;cancelAnimationFrame(p3.raf);removeEventListener("keydown",p3.kd);removeEventListener("keyup",p3.ku);removeEventListener("resize",p3.rs);p3.r.dispose();p3=null}
+function p3Scene(T){const cv=$("c3"),D=pDim(),P=D.P,r=new T.WebGLRenderer({canvas:cv,antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;
+const S=new T.Scene(),cam=new T.PerspectiveCamera(70,1,.1,600);cam.rotation.order="YXZ";S.fog=new T.Fog(0xBFE3F2,60,260);
+const hemi=new T.HemisphereLight(0xE8F4FF,0x6B7A4A,.9),sun=new T.DirectionalLight(0xFFF2D6,2.2);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);S.add(hemi,sun,sun.target);
+const cx=(D.X0+D.W)/2,cz=(D.Y0+D.H)/2,span=Math.max(D.W-D.X0,D.H-D.Y0)+20,sc=sun.shadow.camera;Object.assign(sc,{left:-span,right:span,top:span,bottom:-span,near:1,far:400});sun.target.position.set(cx,0,cz);
+const M=(c,o)=>new T.MeshLambertMaterial({color:c,...o}),mesh=(g,m,x,y,z,sh=1)=>{const k=new T.Mesh(g,m);k.position.set(x,y,z);k.castShadow=!!sh;k.receiveShadow=true;return k};
+const ground=mesh(new T.PlaneGeometry(800,800),M(0xA9BF8A),cx,0,cz,0);ground.rotation.x=-Math.PI/2;S.add(ground);
+const sh=new T.Shape(P.map(p=>new T.Vector2(p[0],p[1]))),lawn=mesh(new T.ShapeGeometry(sh),M(0x8FBF6A),0,.01,0,0);lawn.rotation.x=Math.PI/2;S.add(lawn);
+const pick=[],block=[],lab=(t,x,y,z)=>{const c=document.createElement("canvas");c.width=512;c.height=96;const g=c.getContext("2d");g.font="500 44px Golos Text,system-ui";const w=Math.min(500,g.measureText(t).width+40);
+g.fillStyle="rgba(255,248,231,.92)";g.beginPath();g.roundRect((512-w)/2,14,w,68,34);g.fill();g.fillStyle="#3B2F1A";g.textAlign="center";g.textBaseline="middle";g.fillText(t,256,50);
+const s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),depthTest:false,transparent:true}));s.scale.set(2.6,.49,1);s.position.set(x,y,z);s.renderOrder=9;S.add(s)};
+/* забор по периметру с проёмами под ворота и калитку */
+const gates=pM().objs.filter(o=>o.side),wood=M(0x8A6440),gateM=M(0xB5482A);
+for(let i=1;i<=D.n;i++){const{a,u,L}=pSideV(i),gs=gates.filter(o=>o.side===i).map(o=>[Math.max(0,Math.min(o.at,L-o.w)),Math.min(L,Math.max(0,Math.min(o.at,L-o.w))+o.w),o]).sort((p,q)=>p[0]-q[0]);
+let t0=0;const run=(s,e,h,m)=>{if(e-s<.05)return;const k=mesh(new T.BoxGeometry(e-s,h,.06),m,a[0]+u[0]*(s+e)/2,h/2,a[1]+u[1]*(s+e)/2);k.rotation.y=-Math.atan2(u[1],u[0]);S.add(k)};
+for(const[s,e,o]of gs){run(t0,s,1.5,wood);const g=mesh(new T.BoxGeometry(e-s,1.6,.08),gateM,a[0]+u[0]*(s+e)/2,.8,a[1]+u[1]*(s+e)/2);g.rotation.y=-Math.atan2(u[1],u[0]);g.userData.o=o;pick.push(g);S.add(g);t0=e}run(t0,L,1.5,wood);
+for(let t=0;t<=L;t+=2.5)S.add(mesh(new T.BoxGeometry(.1,1.7,.1),wood,a[0]+u[0]*t,.85,a[1]+u[1]*t))}
+/* объекты */
+for(const o of pM().objs){if(o.side)continue;const K=pK(o),[f,s]=PC[K[8]]||PC.own,col=new T.Color(f),hh=Math.max(.05,o.hh||.2),kind=K[8];
+if(o.pts){for(let i=1;i<o.pts.length;i++){const[p,q]=[o.pts[i-1],o.pts[i]],L=Math.hypot(q[0]-p[0],q[1]-p[1]),ang=-Math.atan2(q[1]-p[1],q[0]-p[0]),mx=(p[0]+q[0])/2,mz=(p[1]+q[1])/2;
+const k=o.k==="fence"?mesh(new T.BoxGeometry(L,hh||1.6,.06),M(0x6B4A2B),mx,(hh||1.6)/2,mz):mesh(new T.BoxGeometry(L+(o.k==="path"?o.lw||.8:0),o.k==="path"?.03:.06,o.k==="path"?o.lw||.8:.06),M(o.k==="path"?0xDCCBA3:0x2E7FA3),mx,.03,mz,0);
+k.rotation.y=ang;k.userData.o=o;pick.push(k);S.add(k)}continue}
+const cx=o.x+o.w/2,cz=o.y+o.h/2,g=new T.Group();g.position.set(cx,0,cz);g.rotation.y=-(o.rot||0)*Math.PI/180;
+if(kind==="tree"||kind==="bush"){const tr=kind==="tree"?Math.max(1,hh*.35):0;if(tr){g.add(mesh(new T.CylinderGeometry(.12,.18,tr,8),M(0x6B4A2B),0,tr/2,0));block.push({x:cx,z:cz,r:.35})}
+const cr=mesh(new T.SphereGeometry(o.w/2,14,10),M(col),0,tr+(hh-tr)/2,0);cr.scale.y=Math.max(.4,(hh-tr)/o.w);g.add(cr)}
+else if(K[2]==="c"){g.add(mesh(new T.CylinderGeometry(o.w/2,o.w/2,hh,20),M(col),0,hh/2,0));if(hh>.5&&o.fix)block.push({x:cx,z:cz,r:o.w/2+.3})}
+else if(kind==="house"||kind==="roof"){const wh=Math.max(1.8,hh*.62),rh=Math.max(.3,hh-wh),L=o.w>=o.h,a=L?o.w:o.h,b=L?o.h:o.w;g.add(mesh(new T.BoxGeometry(o.w,wh,o.h),M(col),0,wh/2,0));
+const tri=new T.Shape([new T.Vector2(-b/2-.25,0),new T.Vector2(b/2+.25,0),new T.Vector2(0,rh)]),rg=new T.ExtrudeGeometry(tri,{depth:a+.4,bevelEnabled:false});rg.translate(0,0,-(a+.4)/2);
+const rf=mesh(rg,M(kind==="house"?0x9C4A35:0x7A5530),0,wh,0);if(L)rf.rotation.y=Math.PI/2;g.add(rf);
+g.add(mesh(new T.BoxGeometry(.9,2,.05),M(0x5A3A22),L?0:o.w/2+.01,1,L?o.h/2+.01:0));block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
+else if(kind==="glass"){g.add(mesh(new T.BoxGeometry(o.w,hh,o.h),M(0xD5ECF1,{transparent:true,opacity:.45}),0,hh/2,0,0));block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
+else if(kind==="solar"){const k=mesh(new T.BoxGeometry(o.w,.05,o.h),M(0x2B3F70),0,hh*.6,0);k.rotation.x=-.6;g.add(k,mesh(new T.BoxGeometry(.06,hh*.6,.06),M(0x555555),0,hh*.3,0))}
+else if(kind==="bed"){g.add(mesh(new T.BoxGeometry(o.w,hh,o.h),M(0x6E5236),0,hh/2,0));const n=Math.max(1,Math.floor(Math.min(o.w,o.h)/.4)),L=o.w>=o.h;
+for(let i=1;i<=n;i++){const t=(i/(n+1)-.5)*(L?o.h:o.w),k=mesh(new T.BoxGeometry(L?o.w*.92:.18,.18,L?.18:o.h*.92),M(0x6FAE4A),L?0:t,hh+.09,L?t:0);g.add(k)}}
+else if(kind==="oven"){g.add(mesh(new T.BoxGeometry(o.w,hh*.75,o.h),M(col),0,hh*.375,0),mesh(new T.BoxGeometry(.35,hh*.6,.35),M(0x6B2E1A),o.w*.25,hh*.75+hh*.3,o.h*.25));block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
+else{g.add(mesh(new T.BoxGeometry(o.w,hh,o.h),M(col),0,hh/2,0));if(o.fix&&hh>=1)block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
+g.traverse(k=>{if(k.isMesh)k.userData.o=o});pick.push(...g.children);S.add(g);lab(K[1]+" "+o.n,cx,hh+.7,cz)}
+/* семена: росток, капля — пора, цветок — так и сделал */
+seeds.forEach((x,k)=>{const p=pSeedPos(x);if(!p)return;const L=x.life,g=new T.Group();g.position.set(p[0],0,p[1]);
+g.add(mesh(new T.CylinderGeometry(.02,.03,.45,6),M(0x3B6D2B),0,.22,0));const top=mesh(L&&L.same?new T.SphereGeometry(.14,10,8):new T.ConeGeometry(.12,.25,8),M(L&&L.same?0xE0709A:L?0x8FB86A:0x2E9A73),0,.5,0);g.add(top);
+if(pDue(x))g.add(mesh(new T.SphereGeometry(.07,8,6),M(0x3B8BD4),.18,.62,0));g.traverse(m=>{if(m.isMesh)m.userData.seed=k});pick.push(...g.children);S.add(g)});
+/* где встать: у ворот внутри участка, иначе у угла 1; смотрим на середину */
+const g0=gates[0],st=g0?(()=>{const[a,b]=pEdgeSeg(g0),o=pSideV(g0.side).out;return[(a[0]+b[0])/2-o[0]*1.5,(a[1]+b[1])/2-o[1]*1.5]})():[P[0][0]+(cx-P[0][0])*.15,P[0][1]+(cz-P[0][1])*.15];
+const me={x:st[0],z:st[1],yaw:Math.atan2(-(cx-st[0]),-(cz-st[1])),pitch:-.05,mv:[0,0],keys:{}};
+const free=(x,z)=>block.every(b=>{if(b.r)return Math.hypot(x-b.x,z-b.z)>b.r;const dx=x-b.x,dz=z-b.z,c=Math.cos(b.a),s=Math.sin(b.a),lx=dx*c+dz*s,lz=-dx*s+dz*c;return Math.abs(lx)>b.w||Math.abs(lz)>b.h})&&
+x>D.X0-40&&x<D.W+40&&z>D.Y0-40&&z<D.H+40;
+const setSun=hr=>{const s=p3Sun(hr),th=pTheta()??0,v=pDir(s.az,th),el=Math.max(-5,s.el)*Math.PI/180,day=Math.max(0,Math.min(1,(s.el+4)/12));
+sun.position.set(cx+v[0]*Math.cos(el)*120,Math.sin(Math.max(el,.02))*120,cz+v[1]*Math.cos(el)*120);sun.intensity=2.4*day;hemi.intensity=.55+.6*day;  /* ночью — лунный свет, чтобы было видно участок */
+const sky=new T.Color(0x34496E).lerp(new T.Color(0xBFE3F2),day);S.background=sky;S.fog.color=sky;
+$("tv").textContent=`${String(Math.floor(hr)).padStart(2,"0")}:${String(Math.round(hr%1*60)).padStart(2,"0")}`};
+const t3=$("t3"),hr0=Math.min(22,Math.max(4,p3Hr()));t3.value=hr0;setSun(hr0);t3.oninput=()=>setSun(+t3.value);
+const info=x=>{const o3=$("o3");if(!x){o3.innerHTML="";return}
+if(x.seed!=null){const s=seeds[x.seed];o3.innerHTML=`<p style="margin:0">🌱 ${esc(s.r)}</p><button class="n" id="g3">Открыть на карте</button>`;$("g3").onclick=()=>{PS.seed=x.seed;PS.sel=null;plotMap()};return}
+const o=x.o;o3.innerHTML=`<div class="prow"><span style="flex:1">${pK(o)[1]} <b style="font-weight:500">${esc(o.n)}</b></span><span class="note">${pm1(Math.hypot(me.x-(o.pts?o.pts[0][0]:o.side?pEdgeSeg(o)[0][0]:o.x+o.w/2),me.z-(o.pts?o.pts[0][1]:o.side?pEdgeSeg(o)[0][1]:o.y+o.h/2)))} м</span></div>
+<button class="main-btn" id="g3">🌱 Посадить намерение у: ${esc(o.n)}</button>`;$("g3").onclick=()=>pPlantAt(o.pts?o.pts[0]:o.side?pEdgeSeg(o)[0]:[o.x+o.w/2,o.y+o.h/2],o)};
+/* управление: левая половина — шаг (джойстик), правая — взгляд; короткое нажатие — выбрать предмет; WASD и стрелки на компьютере */
+const ptr=new Map(),stk=$("stk"),ray=new T.Raycaster();
+cv.onpointerdown=e=>{const b=cv.getBoundingClientRect(),L=e.clientX-b.left<b.width*.45;ptr.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now(),L});try{cv.setPointerCapture(e.pointerId)}catch(_){}
+if(L){stk.hidden=false;stk.style.left=e.clientX-b.left+"px";stk.style.top=e.clientY-b.top+"px";stk.firstChild.style.transform=""}};
+cv.onpointermove=e=>{const p=ptr.get(e.pointerId);if(!p)return;if(p.L){const dx=e.clientX-p.x0,dy=e.clientY-p.y0,k=Math.min(1,48/Math.max(1,Math.hypot(dx,dy)));me.mv=[dx*k/48,dy*k/48];stk.firstChild.style.transform=`translate(${dx*k}px,${dy*k}px)`}
+else{me.yaw-=(e.clientX-p.x)*.006;me.pitch=Math.max(-1.3,Math.min(1.3,me.pitch-(e.clientY-p.y)*.006))}p.x=e.clientX;p.y=e.clientY};
+cv.onpointerup=cv.onpointercancel=e=>{const p=ptr.get(e.pointerId);ptr.delete(e.pointerId);if(!p)return;if(p.L){me.mv=[0,0];stk.hidden=true}
+if(Math.hypot(e.clientX-p.x0,e.clientY-p.y0)<8&&performance.now()-p.t<350){const b=cv.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1),cam);
+const h=ray.intersectObjects(pick,false).find(h=>h.distance<40);info(h&&h.object.userData);$("h3").hidden=true}};
+const kd=e=>{me.keys[e.key.toLowerCase()]=1},ku=e=>{me.keys[e.key.toLowerCase()]=0},rs=()=>{const w=cv.clientWidth,h=cv.clientHeight;r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()};
+addEventListener("keydown",kd);addEventListener("keyup",ku);addEventListener("resize",rs);rs();
+let last=performance.now();const st3={r,kd,ku,rs,raf:0,me,S,cam};
+const loop=n=>{const dt=Math.min(.05,(n-last)/1000);last=n;const K=me.keys;let f=-me.mv[1]+(K.w||K.arrowup?1:0)-(K.s||K.arrowdown?1:0),s=me.mv[0]+(K.d?1:0)-(K.a?1:0);
+if(K.arrowleft)me.yaw+=1.8*dt;if(K.arrowright)me.yaw-=1.8*dt;const sp=1.6*dt,sy=Math.sin(me.yaw),cy=Math.cos(me.yaw),nx=me.x+(-sy*f+cy*s)*sp,nz=me.z+(-cy*f-sy*s)*sp;
+if(free(nx,me.z))me.x=nx;if(free(me.x,nz))me.z=nz;cam.position.set(me.x,1.65,me.z);cam.rotation.set(me.pitch,me.yaw,0);r.render(S,cam);st3.raf=requestAnimationFrame(loop)};
+st3.raf=requestAnimationFrame(loop);$("o3").innerHTML="";return st3}
 
 /* ---------- нижняя карточка ---------- */
 /* режимы — кнопками на карте; карточка внизу свёрнута до одной строки: что происходит и главное действие */
@@ -1176,7 +1264,7 @@ const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15
 ["plot","Участок","M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M12 9v3",()=>plotMap()],
 ["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];
 const nav={cur:undefined};
-function setNav(s){nav.back=null;if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
+function setNav(s){nav.back=null;if(typeof p3Stop==="function")p3Stop();if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
 if(!el){el=document.createElement("nav");el.id="nav";el.setAttribute("aria-label","Меню");document.body.appendChild(el);document.body.classList.add("has-nav");
 el.innerHTML=`<div>${NAV.map(([k,l,d])=>`<button data-n="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${d}"/></svg>${l}</button>`).join("")}</div>`;
 el.onclick=e=>{const b=e.target.closest("button");if(b)NAV.find(x=>x[0]===b.dataset.n)[3]()};
