@@ -1199,7 +1199,7 @@ PFN={der:"Деревянный",prof:"Профлист",set:"Сетка",kirp:"�
 /* стороны дома по фасаду: фасад, задняя, левая и правая — как видит человек, стоящий лицом к фасаду */
 const POPP={s:"n",n:"s",e:"w",w:"e"},PV={s:[0,1],n:[0,-1],e:[1,0],w:[-1,0]};
 function pSideNm(d,k,short){const f=d.front;if(!f)return PDR[k];const fv=PV[f],L=Object.keys(PV).find(q=>PV[q][0]===-fv[1]&&PV[q][1]===fv[0]);
-const nm=k===f?"Фасад":k===POPP[f]?"Задняя":k===L?"Левая":"Правая";return short?nm.slice(0,5):nm+" "+PDR[k].split(" ")[0]}
+const nm=k===f?"Фасад":k===POPP[f]?"Задняя":k===L?"Левая":"Правая";return short?nm:nm+" "+PDR[k].split(" ")[0]}
 function pD3Panel(o){const K=pK(o),d=o.d3||{},ch=(k,v,t,on)=>`<button class="${on?"t":"n"}" data-d3="${k}" data-v="${v}" aria-pressed="${!!on}">${t}</button>`,
 sw=(k,c,cur)=>`<button data-d3="${k}" data-v="${c}" aria-label="Цвет ${c}" style="width:30px;height:30px;border-radius:50%;background:${c};border:${(cur??d[k])===c?"3px solid var(--acc)":"1px solid #0003"};padding:0"></button>`,
 tg=(id,t)=>`<button class="n" id="d3t" aria-expanded="${!!PS.d3}" style="align-self:flex-start">${t} ${PS.d3?"▴":"▾"}</button>`,sides=(k,cur,none)=>(none?ch(k,"",none,!cur):"")+["s","n","w","e"].map(q=>ch(k,q,pSideNm(d,q),cur===q)).join("");
@@ -1221,7 +1221,7 @@ ${d.porch==="veranda"?`<div class="zone">Стороны веранды — ка�
 <div class="zone">Лестница на веранду</div><div class="row">${[["l","← слева"],["f","↓ спереди"],["r","→ справа"]].map(([k,t])=>{const on=!!(d.vst||{f:1})[k];return`<button class="${on?"t":"n"}" data-vst="${k}" aria-pressed="${on}">${t}</button>`}).join("")}</div>`:""}
 ${(+d.fl||1)>1?`<div class="zone">Балкон на 2 этаже</div><div class="row">${sides("balc",d.balc,"Нет")}</div>`:""}
 <div class="zone">Окна по сторонам; пусто = авто</div>
-<div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px;align-items:center">${["","s","n","w","e"].map(k=>`<span class="note" style="text-align:center;font-size:11px">${k?pSideNm(d,k,1)+(d.front?"":""):""}</span>`).join("")}
+<div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px;align-items:center">${["","s","n","w","e"].map(k=>`<span class="note" style="text-align:center;font-size:11px;line-height:1.15">${k?(d.front?pSideNm(d,k,1)+"<br>":"")+PDR[k].split(" ")[0]:""}</span>`).join("")}
 ${pFloors(d).map(f=>`<span class="note">${f[1]}</span>`+["s","n","w","e"].map(k=>f[0]==="g"&&!pGEnd(o,k)?`<span class="note" style="text-align:center">—</span>`:`<input data-wg="${f[0]}.${k}" inputmode="numeric" maxlength="2" aria-label="${f[1]}, ${pSideNm(d,k)}" value="${((d.wg||{})[f[0]]||{})[k]??""}" placeholder="${pAutoWin(o,f[0],k)}" style="min-width:0;text-align:center;padding-left:4px;padding-right:4px">`).join("")).join("")}</div>`:"");
 if(K[8]==="tree"||K[8]==="bush")return tg("d3t","🎨 Порода (для 3D)")+(PS.d3?`
 <div class="row">${Object.entries(PSP).map(([k,v])=>ch("sp",k,v[0],d.sp===k)).join("")}</div><p class="note" style="margin:0">Листва в 3D меняется по сезону: весной плодовые цветут, осенью желтеют, зимой голые ветки.</p>`:"");
