@@ -65,6 +65,11 @@ input,textarea,select{font:inherit;padding:9px 12px;border-radius:10px;border:1p
 #pm .lb.dm{fill:#3B2F1A;font-size:11px}#pm .lb.sd{fill:#5A4128;font-size:11px}#pm .em{font-size:18px;text-anchor:middle;dominant-baseline:central}#pm .t1 .lb{display:none}#pm .t0{display:none}
 #pm [data-o],#pm [data-sd],#pm [data-h]{cursor:pointer}
 .seg2{display:grid;grid-template-columns:1.7fr 1fr;gap:8px}.seg2 button{text-align:center;align-self:stretch}
+.h3{position:absolute;z-index:2;font-size:12px;line-height:1.25;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;transition:opacity .6s;display:flex;flex-direction:column;align-items:center;gap:6px}
+.h3.gone{opacity:0}.r3{width:76px;height:76px;border-radius:50%;border:2px dashed rgba(255,255,255,.85);background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:26px}
+.r3 i{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.85);animation:st3 2.2s ease-in-out infinite}.r3.sw{border-style:solid;animation:sw3 2.2s ease-in-out infinite}
+@keyframes st3{0%,100%{transform:translateY(0)}40%{transform:translateY(-18px)}70%{transform:translate(12px,-6px)}}@keyframes sw3{0%,100%{transform:translateX(0)}50%{transform:translateX(-14px)}}
+@media (prefers-reduced-motion:reduce){.r3 i,.r3.sw{animation:none}}
 .pmode{position:absolute;left:10px;top:96px;display:flex;flex-direction:column;gap:var(--pg,8px)}
 .pmode button{width:var(--pb,44px);height:var(--pb,44px);border-radius:12px;border:0;background:rgba(255,248,231,.8);color:#3B2F1A;font-size:var(--pf,19px);line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
 .pmode button[aria-pressed="true"]{background:var(--acc);color:var(--acc-fg);box-shadow:0 0 0 2px #fff}
@@ -990,9 +995,11 @@ const el=Math.asin(Math.sin(f)*Math.sin(D)+Math.cos(f)*Math.cos(D)*Math.cos(H)),
 const p3Hr=()=>{const n=new Date(),ll=pLL();return Math.round(((n.getUTCHours()+n.getUTCMinutes()/60+(ll?ll[1]:22.7)/15)%24)*2)/2};  /* солнечное время ≈ UTC + долгота/15 */
 async function plot3d(){setNav("plot");nav.back=()=>plotMap();document.body.classList.add("on-map");
 app.innerHTML=`<div id="mapw" class="pw" style="background:#BFE3F2;touch-action:none"><canvas id="c3" style="width:100%;height:100%;display:block;touch-action:none"></canvas>
-<div class="mctl"><button id="x3" aria-label="Назад к карте">✕</button></div><div id="stk" hidden style="position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(255,255,255,.18);pointer-events:none"><i style="position:absolute;left:34px;top:34px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9)"></i></div>
+<div class="mctl"><button id="x3" aria-label="Назад к карте">✕</button><button id="q3" aria-label="Показать подсказки">?</button></div><div id="stk" hidden style="position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(255,255,255,.18);pointer-events:none"><i style="position:absolute;left:34px;top:34px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9)"></i></div>
 <div style="position:absolute;left:50%;top:45%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none"></div>
-<div id="h3" style="position:absolute;left:10px;top:10px;right:64px;font-size:12px;color:#14324A;background:rgba(255,255,255,.75);border-radius:10px;padding:5px 9px;pointer-events:none">Левая половина — идти, правая — смотреть. Нажми на предмет.</div>
+<div class="h3" id="hm" style="left:14px;bottom:96px"><span class="r3"><i></i></span>Тяни здесь —<br>идти</div>
+<div class="h3" id="hl" style="right:14px;bottom:96px;text-align:right"><span class="r3 sw">👆</span>Веди здесь —<br>смотреть</div>
+<div class="h3" id="hp" style="left:50%;top:calc(45% + 14px);transform:translateX(-50%);text-align:center">Нажми на дом,<br>дерево или грядку</div>
 <div class="card" id="sh" style="position:absolute;left:8px;right:8px;bottom:8px;margin:0;padding:10px 14px;gap:8px"><div class="row" style="align-items:center;flex-wrap:nowrap"><span>☀️</span><input type="range" id="t3" min="4" max="22" step=".25" style="flex:1" aria-label="Час"><b id="tv" style="font-weight:500;min-width:48px;text-align:right"></b></div><div id="o3"></div></div></div>`;
 fitMap();$("x3").onclick=()=>plotMap();$("o3").innerHTML=`<p class="note" style="margin:0">Строю участок…</p>`;
 let T;try{T=await import(P3D)}catch(e){$("o3").innerHTML=`<p class="err" style="margin:0">Не загрузился 3D-движок. Проверь интернет и открой снова.</p>`;return}
@@ -1054,19 +1061,23 @@ const o=x.o;o3.innerHTML=`<div class="prow"><span style="flex:1">${pK(o)[1]} <b 
 <button class="main-btn" id="g3">🌱 Посадить намерение у: ${esc(o.n)}</button>`;$("g3").onclick=()=>pPlantAt(o.pts?o.pts[0]:o.side?pEdgeSeg(o)[0]:[o.x+o.w/2,o.y+o.h/2],o)};
 /* управление: левая половина — шаг (джойстик), правая — взгляд; короткое нажатие — выбрать предмет; WASD и стрелки на компьютере */
 const ptr=new Map(),stk=$("stk"),ray=new T.Raycaster();
+/* подсказки: каждая гаснет после первого раза и больше не показывается (флаги в localStorage этого устройства) */
+let HD={};try{HD=JSON.parse(localStorage.getItem("nunu-3dh"))||{}}catch(_){}
+const hint=(k,show)=>{const e=$({m:"hm",l:"hl",p:"hp"}[k]);if(e)e.classList.toggle("gone",!show)},done=k=>{if(HD[k])return;HD[k]=1;try{localStorage.setItem("nunu-3dh",JSON.stringify(HD))}catch(_){}hint(k,false)};
+["m","l","p"].forEach(k=>hint(k,!HD[k]));let walked=0,looked=0;$("q3").onclick=()=>{HD={};walked=looked=0;try{localStorage.removeItem("nunu-3dh")}catch(_){}["m","l","p"].forEach(k=>hint(k,true))};
 cv.onpointerdown=e=>{const b=cv.getBoundingClientRect(),L=e.clientX-b.left<b.width*.45;ptr.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now(),L});try{cv.setPointerCapture(e.pointerId)}catch(_){}
-if(L){stk.hidden=false;stk.style.left=e.clientX-b.left+"px";stk.style.top=e.clientY-b.top+"px";stk.firstChild.style.transform=""}};
-cv.onpointermove=e=>{const p=ptr.get(e.pointerId);if(!p)return;if(p.L){const dx=e.clientX-p.x0,dy=e.clientY-p.y0,k=Math.min(1,48/Math.max(1,Math.hypot(dx,dy)));me.mv=[dx*k/48,dy*k/48];stk.firstChild.style.transform=`translate(${dx*k}px,${dy*k}px)`}
-else{me.yaw-=(e.clientX-p.x)*.006;me.pitch=Math.max(-1.3,Math.min(1.3,me.pitch-(e.clientY-p.y)*.006))}p.x=e.clientX;p.y=e.clientY};
-cv.onpointerup=cv.onpointercancel=e=>{const p=ptr.get(e.pointerId);ptr.delete(e.pointerId);if(!p)return;if(p.L){me.mv=[0,0];stk.hidden=true}
+if(L){$("hm").style.visibility="hidden";stk.hidden=false;stk.style.left=e.clientX-b.left+"px";stk.style.top=e.clientY-b.top+"px";stk.firstChild.style.transform=""}};
+cv.onpointermove=e=>{const p=ptr.get(e.pointerId);if(!p)return;if(p.L){const dx=e.clientX-p.x0,dy=e.clientY-p.y0,d=Math.hypot(dx,dy),k=Math.min(1,48/Math.max(1,d)),m=Math.min(1,d/48),c=m<.15?0:(m-.15)/.85*(m>.95?1.9:1)/Math.max(m,.01);me.mv=[dx/48*c,dy/48*c];stk.firstChild.style.transform=`translate(${dx*k}px,${dy*k}px)`}
+else{const k=Math.PI/cv.clientWidth;me.yaw-=(e.clientX-p.x)*k;me.pitch=Math.max(-1.3,Math.min(1.3,me.pitch-(e.clientY-p.y)*k));looked+=Math.abs(e.clientX-p.x)*k;if(looked>.5)done("l")}p.x=e.clientX;p.y=e.clientY};  /* полный экран по ширине = пол-оборота */
+cv.onpointerup=cv.onpointercancel=e=>{const p=ptr.get(e.pointerId);ptr.delete(e.pointerId);if(!p)return;if(p.L){me.mv=[0,0];stk.hidden=true;$("hm").style.visibility=""}
 if(Math.hypot(e.clientX-p.x0,e.clientY-p.y0)<8&&performance.now()-p.t<350){const b=cv.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1),cam);
-const h=ray.intersectObjects(pick,false).find(h=>h.distance<40);info(h&&h.object.userData);$("h3").hidden=true}};
+const h=ray.intersectObjects(pick,false).find(h=>h.distance<40);info(h&&h.object.userData);if(h)done("p")}};
 const kd=e=>{me.keys[e.key.toLowerCase()]=1},ku=e=>{me.keys[e.key.toLowerCase()]=0},rs=()=>{const w=cv.clientWidth,h=cv.clientHeight;r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()};
 addEventListener("keydown",kd);addEventListener("keyup",ku);addEventListener("resize",rs);rs();
 let last=performance.now();const st3={r,kd,ku,rs,raf:0,me,S,cam};
 const loop=n=>{const dt=Math.min(.05,(n-last)/1000);last=n;const K=me.keys;let f=-me.mv[1]+(K.w||K.arrowup?1:0)-(K.s||K.arrowdown?1:0),s=me.mv[0]+(K.d?1:0)-(K.a?1:0);
 if(K.arrowleft)me.yaw+=1.8*dt;if(K.arrowright)me.yaw-=1.8*dt;const sp=1.6*dt,sy=Math.sin(me.yaw),cy=Math.cos(me.yaw),nx=me.x+(-sy*f+cy*s)*sp,nz=me.z+(-cy*f-sy*s)*sp;
-if(free(nx,me.z))me.x=nx;if(free(me.x,nz))me.z=nz;cam.position.set(me.x,1.65,me.z);cam.rotation.set(me.pitch,me.yaw,0);r.render(S,cam);st3.raf=requestAnimationFrame(loop)};
+const ox=me.x,oz=me.z;if(free(nx,me.z))me.x=nx;if(free(me.x,nz))me.z=nz;if(!HD.m&&(walked+=Math.hypot(me.x-ox,me.z-oz))>1.5)done("m");cam.position.set(me.x,1.65,me.z);cam.rotation.set(me.pitch,me.yaw,0);r.render(S,cam);st3.raf=requestAnimationFrame(loop)};
 st3.raf=requestAnimationFrame(loop);$("o3").innerHTML="";return st3}
 
 /* ---------- нижняя карточка ---------- */
