@@ -25,5 +25,5 @@ def test_my_plot():
     """«Мой участок» (раздел «Динамическое равновесие»): вкладка в меню, анкета уходит на сервер вместе с садом."""
     t = TestClient(api.app).get("/nunu").text
     for marker in ('["plot","Участок"', "function plotHome(", '"nunu-plot":plot', "DeviceOrientation", "LocationManager",
-                   "function plotMap(", "function pSun(", "function pMode(", "function pEdgeSeg(", "function pSlope(", "function merge3(", "base:sync.rev", "function markSeed(", "loc?plotMap({fresh:"):
+                   "function plotMap(", "function pSun(", "function pMode(", "function pEdgeSeg(", "function pSlope(", "function merge3(", "base:sync.rev", "function markSeed(", "loc?plotMap({fresh:", "function pPoly(", "function pPlace(", "function pMeasure(", "/nunu/api/tile/", "function pMig("):
         assert marker in t

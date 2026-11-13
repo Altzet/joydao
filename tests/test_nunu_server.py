@@ -312,3 +312,20 @@ def test_state_versions(tmp_path, monkeypatch):
     assert r.status_code == 409 and r.json()["detail"] == {"rev": 2, "data": {"a": 2}}
     assert c.get("/nunu/api/state?since=2", headers=me).json() == {"same": True, "rev": 2, "name": "Я", "inbox": []}
     assert c.get("/nunu/api/state?since=1", headers=me).json()["data"] == {"a": 2}
+
+
+def test_tile(tmp_path, monkeypatch):
+    """Спутниковая плитка: только крупные масштабы, тянется один раз и дальше берётся с диска; не-картинку не кэшируем."""
+    monkeypatch.setattr(nunu, "TILES", tmp_path / "t")
+    calls = []
+
+    def fake(url, timeout=8):
+        calls.append(url)
+        return url, (b"<html>" if "/19/1/" in url else b"\xff\xd8jpeg")
+    monkeypatch.setattr(nunu, "_get", fake)
+    c = TestClient(pause.app)
+    assert c.get("/nunu/api/tile/12/1/1").status_code == 404
+    r = c.get("/nunu/api/tile/19/300000/180000")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg" and "/19/180000/300000" in calls[0]
+    assert c.get("/nunu/api/tile/19/300000/180000").content == b"\xff\xd8jpeg" and len(calls) == 1
+    assert c.get("/nunu/api/tile/19/1/1").status_code == 502

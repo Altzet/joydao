@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import math
+import os
 import re
 import secrets
 import urllib.parse
@@ -666,6 +667,37 @@ async def slope(body: SlopeIn, x_init_data: str | None = Header(default=None)):
     out = {"lat": round(ll[0], 6), "lon": round(ll[1], 6), "z": round(zs[12], 1), "pct": round(pct, 1), "az": round(az), "rms": round(rms, 1), "src": src}
     _slope_cache[key] = out
     return out
+
+
+# ---------- «Мой участок»: спутниковая подложка ----------
+# Esri World Imagery: публичные плитки, подпись «Esri, Maxar» на карте обязательна. Если в .env есть ESRI_KEY (ArcGIS Location
+# Platform), он добавляется к запросу. Плитки кэшируются на диске — снимок участка меняется раз в годы.
+# ponytail: эндпойнт без авторизации (картинки грузит <image>, заголовок не передать); ограничение — только крупные масштабы 16–20.
+TILES = DB.parent / "tiles"
+ESRI_TILE = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+
+
+@router.get("/tile/{z}/{x}/{y}")
+async def tile(z: int, x: int, y: int):
+    from fastapi.responses import Response
+    if not (16 <= z <= 20 and 0 <= x < 2 ** z and 0 <= y < 2 ** z):
+        raise HTTPException(404)
+    f = TILES / str(z) / str(x) / f"{y}"
+    if f.exists():
+        raw = f.read_bytes()
+    else:
+        key = os.environ.get("ESRI_KEY", "")
+        url = ESRI_TILE.format(z=z, x=x, y=y) + (f"?token={urllib.parse.quote(key)}" if key else "")
+        try:
+            _, raw = await asyncio.to_thread(_get, url, 10)
+        except Exception:
+            raise HTTPException(502, "Снимок сейчас недоступен")
+        if not raw.startswith((b"\xff\xd8", b"\x89PNG")):
+            raise HTTPException(502, "Снимок сейчас недоступен")
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_bytes(raw)
+    return Response(raw, media_type="image/png" if raw.startswith(b"\x89PNG") else "image/jpeg",
+                    headers={"Cache-Control": "public, max-age=2592000"})
 
 
 @router.get("/world")
