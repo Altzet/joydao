@@ -861,8 +861,10 @@ else{g=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.min(.15,w/
 if(K[8]==="house"||K[8]==="roof")g+=L?`<line x1="${x+h/2.4}" y1="${cy}" x2="${x+w-h/2.4}" y2="${cy}" stroke="${s}" stroke-opacity=".55" stroke-width="1.2"${ve}/>`:`<line x1="${cx}" y1="${y+w/2.4}" x2="${cx}" y2="${y+h-w/2.4}" stroke="${s}" stroke-opacity=".55" stroke-width="1.2"${ve}/>`;
 if(K[8]==="bed"){const sh=L?h:w,n=Math.max(1,Math.floor(sh/.4));for(let i=1;i<=n;i++){const t=sh*i/(n+1);g+=L?`<line x1="${x+.2}" y1="${y+t}" x2="${x+w-.2}" y2="${y+t}" stroke="#7FBF5A" stroke-width=".13" stroke-dasharray=".18 .22" stroke-linecap="round"/>`:`<line x1="${x+t}" y1="${y+.2}" x2="${x+t}" y2="${y+h-.2}" stroke="#7FBF5A" stroke-width=".13" stroke-dasharray=".18 .22" stroke-linecap="round"/>`}}
 if(K[8]==="glass"||K[8]==="solar"){const n=Math.max(1,Math.round((L?w:h)/(K[8]==="solar"?.4:1)));for(let i=1;i<n;i++){const t=(L?w:h)*i/n;g+=L?`<line x1="${x+t}" y1="${y}" x2="${x+t}" y2="${y+h}" stroke="${s}" stroke-opacity=".35" stroke-width="1"${ve}/>`:`<line x1="${x}" y1="${y+t}" x2="${x+w}" y2="${y+t}" stroke="${s}" stroke-opacity=".35" stroke-width="1"${ve}/>`}}
-if((K[8]==="house"||K[8]==="roof")&&(o.d3&&(o.d3.door||o.d3.doors)||PS.doorO===o.id))for(const q of pDoors(o)){const dr=q.k,t=q.t||0,dw=Math.min(.9,(dr==="s"||dr==="n"?w:h)*.4);
-g+=dr==="s"||dr==="n"?`<line x1="${cx+t-dw/2}" y1="${dr==="s"?y+h:y}" x2="${cx+t+dw/2}" y2="${dr==="s"?y+h:y}" stroke="#fff" stroke-width="5"${ve}/>`:`<line x1="${dr==="e"?x+w:x}" y1="${cy+t-dw/2}" x2="${dr==="e"?x+w:x}" y2="${cy+t+dw/2}" stroke="#fff" stroke-width="5"${ve}/>`}
+if((K[8]==="house"||K[8]==="roof")&&(o.d3&&(o.d3.door||o.d3.doors)||PS.doorO===o.id))pDoors(o).forEach((q,qi)=>{const dr=q.k,t=q.t||0,dw=Math.min(.9,(dr==="s"||dr==="n"?w:h)*.4),sc=PS.doorO===o.id&&PS.doorI===qi?"var(--acc)":"#fff",ns=dr==="s"||dr==="n";
+if(q.porch){const len=ns?w:h,pw=q.porch==="canopy"?1.8:Math.min(len,+q.vw||4.5),pd=q.porch==="canopy"?1.1:+q.vd||2.6,tc=Math.max(-(len-pw)/2,Math.min((len-pw)/2,q.porch==="canopy"?t:t));
+const rx=ns?cx+tc-pw/2:dr==="e"?x+w:x-pd,ry=ns?(dr==="s"?y+h:y-pd):cy+tc-pw/2;g+=`<rect x="${rx}" y="${ry}" width="${ns?pw:pd}" height="${ns?pd:pw}" fill="${q.porch==="veranda"?"#E8D6B5":"#D9CFC0"}" fill-opacity=".7" stroke="#8A6440" stroke-width="1.2"${ve} stroke-dasharray="3 2"/>`}  /* веранда или козырёк на карте */
+g+=ns?`<line x1="${cx+t-dw/2}" y1="${dr==="s"?y+h:y}" x2="${cx+t+dw/2}" y2="${dr==="s"?y+h:y}" stroke="${sc}" stroke-width="5"${ve}/>`:`<line x1="${dr==="e"?x+w:x}" y1="${cy+t-dw/2}" x2="${dr==="e"?x+w:x}" y2="${cy+t+dw/2}" stroke="${sc}" stroke-width="5"${ve}/>`})
 if((K[8]==="house"||K[8]==="roof")&&o.d3&&o.d3.gd){const dr=o.d3.gd,dw=Math.min(2.8,(dr==="s"||dr==="n"?w:h)*.85);g+=dr==="s"||dr==="n"?`<line x1="${cx-dw/2}" y1="${dr==="s"?y+h:y}" x2="${cx+dw/2}" y2="${dr==="s"?y+h:y}" stroke="#5F5E5A" stroke-width="6"${ve}/>`:`<line x1="${dr==="e"?x+w:x}" y1="${cy-dw/2}" x2="${dr==="e"?x+w:x}" y2="${cy+dw/2}" stroke="#5F5E5A" stroke-width="6"${ve}/>`}
 if(K[8]==="oven")g+=`<rect x="${x+w*.3}" y="${y+h*.3}" width="${w*.4}" height="${h*.4}" rx="${w*.2}" fill="#3B1A0E" fill-opacity=".55"/>`;
 if(o.rot)g=`<g transform="rotate(${o.rot} ${cx} ${cy})">${g}</g>`}
@@ -982,9 +984,9 @@ $("pu").onclick=()=>{const k=pDim().key;if(!pUndo()){try{TG.HapticFeedback.notif
 PS.mid=mid;PS.fly=flyTo;PS.dbl=(p)=>{const now=Date.now();if(now-lastTap<320){zoomAt(p[0],p[1],1.8);lastTap=0;return true}lastTap=now;return false}}
 /* режим входов: точка → локальные оси постройки → ближайшая стена; рядом есть вход — убираем, иначе ставим */
 function pDoorTap(pt){const o=pO(PS.doorO),r=(o.rot||0)*Math.PI/180,dx=pt[0]-(o.x+o.w/2),dy=pt[1]-(o.y+o.h/2),lx=dx*Math.cos(r)+dy*Math.sin(r),ly=-dx*Math.sin(r)+dy*Math.cos(r),
-D=[["s",Math.abs(ly-o.h/2)],["n",Math.abs(ly+o.h/2)],["e",Math.abs(lx-o.w/2)],["w",Math.abs(lx+o.w/2)]].sort((a,b)=>a[1]-b[1])[0];if(D[1]>1.5)return;
-const k=D[0],len=k==="s"||k==="n"?o.w:o.h,t=psnap(Math.max(-len/2+.5,Math.min(len/2-.5,k==="s"||k==="n"?lx:ly))),d=o.d3=o.d3||{};pHist();d.doors=pDoors(o).map(q=>({...q}));delete d.door;
-const ex=d.doors.findIndex(q=>q.k===k&&Math.abs((q.t||0)-t)<.7);if(ex>=0)d.doors.splice(ex,1);else d.doors.push({k,t});pSave();pDraw();pPanel()}
+D=[["s",Math.abs(ly-o.h/2)],["n",Math.abs(ly+o.h/2)],["e",Math.abs(lx-o.w/2)],["w",Math.abs(lx+o.w/2)]].sort((a,b)=>a[1]-b[1])[0];if(D[1]>1.5){PS.doorI=null;pDraw();return pPanel()}
+const k=D[0],len=k==="s"||k==="n"?o.w:o.h,t=psnap(Math.max(-len/2+.5,Math.min(len/2-.5,k==="s"||k==="n"?lx:ly))),d=o.d3=o.d3||{};pHist();pDoorsW(o);
+const ex=d.doors.findIndex(q=>q.k===k&&Math.abs((q.t||0)-t)<.7);if(ex>=0){PS.hist.pop();PS.doorI=ex}else{d.doors.push({k,t});PS.doorI=d.doors.length-1}pSave();pDraw();pPanel()}
 function pTap(pt,t){if(PS.doorO)return pDoorTap(pt);const sp=pt.map(psnap),sd=t.closest&&t.closest("[data-sd]"),oe=t.closest&&t.closest("[data-o]");
 if(PS.place!=null){const o=oe&&pO(oe.dataset.o);if(PS.place==="new"){PS.place=null;return pPlantAt(pt,o)}const x=seeds[PS.place];x.loc=pLoc(pt,o);x.place=o?o.n:"Участок";saveSeeds();PS.seed=PS.place;PS.place=null;pDraw();pPanel();return}
 if(PS.tool==="plant"&&!sd)return pPlantAt(pt,oe&&pO(oe.dataset.o));
@@ -1147,7 +1149,7 @@ const dz=dr==="s"?o.h/2+.04:dr==="n"?-o.h/2-.04:0,dx=dr==="e"?o.w/2+.04:dr==="w"
 for(const q of DRS){const[fx,fz]=FACE[q.k];g.add(mesh(fx?new T.BoxGeometry(.06,dh,.95):new T.BoxGeometry(.95,dh,.06),M(0x5A3A22),fx?fx*(o.w/2+.04):q.t||0,dh/2,fz?fz*(o.h/2+.04):q.t||0,0))}
 /* гаражные ворота: секционные, на выбранной стороне */
 if(d.gd){const[fx,fz]=FACE[d.gd],len=fx?o.h:o.w,gw=Math.min(2.8,len*.85),gh2=Math.min(2.3,wh*.85);g.add(mesh(fx?new T.BoxGeometry(.06,gh2,gw):new T.BoxGeometry(gw,gh2,.06),TM("sayd","#C9CFC4",gw,gh2*2),fx*(o.w/2+.04),gh2/2,fz*(o.h/2+.04),0))}
-if(bh>.15)DRS.forEach((q,qi)=>{if(qi===0&&d.porch==="veranda")return;const ns=Math.ceil(bh/.18),[fx,fz]=FACE[q.k],t0=q.t||0;for(let i=0;i<ns;i++){const dep=.3*(ns-i),sy=(i+.5)*bh/ns-bh;
+if(bh>.15)DRS.forEach(q=>{if(q.porch==="veranda")return;const ns=Math.ceil(bh/.18),[fx,fz]=FACE[q.k],t0=q.t||0;for(let i=0;i<ns;i++){const dep=.3*(ns-i),sy=(i+.5)*bh/ns-bh;
 g.add(mesh(fx?new T.BoxGeometry(dep,bh/ns,1.3):new T.BoxGeometry(1.3,bh/ns,dep),M(0x9A968E),fx?fx*(o.w/2+dep/2):t0,sy,fz?fz*(o.h/2+dep/2):t0))}});  /* крыльцо у каждого входа: ступени по 18 см */
 /* мансарда: окна в торцах (вертикальные) и на скатах (наклонённые по крыше); считаем в осях крыши: конёк вдоль Z, при L повёрнуто как крыша */
 if(d.mans&&rt!=="flat"&&rt!=="shed"){const rg2=new T.Group();if(RL)rg2.rotation.y=Math.PI/2;g.add(rg2);const hb=RB/2+.25,yy=Math.min(1.3,rh*.4),
@@ -1174,14 +1176,15 @@ const wt=pM().objs.filter(q=>pK(q)[8]==="water"&&!q.pts).sort((p1,p2)=>Math.hypo
 let sx=1,sz=1;if(wt){const vx=wt.x+wt.w/2-cx,vz=wt.y+wt.h/2-cz,lx=vx*Math.cos(ra)-vz*Math.sin(ra),lz=vx*Math.sin(ra)+vz*Math.cos(ra);sx=Math.sign(lx)||1;sz=Math.sign(lz)||1}
 const px=sx*(o.w/2+.25),pz=sz*(o.h/2+.25),ph=wh+bh;g.add(mesh(new T.CylinderGeometry(.05,.05,ph,8),gm2,px,wh-ph/2,pz,0))}
 if(d.balc&&(+d.fl||1)>1){const S2=sideAt(d.balc),wd=Math.min(3.2,S2.len*.5);slab(d.balc,1.2,wd,2.7,.15,M(0xB9B5AC));slab(d.balc,1.2,wd,3.25,.9,M(0xDDEBF2,{transparent:true,opacity:.35,depthWrite:false}))}
-if(d.porch==="canopy")slab(dr==="none"?"s":dr,1.1,1.8,Math.min(2.05,wh*.85)+.35,.1,rc);
-if(d.porch==="veranda"){const vd=dr==="none"?"s":dr,S2=sideAt(vd),wd=Math.min(S2.len,4.5),dp=2.6,vh=Math.min(2.6,wh),N=[S2.fx,S2.fz],Lv=[-S2.fz,S2.fx],
+for(const q of DRS)if(q.porch==="canopy"){const S2=sideAt(q.k),y=Math.min(2.05,wh*.85)+.35;g.add(mesh(S2.fx?new T.BoxGeometry(1.1,.1,1.8):new T.BoxGeometry(1.8,.1,1.1),rc,S2.fx?S2.fx*(S2.off+.55):q.t||0,y,S2.fz?S2.fz*(S2.off+.55):q.t||0))}
+for(const q of DRS)if(q.porch==="veranda"){const vd=q.k,S2=sideAt(vd),wd=Math.min(S2.len,+q.vw||4.5),dp=+q.vd||2.6,vh=Math.min(2.6,wh),N=[S2.fx,S2.fz],Lv=[-S2.fz,S2.fx],
+A0=Math.max(-(S2.len-wd)/2,Math.min((S2.len-wd)/2,q.t||0))*(S2.fx?Lv[1]:Lv[0]),  /* веранда по центру своего входа, но в пределах стены */
 WC=d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),
 /* веранда в своих осях: a — вбок (влево, как видно снаружи), t — от стены наружу */
-vb=(a,t,y,sa,st,h,m,sh=1)=>g.add(mesh(S2.fx?new T.BoxGeometry(st,h,sa):new T.BoxGeometry(sa,h,st),m,Lv[0]*a+N[0]*(S2.off+t),y,Lv[1]*a+N[1]*(S2.off+t),sh));
+vb=(a,t,y,sa,st,h,m,sh=1)=>g.add(mesh(S2.fx?new T.BoxGeometry(st,h,sa):new T.BoxGeometry(sa,h,st),m,Lv[0]*(a+A0)+N[0]*(S2.off+t),y,Lv[1]*(a+A0)+N[1]*(S2.off+t),sh));
 vb(0,dp/2,.05,wd,dp,.1,TM("der","#B88A5A",wd,dp));if(bh>.15)vb(0,dp/2,-bh/2,wd,dp,bh,TM("blok","#8C8A84",wd,bh));  /* настил на цоколе, не в воздухе */
 vb(0,(dp+.3)/2,vh+.08,wd+.3,dp+.3,.12,rc);
-const VS=d.vs||{},ST=d.vst||{f:1},wallM=TM(d.mat,WC,1,1),glassM=M(0xCFE6F2,{transparent:true,opacity:.35,depthWrite:false}),post=M(0xB88A5A);
+const VS=q.vs||{},ST=q.vst||{f:1},wallM=TM(d.mat,WC,1,1),glassM=M(0xCFE6F2,{transparent:true,opacity:.35,depthWrite:false}),post=M(0xB88A5A);
 /* сторона веранды: открыто / перила / стена / стена с окном / стекло; если там лестница — проём 1,3 м посередине */
 const SIDE={f:{c:[0,dp-.06],len:wd,along:"a"},l:{c:[wd/2-.06,dp/2],len:dp,along:"t"},r:{c:[-wd/2+.06,dp/2],len:dp,along:"t"}};
 for(const k of["l","f","r"]){const ty=VS[k]||"open",S3=SIDE[k],gap=ST[k]&&bh>.15?1.3:ST[k]&&ty!=="open"?1.3:0,parts=gap?[[-S3.len/2,-gap/2],[gap/2,S3.len/2]]:[[-S3.len/2,S3.len/2]];
@@ -1286,9 +1289,7 @@ ${(d.roof||"gable")==="shed"?`<div class="zone">Скат опускается к
 <div class="zone">Главный вход</div><div class="row">${(()=>{const D=pDoors(o);return sides("door",D.length?D[0].k:"")+ch("door","none","Нет",!D.length)})()}</div>
 <button class="n" id="d3dr" style="align-self:flex-start">🚪 Входы на карте (${pDoors(o).length})</button>
 <div class="zone">Гаражные ворота</div><div class="row">${sides("gd",d.gd,"Нет")}</div>
-<div class="zone">У двери</div><div class="row">${Object.entries({"":"Ничего",canopy:"Козырёк",veranda:"Веранда"}).map(([k,t])=>ch("porch",k,t,(d.porch||"")===k)).join("")}</div>
-${d.porch==="veranda"?`<div class="zone">Стороны веранды — как видно снаружи</div><div class="pgrid">${[["l","Слева"],["f","Спереди"],["r","Справа"]].map(([k,t])=>`<div class="pf"><label class="zone" for="vs-${k}">${t}</label><select id="vs-${k}" data-vs="${k}">${Object.entries(PVS).map(([q,n])=>`<option value="${q}"${((d.vs||{})[k]||"open")===q?" selected":""}>${n}</option>`).join("")}</select></div>`).join("")}</div>
-<div class="zone">Лестница на веранду</div><div class="row">${[["l","← слева"],["f","↓ спереди"],["r","→ справа"]].map(([k,t])=>{const on=!!(d.vst||{f:1})[k];return`<button class="${on?"t":"n"}" data-vst="${k}" aria-pressed="${on}">${t}</button>`}).join("")}</div>`:""}
+${pDoors(o).length?`<div class="zone">У главного входа</div>${pPorchUI(o,0)}`:""}
 ${(+d.fl||1)>1?`<div class="zone">Балкон на 2 этаже</div><div class="row">${sides("balc",d.balc,"Нет")}</div>`:""}
 <div class="zone">Окна по сторонам; пусто = авто</div>
 <div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px;align-items:center">${["","s","n","w","e"].map(k=>`<span class="note" style="text-align:center;font-size:11px;line-height:1.15">${k?(d.front?pSideNm(d,k,1)+"<br>":"")+PDR[k].split(" ")[0]:""}</span>`).join("")}
@@ -1311,18 +1312,31 @@ box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,m
 b.closest(".row,.prow").after(box);const set=e=>{pHist();if(e)o.em=e;else delete o.em;PS.emo=false;pSave();pDraw();pPanel()};
 box.querySelectorAll("[data-em]").forEach(x=>x.onclick=()=>set(x.dataset.em));$("emo-ok").onclick=()=>{const v=$("emo-own").value.trim();if(v)set([...v].slice(0,4).join(""))};if($("emo-def"))$("emo-def").onclick=()=>set("")}
 function pD3Bind(pn,o){if($("d3t"))$("d3t").onclick=()=>{PS.d3=!PS.d3;pPanel()};
-if($("d3dr"))$("d3dr").onclick=()=>{PS.doorO=o.id;$("sh").classList.add("min");pDraw();pPanel()};
+if($("d3dr"))$("d3dr").onclick=()=>{PS.doorO=o.id;PS.doorI=null;$("sh").classList.add("min");pDraw();pPanel()};
 pn.querySelectorAll("[data-d3]").forEach(b=>b.onclick=()=>{pHist();const d=o.d3=o.d3||{},k=b.dataset.d3,v=b.dataset.v;
-if(k==="door"&&d.doors){if(v==="none")d.doors=[];else if(d.doors.length)d.doors[0]={k:v,t:0};else d.doors=[{k:v,t:0}];pSave();pDraw();pPanel();return}
+if(k==="door"){const D=pDoorsW(o);if(v==="none")D.length=0;else if(D.length)Object.assign(D[0],{k:v,t:0});else D.push({k:v,t:0});pSave();pDraw();pPanel();return}
 if(v==="")delete d[k];else d[k]=k==="fl"||k==="gh"?+v:v;pSave();pDraw();pPanel()});
-pn.querySelectorAll("[data-vs]").forEach(x=>x.onchange=()=>{pHist();const d=o.d3=o.d3||{};(d.vs=d.vs||{})[x.dataset.vs]=x.value;pSave()});
-pn.querySelectorAll("[data-vst]").forEach(b=>b.onclick=()=>{pHist();const d=o.d3=o.d3||{},v=d.vst=d.vst||{f:1},k=b.dataset.vst;if(v[k])delete v[k];else v[k]=1;pSave();pPanel()});
+if(pn.querySelector("[data-pp]"))pPorchBind(pn,o,0);
 pn.querySelectorAll("[data-wg]").forEach(x=>x.onchange=()=>{const[f,k]=x.dataset.wg.split("."),v=x.value.trim(),n=parseInt(v);pHist();const d=o.d3=o.d3||{},g=d.wg=d.wg||{},r=g[f]=g[f]||{};
 if(v===""||!(n>=0&&n<=20)){delete r[k];x.value=""}else r[k]=n;pSave()})}
 /* этажи для таблицы окон: полуподвал/цоколь (если есть) и 1…N */
 const PBS={none:["Нет",0],cellar:["Подвал",0],semi:["Полуподвал",1.2],plinth:["Цоколь",.6]};
 /* входы постройки: [{k: сторона, t: метры вдоль стены от середины}]; первый — главный (у него крыльцо, веранда, козырёк) */
-function pDoors(o){const d=o.d3||{};if(d.doors)return d.doors;if(d.door==="none")return[];return[{k:d.door||(o.w>=o.h?"s":"e"),t:0}]}
+function pDoors(o){const d=o.d3||{},lg={porch:d.porch,vs:d.vs,vst:d.vst};if(d.doors)return d.doors.map((q,i)=>i===0&&q.porch===undefined&&d.porch?{...q,...lg}:q);if(d.door==="none")return[];return[{k:d.door||(o.w>=o.h?"s":"e"),t:0,...lg}]}
+/* у каждого входа своё: козырёк или веранда со сторонами, лестницами, шириной и глубиной; правим — переводим старые поля дома во входы */
+function pDoorsW(o){const d=o.d3=o.d3||{};d.doors=pDoors(o).map(q=>JSON.parse(JSON.stringify(q)));["door","porch","vs","vst"].forEach(k=>delete d[k]);return d.doors}
+function pPorchUI(o,i){const q=pDoors(o)[i];if(!q)return"";const c=(a,v,t,on)=>`<button class="${on?"t":"n"}" data-${a}="${v}" aria-pressed="${!!on}">${t}</button>`,vw=+q.vw||0,vd=+q.vd||2.6;
+return`<div class="row">${Object.entries({"":"Ничего",canopy:"Козырёк",veranda:"Веранда"}).map(([k,t])=>c("pp",k,t,(q.porch||"")===k)).join("")}</div>
+${q.porch==="veranda"?`<div class="zone">Ширина веранды</div><div class="row">${[[0,"Вся стена до 4,5 м"],[2,"2 м"],[3,"3 м"],[4,"4 м"],[5,"5 м"]].map(([v,t])=>c("pw",v,t,vw===v)).join("")}</div>
+<div class="zone">Глубина</div><div class="row">${[1.5,2,2.6,3].map(v=>c("pdp",v,pm1(v)+" м",vd===v)).join("")}</div>
+<div class="zone">Стороны веранды — как видно снаружи</div><div class="pgrid">${[["l","Слева"],["f","Спереди"],["r","Справа"]].map(([k,t])=>`<div class="pf"><label class="zone" for="vs-${k}">${t}</label><select id="vs-${k}" data-pvs="${k}">${Object.entries(PVS).map(([v,n])=>`<option value="${v}"${((q.vs||{})[k]||"open")===v?" selected":""}>${n}</option>`).join("")}</select></div>`).join("")}</div>
+<div class="zone">Лестница на веранду</div><div class="row">${[["l","← слева"],["f","↓ спереди"],["r","→ справа"]].map(([k,t])=>c("pst",k,t,!!(q.vst||{f:1})[k])).join("")}</div>`:""}`}
+function pPorchBind(pn,o,i){const ed=f=>{pHist();f(pDoorsW(o)[i]);pSave();pDraw();pPanel()};
+pn.querySelectorAll("[data-pp]").forEach(b=>b.onclick=()=>ed(q=>{if(b.dataset.pp)q.porch=b.dataset.pp;else delete q.porch}));
+pn.querySelectorAll("[data-pw]").forEach(b=>b.onclick=()=>ed(q=>{if(+b.dataset.pw)q.vw=+b.dataset.pw;else delete q.vw}));
+pn.querySelectorAll("[data-pdp]").forEach(b=>b.onclick=()=>ed(q=>q.vd=+b.dataset.pdp));
+pn.querySelectorAll("[data-pst]").forEach(b=>b.onclick=()=>ed(q=>{const v=q.vst=q.vst||{f:1},k=b.dataset.pst;if(v[k])delete v[k];else v[k]=1}));
+pn.querySelectorAll("[data-pvs]").forEach(x=>x.onchange=()=>{pHist();const q=pDoorsW(o)[i];(q.vs=q.vs||{})[x.dataset.pvs]=x.value;pSave()})}
 /* фронтон — только на торцах, где кончается конёк */
 const pGEnd=(o,k)=>{const d=o.d3||{};if(d.roof==="shed"){const sp=d.slope||(o.w>=o.h?"s":"e");return k!==sp}  /* боковины и высокая стена; низкая сторона — без места */
 const rl=(d.ridge==="short")!==(o.w>=o.h);return rl?k==="e"||k==="w":k==="s"||k==="n"};
@@ -1346,9 +1360,14 @@ if(m==="add"){PS.pal=!PS.pal;PS.tool="move";if(sh)sh.classList.toggle("min",!PS.
 pDraw();pPanel()}
 function pPanel(){const pn=$("pn");if(!pn)return;pModes();const chip=(id,t,on,cls)=>`<button class="${on?"t":"n"}${cls?" "+cls:""}" id="${id}" aria-pressed="${!!on}">${t}</button>`;
 let h="";
-if(PS.doorO){const o=pO(PS.doorO);if(!o){PS.doorO=null;return pPanel()}const n=pDoors(o).length;
-pn.innerHTML=`<div class="prow"><span style="flex:1">🚪 Стена — вход, вход — убрать</span><button class="n pi" id="dox" aria-label="Готово">✓</button></div>
-<p class="note" style="margin:0">«${esc(o.n)}»: входов ${n}. Нажми на стену — там появится вход, на вход — он исчезнет. Первый — главный: у него крыльцо, веранда или козырёк.</p>`;$("sh").scrollTop=0;$("dox").onclick=()=>{PS.doorO=null;pDraw();pPanel()};return}
+if(PS.doorO){const o=pO(PS.doorO);if(!o){PS.doorO=null;return pPanel()}const D=pDoors(o),n=D.length,di=PS.doorI!=null&&D[PS.doorI]?PS.doorI:null;
+pn.innerHTML=di==null?`<div class="prow"><span style="flex:1">🚪 Стена — новый вход, вход — его настройки</span><button class="n pi" id="dox" aria-label="Готово">✓</button></div>
+<p class="note" style="margin:0">«${esc(o.n)}»: входов ${n}. Нажми на стену — там появится вход. Нажми на вход — откроются его настройки: козырёк или своя веранда.</p>`
+:`<div class="prow"><span style="flex:1">🚪 Вход ${di+1}${di===0?" · главный":""} · ${esc(pSideNm(o.d3||{},D[di].k))}</span><button class="n" id="ddel">Убрать</button><button class="n pi" id="dox" aria-label="Готово">✓</button></div>
+<div class="zone">У входа</div>${pPorchUI(o,di)}${di?`<button class="n" id="dmain" style="align-self:flex-start">Сделать главным</button>`:""}`;
+$("sh").scrollTop=0;$("dox").onclick=()=>{if(di!=null){PS.doorI=null;pDraw();return pPanel()}PS.doorO=null;pDraw();pPanel()};
+if(di!=null){pPorchBind(pn,o,di);$("ddel").onclick=()=>{pHist();pDoorsW(o).splice(di,1);PS.doorI=null;pSave();pDraw();pPanel()};
+if($("dmain"))$("dmain").onclick=()=>{pHist();const W=pDoorsW(o);W.unshift(W.splice(di,1)[0]);PS.doorI=0;pSave();pDraw();pPanel()}}return}
 if(PS.place!=null){const x=PS.place==="new"?null:seeds[PS.place];h=`<div class="prow"><span style="flex:1">🌱 ${x?"Нажми, куда пересадить":"Нажми на место — посадишь там"}</span><button class="n" id="pcx">Отмена</button></div>${x?`<p class="note" style="margin:0">«${esc(x.r.slice(0,80))}»</p>`:""}<p class="note" style="margin:0">Можно прямо на грядку, печь или дерево.</p>`;
 pn.innerHTML=h;$("pcx").onclick=()=>{PS.place=null;pPanel()};return}
 if(PS.pal){h=`<div class="row" style="justify-content:space-between;align-items:center"><h2>${PS.rect?"Что ты начертил?":"Добавить на участок"}</h2><button class="n" id="pcx">Отмена</button></div>
