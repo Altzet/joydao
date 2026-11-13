@@ -1071,6 +1071,10 @@ if(ax)sl.rotation.x=sp==="s"?th:-th;else sl.rotation.z=sp==="e"?-th:th;g.add(sl)
 const hi=(sp==="s"||sp==="e")?-1:1,tg=new T.ShapeGeometry(new T.Shape([new T.Vector2(-span/2,0),new T.Vector2(span/2,0),new T.Vector2(hi*span/2,rh)])),
 wm=TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),span,rh,{side:T.DoubleSide});
 [1,-1].forEach(q=>{const t2=mesh(tg,wm,ax?q*o.w/2:0,wh,ax?0:q*o.h/2,0);if(ax)t2.rotation.y=-Math.PI/2;g.add(t2)});
+/* высокая стена под скатом — заложена стеной, в ней тоже могут быть окна */
+const HS=POPP[sp],[hfx,hfz]=PV[HS],hl=hfx?o.h:o.w;g.add(mesh(hfx?new T.BoxGeometry(.12,rh,hl):new T.BoxGeometry(hl,rh,.12),TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),hl,rh),hfx*(o.w/2-.06),wh+rh/2,hfz*(o.h/2-.06),0));
+{const n=(((d.wg||{}).g)||{})[HS]||0,wh2=Math.min(.8,rh*.6);if(n&&wh2>=.25)for(let i=0;i<n;i++){const t=(i+1)/(n+1)*hl-hl/2,ww=Math.min(1,hl/(n+1)*.7),px=hfx?hfx*(o.w/2+.03):t,pz=hfx?t:hfz*(o.h/2+.03);
+g.add(mesh(hfx?new T.BoxGeometry(.04,wh2+.12,ww+.12):new T.BoxGeometry(ww+.12,wh2+.12,.04),M(0xF4F1EA),px,wh+rh/2,pz,0),mesh(hfx?new T.BoxGeometry(.05,wh2,ww):new T.BoxGeometry(ww,wh2,.05),M(0x35556E),px,wh+rh/2,pz,0))}}
 /* окна в боковинах под скатом: ближе к высокой стороне */
 const SW=((d.wg||{}).g)||{},fm=M(0xF4F1EA),gm=M(0x35556E);for(const[k,q]of ax?[["e",1],["w",-1]]:[["s",1],["n",-1]]){const n=SW[k]||0;if(!n)continue;
 for(let i=0;i<n;i++){const u=hi*span*(.3-i*.3/Math.max(1,n)),hu=rh*(.5+hi*u/span),wh2=Math.min(.8,hu*.55),ww=Math.min(.8,span/(n+1)*.7);if(wh2<.25)continue;
@@ -1246,7 +1250,7 @@ if(v===""||!(n>=0&&n<=20)){delete r[k];x.value=""}else r[k]=n;pSave()})}
 /* этажи для таблицы окон: полуподвал/цоколь (если есть) и 1…N */
 const PBS={none:["Нет",0],cellar:["Подвал",0],semi:["Полуподвал",1.2],plinth:["Цоколь",.6]};
 /* фронтон — только на торцах, где кончается конёк */
-const pGEnd=(o,k)=>{const d=o.d3||{};if(d.roof==="shed"){const sp=d.slope||(o.w>=o.h?"s":"e");return sp==="s"||sp==="n"?k==="e"||k==="w":k==="s"||k==="n"}
+const pGEnd=(o,k)=>{const d=o.d3||{};if(d.roof==="shed"){const sp=d.slope||(o.w>=o.h?"s":"e");return k!==sp}  /* боковины и высокая стена; низкая сторона — без места */
 const rl=(d.ridge==="short")!==(o.w>=o.h);return rl?k==="e"||k==="w":k==="s"||k==="n"};
 function pFloors(d){const n=+d.fl||1,r=[];if(d.base==="semi")r.push(["b","Полуподв."]);for(let i=1;i<=n;i++)r.push([String(i),i+" этаж"]);if(d.mans)r.push(["m","Мансарда"]);else if(["gable","mansard"].includes(d.roof||"gable"))r.push(["g","Фронтон"]);else if(d.roof==="shed")r.push(["g","Под скатом"]);return r}
 /* сколько окон по умолчанию: длинная сторона — по одному на 3 м, торец от 4 м — одно; полуподвал — по два на длинных */
