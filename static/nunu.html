@@ -1070,7 +1070,11 @@ if(ax)sl.rotation.x=sp==="s"?th:-th;else sl.rotation.z=sp==="e"?-th:th;g.add(sl)
 /* боковины под скатом — цвета стен, чтобы не было щели */
 const hi=(sp==="s"||sp==="e")?-1:1,tg=new T.ShapeGeometry(new T.Shape([new T.Vector2(-span/2,0),new T.Vector2(span/2,0),new T.Vector2(hi*span/2,rh)])),
 wm=TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),span,rh,{side:T.DoubleSide});
-[1,-1].forEach(q=>{const t2=mesh(tg,wm,ax?q*o.w/2:0,wh,ax?0:q*o.h/2,0);if(ax)t2.rotation.y=-Math.PI/2;g.add(t2)})}
+[1,-1].forEach(q=>{const t2=mesh(tg,wm,ax?q*o.w/2:0,wh,ax?0:q*o.h/2,0);if(ax)t2.rotation.y=-Math.PI/2;g.add(t2)});
+/* окна в боковинах под скатом: ближе к высокой стороне */
+const SW=((d.wg||{}).g)||{},fm=M(0xF4F1EA),gm=M(0x35556E);for(const[k,q]of ax?[["e",1],["w",-1]]:[["s",1],["n",-1]]){const n=SW[k]||0;if(!n)continue;
+for(let i=0;i<n;i++){const u=hi*span*(.3-i*.3/Math.max(1,n)),hu=rh*(.5+hi*u/span),wh2=Math.min(.8,hu*.55),ww=Math.min(.8,span/(n+1)*.7);if(wh2<.25)continue;
+const yy=wh+hu*.45,px=ax?q*(o.w/2+.03):u,pz=ax?u:q*(o.h/2+.03);g.add(mesh(ax?new T.BoxGeometry(.04,wh2+.12,ww+.12):new T.BoxGeometry(ww+.12,wh2+.12,.04),fm,px,yy,pz,0),mesh(ax?new T.BoxGeometry(.05,wh2,ww):new T.BoxGeometry(ww,wh2,.05),gm,px,yy,pz,0))}}}
 else{const hb=RB/2+.25,tri=new T.Shape(rt==="mansard"?[new T.Vector2(-hb,0),new T.Vector2(hb,0),new T.Vector2(hb-.9,rh*.68),new T.Vector2(0,rh),new T.Vector2(-hb+.9,rh*.68)]:[new T.Vector2(-hb,0),new T.Vector2(hb,0),new T.Vector2(0,rh)]),rg=new T.ExtrudeGeometry(tri,{depth:RA+.4,bevelEnabled:false});rg.translate(0,0,-(RA+.4)/2);
 const rf=mesh(rg,rc,0,wh,0);if(RL)rf.rotation.y=Math.PI/2;g.add(rf);
 /* фронтоны — цвета стен, с каймой крыши по краю */
@@ -1242,8 +1246,9 @@ if(v===""||!(n>=0&&n<=20)){delete r[k];x.value=""}else r[k]=n;pSave()})}
 /* этажи для таблицы окон: полуподвал/цоколь (если есть) и 1…N */
 const PBS={none:["Нет",0],cellar:["Подвал",0],semi:["Полуподвал",1.2],plinth:["Цоколь",.6]};
 /* фронтон — только на торцах, где кончается конёк */
-const pGEnd=(o,k)=>{const rl=((o.d3||{}).ridge==="short")!==(o.w>=o.h);return rl?k==="e"||k==="w":k==="s"||k==="n"};
-function pFloors(d){const n=+d.fl||1,r=[];if(d.base==="semi")r.push(["b","Полуподв."]);for(let i=1;i<=n;i++)r.push([String(i),i+" этаж"]);if(d.mans)r.push(["m","Мансарда"]);else if(["gable","mansard"].includes(d.roof||"gable"))r.push(["g","Фронтон"]);return r}
+const pGEnd=(o,k)=>{const d=o.d3||{};if(d.roof==="shed"){const sp=d.slope||(o.w>=o.h?"s":"e");return sp==="s"||sp==="n"?k==="e"||k==="w":k==="s"||k==="n"}
+const rl=(d.ridge==="short")!==(o.w>=o.h);return rl?k==="e"||k==="w":k==="s"||k==="n"};
+function pFloors(d){const n=+d.fl||1,r=[];if(d.base==="semi")r.push(["b","Полуподв."]);for(let i=1;i<=n;i++)r.push([String(i),i+" этаж"]);if(d.mans)r.push(["m","Мансарда"]);else if(["gable","mansard"].includes(d.roof||"gable"))r.push(["g","Фронтон"]);else if(d.roof==="shed")r.push(["g","Под скатом"]);return r}
 /* сколько окон по умолчанию: длинная сторона — по одному на 3 м, торец от 4 м — одно; полуподвал — по два на длинных */
 function pAutoWin(o,f,k){const L=o.w>=o.h,side=(k==="s"||k==="n")?o.w:o.h,long=(k==="s"||k==="n")===L,d=o.d3||{};if(d.win!=null&&long&&f!=="b")return d.win;
 if(f==="b")return long?Math.min(3,Math.max(1,Math.floor(side/4))):0;
