@@ -793,7 +793,7 @@ const PB={"дом":"house","беседка":"gazebo","печь":"oven","сара
 PT={"Тёплая":"warmbed","Высокая":"raised","Теплица":"greenhouse","Дерево":"tree","Кусты":"bush"};
 /* строка анкеты → объект: размер, высота, поворот, место по двум отступам (сдвигаем, только если разошлось больше чем на 6 см) */
 function pFromRow(o,r,t){let w=pnum(r.l),h=pnum(r.w);if(t==="beds"){const s=String(r.size||"").split(/[×xх*]/).map(pnum);w=s[0];h=s[1]??s[0]}
-const c=pK(o)[2]==="c";if(w>0&&h>0){o.w=c?Math.max(w,h):w;o.h=c?Math.max(w,h):h}if(pnum(r.h)!=null)o.hh=pnum(r.h);if(r.what)o.n=r.what;
+const c=pK(o)[2]==="c";if(w>0&&h>0){o.w=c?Math.max(w,h):w;o.h=c?Math.max(w,h):h}if(pnum(r.h)!=null)o.hh=pnum(r.h);if(r.what)o.n=r.what;if(r.plan==="План")o.plan=1;else if(r.plan==="Есть")delete o.plan;
 const n=pN();o.s1=+r.s1>=1&&+r.s1<=n?+r.s1:o.s1||1;o.s2=+r.s2>=1&&+r.s2<=n?+r.s2:o.s2||n;if(pnum(r.rot)!=null&&!c)o.rot=pNorm(pSideAng(o.s1)+pnum(r.rot));
 const d1=pnum(r.o1),d2=pnum(r.o2);if(d1!=null&&d2!=null&&(Math.abs(pOffs(o,o.s1)-d1)>.06||Math.abs(pOffs(o,o.s2)-d2)>.06))pPlace(o,o.s1,d1,o.s2,d2)}
 function pSync(){pMig();const m=pM();[["build"],["beds"]].forEach(([t])=>(plot[t]||[]).forEach(r=>{const ex=r.oid&&pO(r.oid);if(ex)return pFromRow(ex,r,t);if(r.oid)return;let w=pnum(r.l),h=pnum(r.w);
@@ -811,7 +811,7 @@ if(s&&["a","b","c","d","diag","shape"].some(k=>k in s)){["a","b","c","d","diag",
 if(ch){pGateTxt();savePlot()}}
 function pRow(o){for(const t of["build","beds"]){const r=(plot[t]||[]).find(r=>r.oid===o.id);if(r)return[t,r]}return[]}
 function pBack(o){const[t,r]=pRow(o);if(!r||o.pts)return;const n=pN(),s1=o.s1||1,s2=o.s2||n;Object.assign(r,{s1:String(s1),o1:pm1(pOffs(o,s1)),s2:String(s2),o2:pm1(pOffs(o,s2))});
-if(pK(o)[2]!=="c")r.rot=pm1(pNorm((o.rot||0)-pSideAng(s1)));r.h=pm1(o.hh||0);r.what=o.n;if(t==="build"){r.l=pm1(o.w);r.w=pm1(o.h)}else r.size=pm1(o.w)+" × "+pm1(o.h)}
+if(pK(o)[2]!=="c")r.rot=pm1(pNorm((o.rot||0)-pSideAng(s1)));r.h=pm1(o.hh||0);r.what=o.n;if(t==="beds")r.plan=o.plan?"План":"Есть";if(t==="build"){r.l=pm1(o.w);r.w=pm1(o.h)}else r.size=pm1(o.w)+" × "+pm1(o.h)}
 function pLink(o){const g=pK(o)[7];if(o.pts||!"bgt".includes(g))return;const t=g==="b"?"build":"beds",rows=plot[t]||(plot[t]=[]),
 r={what:o.n,oid:o.id};if(t==="beds")r.type=({warmbed:"Тёплая",raised:"Высокая",tree:"Дерево",fruit:"Дерево",bush:"Кусты"})[o.k]||"Обычная";
 rows.push(r);pBack(o)}
@@ -856,7 +856,7 @@ if(K[8]==="glass"||K[8]==="solar"){const n=Math.max(1,Math.round((L?w:h)/(K[8]==
 if((K[8]==="house"||K[8]==="roof")&&o.d3&&o.d3.door){const dr=o.d3.door,dw=Math.min(.9,(dr==="s"||dr==="n"?w:h)*.4);g+=dr==="s"||dr==="n"?`<line x1="${cx-dw/2}" y1="${dr==="s"?y+h:y}" x2="${cx+dw/2}" y2="${dr==="s"?y+h:y}" stroke="#fff" stroke-width="5"${ve}/>`:`<line x1="${dr==="e"?x+w:x}" y1="${cy-dw/2}" x2="${dr==="e"?x+w:x}" y2="${cy+dw/2}" stroke="#fff" stroke-width="5"${ve}/>`}
 if(K[8]==="oven")g+=`<rect x="${x+w*.3}" y="${y+h*.3}" width="${w*.4}" height="${h*.4}" rx="${w*.2}" fill="#3B1A0E" fill-opacity=".55"/>`;
 if(o.rot)g=`<g transform="rotate(${o.rot} ${cx} ${cy})">${g}</g>`}
-return`<g data-o="${o.id}">${g}<g class="fix" data-lw="${Math.min(w,h*1.6)}" style="transform:translate(${cx}px,${cy}px) scale(var(--s))"><text class="em">${K[1]}</text><text class="lb" y="20">${esc(o.n)}</text></g></g>`}
+return`<g data-o="${o.id}"${o.plan?' opacity=".5"':""}>${g}<g class="fix" data-lw="${Math.min(w,h*1.6)}" style="transform:translate(${cx}px,${cy}px) scale(var(--s))"><text class="em">${K[1]}</text><text class="lb" y="20">${esc(o.n)}</text></g></g>`}
 /* семя на карте: в земле — бугорок с ростком, пора — капля, так и сделал — цветок, иначе — свой росток */
 function pSeedSvg(x,k){const p=pSeedPos(x);if(!p)return"";const L=x.life,due=pDue(x);
 const ic=L?L.same?`<circle r="5" cy="-14" fill="#E0709A"/><circle r="5" cx="-6" cy="-9" fill="#E0709A"/><circle r="5" cx="6" cy="-9" fill="#E0709A"/><circle r="5" cx="-4" cy="-2" fill="#E0709A"/><circle r="5" cx="4" cy="-2" fill="#E0709A"/><circle r="3.5" cy="-7" fill="#F7D46A"/>`
@@ -1048,28 +1048,37 @@ let cr;if(shp==="cone"||shp==="narrow")cr=mesh(new T.ConeGeometry(o.w/2*(shp==="
 else{cr=mesh(new T.SphereGeometry(o.w/2,16,12),cm,0,tr+ch/2,0);cr.scale.y=Math.max(.4,ch/o.w)*(shp==="tall"?1.15:shp==="pine"?.7:1);if(shp==="wide")cr.scale.x=cr.scale.z=1.15}
 if(op<.5)cr.castShadow=false;g.add(cr)}
 else if(K[2]==="c"){g.add(mesh(new T.CylinderGeometry(o.w/2,o.w/2,hh,20),M(col),0,hh/2,0));if(hh>.5&&o.fix)block.push({x:cx,z:cz,r:o.w/2+.3})}
-else if(kind==="house"||kind==="roof"){const d=o.d3||{},fl=+d.fl||0,L=o.w>=o.h,a=L?o.w:o.h,b=L?o.h:o.w,rt=d.roof||"gable",wh=fl?fl*2.7:Math.max(1.8,hh*.62),
-rh=hh>wh+.3?hh-wh:rt==="flat"?.25:rt==="shed"?1:Math.max(1.2,b*.35),rc=M(d.rc||(kind==="house"?"#9C4A35":"#7A5530"));
+else if(kind==="house"||kind==="roof"){const d=o.d3||{},fl=+d.fl||0,L=o.w>=o.h,a=L?o.w:o.h,b=L?o.h:o.w,rt=d.roof||"gable",bh=(PBS[d.base]||PBS.none)[1],wh=fl?fl*2.7:Math.max(1.8,hh*.62),
+rh=hh>bh+wh+.3?hh-bh-wh:rt==="flat"?.25:rt==="shed"?1:Math.max(1.2,b*.35),rc=M(d.rc||(kind==="house"?"#9C4A35":"#7A5530"));
+if(bh)g.add(mesh(new T.BoxGeometry(o.w+.08,bh,o.h+.08),TM("blok","#8C8A84",a,bh),0,bh/2,0));const hg=new T.Group();hg.position.y=bh;g.add(hg);const gadd=g.add.bind(g);g.add=(...k)=>hg.add(...k);
 g.add(mesh(new T.BoxGeometry(o.w,wh,o.h),TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),a,wh),0,wh/2,0));
 if(rt==="hip"){const cg=new T.ConeGeometry(Math.SQRT1_2,1,4,1);cg.rotateY(Math.PI/4);const k=mesh(cg,rc,0,wh+rh/2,0);k.scale.set(o.w+.5,rh,o.h+.5);g.add(k)}
 else if(rt==="flat")g.add(mesh(new T.BoxGeometry(o.w+.3,.25,o.h+.3),rc,0,wh+.12,0));
 else if(rt==="shed"){const sg=new T.Group(),sl=mesh(new T.BoxGeometry(a+.4,.12,Math.hypot(b,rh)+.3),rc,0,0,0);sl.rotation.x=Math.atan2(rh,b);sg.add(sl);if(!L)sg.rotation.y=Math.PI/2;sg.position.y=wh+rh/2;g.add(sg)}
 else{const tri=new T.Shape([new T.Vector2(-b/2-.25,0),new T.Vector2(b/2+.25,0),new T.Vector2(0,rh)]),rg=new T.ExtrudeGeometry(tri,{depth:a+.4,bevelEnabled:false});rg.translate(0,0,-(a+.4)/2);
 const rf=mesh(rg,rc,0,wh,0);if(L)rf.rotation.y=Math.PI/2;g.add(rf)}
-/* окна: на длинных сторонах по d.win (или по одному на 3 м), на торцах — одно, если торец от 4 м; по этажам */
-const nf=fl||Math.max(1,Math.round(wh/2.7)),nw=d.win??Math.max(1,Math.floor(a/3)),fm=M(0xF4F1EA),gm=M(0x35556E),win=(x,y,z,side)=>{const w1=side?[.04,1.2,1]:[1,1.2,.04],w2=side?[.05,1.05,.85]:[.85,1.05,.05];
-g.add(mesh(new T.BoxGeometry(...w1),fm,x,y,z,0),mesh(new T.BoxGeometry(...w2),gm,x,y,z,0))};
-if(kind==="house"||d.win)for(let f2=0;f2<nf;f2++){const y=f2*2.7+Math.min(1.45,wh*.55);for(let i=0;i<nw;i++){const t=(i+1)/(nw+1)*a-a/2;if(L){win(t,y,o.h/2+.02,0);win(t,y,-o.h/2-.02,0)}else{win(o.w/2+.02,y,t,1);win(-o.w/2-.02,y,t,1)}}
-if(b>=4){if(L){win(o.w/2+.02,y,0,1);win(-o.w/2-.02,y,0,1)}else{win(0,y,o.h/2+.02,0);win(0,y,-o.h/2-.02,0)}}}
-const dr=d.door||(L?"s":"e"),dz=dr==="s"?o.h/2+.04:dr==="n"?-o.h/2-.04:0,dx=dr==="e"?o.w/2+.04:dr==="w"?-o.w/2-.04:0,dh=Math.min(2.05,wh*.85);
-g.add(mesh(dx?new T.BoxGeometry(.06,dh,.95):new T.BoxGeometry(.95,dh,.06),M(0x5A3A22),dx,dh/2,dz,0));block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
+/* окна по сторонам и этажам (таблица в паспорте, иначе авто); на стороне с дверью окна первого этажа обходят середину */
+const dr=d.door||(L?"s":"e"),fm=M(0xF4F1EA),gm=M(0x35556E),FACE={s:[0,1],n:[0,-1],e:[1,0],w:[-1,0]};
+const win=(k,t,y,ww,wh2)=>{const[fx,fz]=FACE[k],x=fx?fx*(o.w/2+.02):t,z=fz?fz*(o.h/2+.02):t,sd=!!fx;g.add(mesh(new T.BoxGeometry(sd?.04:ww+.15,wh2+.15,sd?ww+.15:.04),fm,x,y,z,0),mesh(new T.BoxGeometry(sd?.05:ww,wh2,sd?ww:.05),gm,x,y,z,0))};
+if(kind==="house"||d.wg||d.win!=null)for(const[f2]of pFloors(d)){const bsm=f2==="b";for(const k of["s","n","w","e"]){const n=((d.wg||{})[f2]||{})[k]??pAutoWin(o,f2,k);if(!n)continue;
+const len=(k==="s"||k==="n")?o.w:o.h,skip=k===dr&&f2==="1",slots=n+(skip?1:0),mid=Math.floor(slots/2);let j=0;
+for(let i=0;i<slots;i++){if(skip&&i===mid)continue;if(j++>=n)break;const t=(i+1)/(slots+1)*len-len/2;
+if(bsm){const y=-bh*.45;g.add(...[]);hg.add(mesh(new T.BoxGeometry((k==="e"||k==="w")?.05:.8,.4,(k==="e"||k==="w")?.8:.05),gm,FACE[k][0]?FACE[k][0]*(o.w/2+.06):t,y,FACE[k][1]?FACE[k][1]*(o.h/2+.06):t,0))}
+else win(k,t,(+f2-1)*2.7+Math.min(1.45,wh*.55),1,1.2)}}}
+const dz=dr==="s"?o.h/2+.04:dr==="n"?-o.h/2-.04:0,dx=dr==="e"?o.w/2+.04:dr==="w"?-o.w/2-.04:0,dh=Math.min(2.05,wh*.85);
+g.add(mesh(dx?new T.BoxGeometry(.06,dh,.95):new T.BoxGeometry(.95,dh,.06),M(0x5A3A22),dx,dh/2,dz,0));
+if(bh>.15){const ns=Math.ceil(bh/.18);for(let i=0;i<ns;i++){const dep=.3*(ns-i),sy=(i+.5)*bh/ns-bh,ox=dx?Math.sign(dx)*(o.w/2+dep/2):0,oz=dz?Math.sign(dz)*(o.h/2+dep/2):0;
+g.add(mesh(dx?new T.BoxGeometry(dep,bh/ns,1.3):new T.BoxGeometry(1.3,bh/ns,dep),M(0x9A968E),ox,sy,oz))}}  /* крыльцо: ступени по 18 см */
+g.add=gadd;block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
 else if(kind==="glass"){g.add(mesh(new T.BoxGeometry(o.w,hh,o.h),M(0xD5ECF1,{transparent:true,opacity:.45}),0,hh/2,0,0));block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
 else if(kind==="solar"){const k=mesh(new T.BoxGeometry(o.w,.05,o.h),M(0x2B3F70),0,hh*.6,0);k.rotation.x=-.6;g.add(k,mesh(new T.BoxGeometry(.06,hh*.6,.06),M(0x555555),0,hh*.3,0))}
 else if(kind==="bed"){g.add(mesh(new T.BoxGeometry(o.w,hh,o.h),M(0x6E5236),0,hh/2,0));const n=Math.max(1,Math.floor(Math.min(o.w,o.h)/.4)),L=o.w>=o.h;
 for(let i=1;i<=n;i++){const t=(i/(n+1)-.5)*(L?o.h:o.w),k=mesh(new T.BoxGeometry(L?o.w*.92:.18,.18,L?.18:o.h*.92),M(0x6FAE4A),L?0:t,hh+.09,L?t:0);g.add(k)}}
 else if(kind==="oven"){g.add(mesh(new T.BoxGeometry(o.w,hh*.75,o.h),M(col),0,hh*.375,0),mesh(new T.BoxGeometry(.35,hh*.6,.35),M(0x6B2E1A),o.w*.25,hh*.75+hh*.3,o.h*.25));block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
 else{g.add(mesh(new T.BoxGeometry(o.w,hh,o.h),M(col),0,hh/2,0));if(o.fix&&hh>=1)block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
-g.traverse(k=>{if(k.isMesh)k.userData.o=o});pick.push(...g.children);S.add(g);lab(K[1]+" "+o.n,cx,hh+.7,cz)}
+if(o.plan)g.traverse(k=>{if(k.isMesh){k.material=k.material.clone();Object.assign(k.material,{transparent:true,opacity:.38,depthWrite:false});k.material.color.lerp(new T.Color(0xBFDFFF),.5);k.castShadow=false}});  /* задумка — призрак */
+if(o.plan)block.splice(0,block.length,...block.filter(b=>!(Math.abs(b.x-cx)<.01&&Math.abs(b.z-cz)<.01)));
+g.traverse(k=>{if(k.isMesh){k.userData.o=o;pick.push(k)}});S.add(g);lab((o.plan?"💭 ":"")+K[1]+" "+o.n,cx,hh+.7+((PBS[(o.d3||{}).base]||[0,0])[1]||0),cz)}
 /* семена: росток, капля — пора, цветок — так и сделал */
 seeds.forEach((x,k)=>{const p=pSeedPos(x);if(!p)return;const L=x.life,g=new T.Group();g.position.set(p[0],0,p[1]);
 g.add(mesh(new T.CylinderGeometry(.02,.03,.45,6),M(0x3B6D2B),0,.22,0));const top=mesh(L&&L.same?new T.SphereGeometry(.14,10,8):new T.ConeGeometry(.12,.25,8),M(L&&L.same?0xE0709A:L?0x8FB86A:0x2E9A73),0,.5,0);g.add(top);
@@ -1126,14 +1135,24 @@ if(K[8]==="house"||K[8]==="roof")return`<button class="n" id="d3t" aria-expanded
 <div class="zone">Цвет крыши</div><div class="row">${PRC.map(c=>sw("rc",c)).join("")}</div>
 <div class="zone">Стены</div><div class="row">${Object.entries(PWM).map(([k,t])=>ch("mat",k,t,d.mat===k)).join("")}</div>
 <div class="zone">Цвет стен</div><div class="row">${PWC.map(c=>sw("wc",c)).join("")}</div>
-<div class="pgrid"><div class="pf"><label class="zone" for="d3w">Окон на длинной стороне (на этаж)</label><input id="d3w" inputmode="numeric" maxlength="2" value="${d.win??""}" placeholder="авто"></div></div>
+<div class="zone">Под домом</div><div class="row">${Object.entries(PBS).map(([k,v])=>ch("base",k,v[0],(d.base||"none")===k)).join("")}</div>
+<div class="zone">Окна по сторонам — как на карте; пусто = авто</div>
+<div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px;align-items:center">${["","s","n","w","e"].map(k=>`<span class="note" style="text-align:center">${k?PDR[k].split(" ")[0]:""}</span>`).join("")}
+${pFloors(d).map(f=>`<span class="note">${f[1]}</span>`+["s","n","w","e"].map(k=>`<input data-wg="${f[0]}.${k}" inputmode="numeric" maxlength="2" aria-label="${f[1]}, ${PDR[k]}" value="${((d.wg||{})[f[0]]||{})[k]??""}" placeholder="${pAutoWin(o,f[0],k)}" style="min-width:0;text-align:center;padding-left:4px;padding-right:4px">`).join("")).join("")}</div>
 <div class="zone">Дверь — как на карте</div><div class="row">${Object.entries(PDR).map(([k,t])=>ch("door",k,t,(d.door||"s")===k)).join("")}</div>`:""}`;
 if(K[8]==="tree"||K[8]==="bush")return`<button class="n" id="d3t" aria-expanded="${!!PS.d3}" style="align-self:flex-start">🎨 Порода (для 3D) ${PS.d3?"▴":"▾"}</button>${PS.d3?`
 <div class="row">${Object.entries(PSP).map(([k,v])=>ch("sp",k,v[0],d.sp===k)).join("")}</div><p class="note" style="margin:0">Листва в 3D меняется по сезону: весной плодовые цветут, осенью желтеют, зимой голые ветки.</p>`:""}`;
 return""}
 function pD3Bind(pn,o){if($("d3t"))$("d3t").onclick=()=>{PS.d3=!PS.d3;pPanel()};
 pn.querySelectorAll("[data-d3]").forEach(b=>b.onclick=()=>{pHist();const d=o.d3=o.d3||{},k=b.dataset.d3,v=b.dataset.v;d[k]=k==="fl"?+v:v;pSave();pDraw();pPanel()});
-if($("d3w"))$("d3w").onchange=()=>{const v=$("d3w").value.trim(),n=parseInt(v);pHist();o.d3=o.d3||{};if(v===""||!(n>=0&&n<=20))delete o.d3.win;else o.d3.win=n;pSave()}}
+pn.querySelectorAll("[data-wg]").forEach(x=>x.onchange=()=>{const[f,k]=x.dataset.wg.split("."),v=x.value.trim(),n=parseInt(v);pHist();const d=o.d3=o.d3||{},g=d.wg=d.wg||{},r=g[f]=g[f]||{};
+if(v===""||!(n>=0&&n<=20)){delete r[k];x.value=""}else r[k]=n;pSave()})}
+/* этажи для таблицы окон: полуподвал/цоколь (если есть) и 1…N */
+const PBS={none:["Нет",0],cellar:["Подвал",0],semi:["Полуподвал",1.2],plinth:["Цоколь",.6]};
+function pFloors(d){const n=+d.fl||1,r=[];if(d.base==="semi")r.push(["b","Полуподв."]);for(let i=1;i<=n;i++)r.push([String(i),i+" этаж"]);return r}
+/* сколько окон по умолчанию: длинная сторона — по одному на 3 м, торец от 4 м — одно; полуподвал — по два на длинных */
+function pAutoWin(o,f,k){const L=o.w>=o.h,side=(k==="s"||k==="n")?o.w:o.h,long=(k==="s"||k==="n")===L,d=o.d3||{};if(d.win!=null&&long&&f!=="b")return d.win;
+if(f==="b")return long?Math.min(3,Math.max(1,Math.floor(side/4))):0;return long?Math.max(1,Math.floor(side/3)):side>=4?1:0}
 /* ---------- нижняя карточка ---------- */
 /* режимы — кнопками на карте; карточка внизу свёрнута до одной строки: что происходит и главное действие */
 const PMODE=[["move","✋","Двигать и выбирать"],["corners","📐","Углы участка: тяни точки"],["plant","🌱","Посадить: нажми на место"],["add","＋","Добавить объект"],["rect","▭","Чертить рамку"],["line","╱","Линия: дорожка, забор, труба"],["measure","📏","Рулетка"]];
@@ -1235,6 +1254,7 @@ h=`<div class="row" style="align-items:center;flex-wrap:nowrap"><span style="fon
 <div class="pgrid">${o.pts?`<div class="pf"><span class="zone">Длина</span><b style="font-weight:500">${pm1(pLen(o.pts))} м</b></div>${o.k==="path"?fld("olw","Ширина, м",o.lw):""}`:
 (c?fld("ow","Диаметр, м",o.w):fld("ow","Длина, м",o.w)+fld("oh","Ширина, м",o.h))+[1,2].map(j=>{const si=j===1?o.s1||1:o.s2||pN();return`<div class="pf"><label class="zone" for="os${j}">Отступ ${j} от стороны</label><select id="os${j}">${[...Array(pN())].map((_,i)=>`<option${i+1===si?" selected":""}>${i+1}</option>`).join("")}</select></div>`+fld("oo"+j,"Отступ "+j+", м",pOffs(o,si))}).join("")+(c?"":fld("orr","Поворот, °",pNorm((o.rot||0)-pSideAng(o.s1||1)),"0 — вдоль стороны отступа 1"))}${o.pts&&o.k!=="fence"?"":fld("ohh","Высота, м",o.hh,"для тени")}</div>
 <div class="row">${chip("ofx","🔒 Стационарное",o.fix)}${chip("omb","⇄ Переносное",!o.fix)}</div>
+<div class="row">${chip("ohv","✅ Есть",!o.plan)}${chip("opl","💭 Задумка",o.plan)}</div>
 <div class="row"><span class="note" style="align-self:center">Тяни, чтобы переставить</span>
 ${o.pts?"":`<button class="n" id="orot">↻ 90°</button>`}<button class="n" id="odup">Копия</button><button class="n" id="odel">Удалить</button></div>
 <button class="main-btn" id="osd">🌱 Посадить намерение ${o.pts?"здесь":"у: "+esc(o.n)}</button>${o.pts?"":pD3Panel(o)}${here?`<p class="note" style="margin:0">Здесь уже ${here} ${pl(here,["семя","семени","семян"])}.</p>`:""}`;
@@ -1248,6 +1268,7 @@ e.onchange=()=>{const v=pnum(e.value),er=pn.querySelector(`[data-e="oo${j}"]`),s
 pHist();const ok=pPlace(o,s1,j===1?v:pOffs(o,s1),s2,j===2?v:pOffs(o,s2));er.textContent=ok?"":"Стороны отступов параллельны — выбери соседние";if(!ok){PS.hist.pop();return}pBack(o);pSave();pDraw()}});
 if($("orr"))$("orr").onchange=()=>{const v=pnum($("orr").value),er=pn.querySelector('[data-e="orr"]');if(v==null){er.textContent="Число градусов, например 15";return}
 pHist();const s1=o.s1||1,s2=o.s2||pN(),d1=pOffs(o,s1),d2=pOffs(o,s2);o.rot=pNorm(pSideAng(s1)+v);pPlace(o,s1,d1,s2,d2);pBack(o);pSave();pDraw();pPanel()};
+$("ohv").onclick=()=>{pHist();delete o.plan;pSave();pDraw();pPanel()};$("opl").onclick=()=>{pHist();o.plan=1;pSave();pDraw();pPanel()};
 $("ofx").onclick=()=>{pHist();o.fix=1;PS.unlock=false;pSave();pDraw();pPanel()};$("omb").onclick=()=>{pHist();o.fix=0;pSave();pDraw();pPanel()};
 if($("omv"))$("omv").onclick=()=>{PS.unlock=!PS.unlock;pPanel()};
 if($("orot"))$("orot").onclick=()=>{pHist();const cx=o.x+o.w/2,cy=o.y+o.h/2;[o.w,o.h]=[o.h,o.w];o.x=psnap(cx-o.w/2);o.y=psnap(cy-o.h/2);pBack(o);pSave();pDraw();pPanel()};
