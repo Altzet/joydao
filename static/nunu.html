@@ -1113,7 +1113,12 @@ for(let i=0;i<n;i++){const t=(i+1)/(n+1)*span-span/2;rg3.add(mesh(new T.BoxGeome
 /* труба, водостоки, балкон, козырёк или веранда */
 const sideAt=k=>{const[fx,fz]=FACE[k];return{fx,fz,len:fx?o.h:o.w,off:fx?o.w/2:o.h/2}},slab=(k,dep,wd,y,th,m)=>{const S2=sideAt(k);g.add(mesh(S2.fx?new T.BoxGeometry(dep,th,wd):new T.BoxGeometry(wd,th,dep),m,S2.fx*(S2.off+dep/2),y,S2.fz*(S2.off+dep/2)))};
 if(d.chim){const ch=rh+.7;g.add(mesh(new T.BoxGeometry(.5,ch,.5),TM("kirp","#93472F",.5,ch),RL?RA*.22:0,wh+ch/2,RL?0:RA*.22))}
-if(d.gut){const gm2=M(0x8A8F94);[1,-1].forEach(sg=>g.add(mesh(RL?new T.BoxGeometry(RA+.4,.12,.12):new T.BoxGeometry(.12,.12,RA+.4),gm2,RL?0:sg*(o.w/2+.3),wh-.05,RL?sg*(o.h/2+.3):0,0)));
+if(d.gut&&rt==="shed"){const gm2=M(0x8A8F94),sp=d.slope||(L?"s":"e"),[nx,nz]=PV[sp],len=nx?o.h:o.w,off=(nx?o.w:o.h)/2+.22,y=wh-.06;  /* односкатная: жёлоб только под низким краем */
+g.add(mesh(nx?new T.BoxGeometry(.12,.12,len+.3):new T.BoxGeometry(len+.3,.12,.12),gm2,nx*off,y,nz*off,0));
+const wt=pM().objs.filter(q=>pK(q)[8]==="water"&&!q.pts).sort((p1,p2)=>Math.hypot(p1.x-o.x,p1.y-o.y)-Math.hypot(p2.x-o.x,p2.y-o.y))[0],ra=-(o.rot||0)*Math.PI/180;
+let side=1;if(wt){const vx=wt.x+wt.w/2-cx,vz=wt.y+wt.h/2-cz,lx=vx*Math.cos(ra)-vz*Math.sin(ra),lz=vx*Math.sin(ra)+vz*Math.cos(ra);side=Math.sign(nx?lz:lx)||1}
+const ph=y+bh,px=nx?nx*off:side*(len/2+.05),pz=nx?side*(len/2+.05):nz*off;g.add(mesh(new T.CylinderGeometry(.05,.05,ph,8),gm2,px,y-ph/2,pz,0))}
+else if(d.gut){const gm2=M(0x8A8F94);[1,-1].forEach(sg=>g.add(mesh(RL?new T.BoxGeometry(RA+.4,.12,.12):new T.BoxGeometry(.12,.12,RA+.4),gm2,RL?0:sg*(o.w/2+.3),wh-.05,RL?sg*(o.h/2+.3):0,0)));
 const wt=pM().objs.filter(q=>pK(q)[8]==="water"&&!q.pts).sort((p1,p2)=>Math.hypot(p1.x-o.x,p1.y-o.y)-Math.hypot(p2.x-o.x,p2.y-o.y))[0],ra=-(o.rot||0)*Math.PI/180;
 let sx=1,sz=1;if(wt){const vx=wt.x+wt.w/2-cx,vz=wt.y+wt.h/2-cz,lx=vx*Math.cos(ra)-vz*Math.sin(ra),lz=vx*Math.sin(ra)+vz*Math.cos(ra);sx=Math.sign(lx)||1;sz=Math.sign(lz)||1}
 const px=sx*(o.w/2+.25),pz=sz*(o.h/2+.25),ph=wh+bh;g.add(mesh(new T.CylinderGeometry(.05,.05,ph,8),gm2,px,wh-ph/2,pz,0))}
