@@ -1078,7 +1078,7 @@ if(bsm){const y=-bh*.45;g.add(...[]);hg.add(mesh(new T.BoxGeometry((k==="e"||k==
 else win(k,t,(+f2-1)*2.7+Math.min(1.45,wh*.55),1,1.2)}}}
 const dz=dr==="s"?o.h/2+.04:dr==="n"?-o.h/2-.04:0,dx=dr==="e"?o.w/2+.04:dr==="w"?-o.w/2-.04:0,dh=Math.min(2.05,wh*.85);
 g.add(mesh(dx?new T.BoxGeometry(.06,dh,.95):new T.BoxGeometry(.95,dh,.06),M(0x5A3A22),dx,dh/2,dz,0));
-if(bh>.15){const ns=Math.ceil(bh/.18);for(let i=0;i<ns;i++){const dep=.3*(ns-i),sy=(i+.5)*bh/ns-bh,ox=dx?Math.sign(dx)*(o.w/2+dep/2):0,oz=dz?Math.sign(dz)*(o.h/2+dep/2):0;
+if(bh>.15){const ns=Math.ceil(bh/.18),vo=d.porch==="veranda"?2.6:0;for(let i=0;i<ns;i++){const dep=.3*(ns-i),sy=(i+.5)*bh/ns-bh,ox=dx?Math.sign(dx)*(o.w/2+vo+dep/2):0,oz=dz?Math.sign(dz)*(o.h/2+vo+dep/2):0;  /* с верандой ступени у её края */
 g.add(mesh(dx?new T.BoxGeometry(dep,bh/ns,1.3):new T.BoxGeometry(1.3,bh/ns,dep),M(0x9A968E),ox,sy,oz))}}  /* крыльцо: ступени по 18 см */
 /* мансарда: окна в торцах (вертикальные) и на скатах (наклонённые по крыше); считаем в осях крыши: конёк вдоль Z, при L повёрнуто как крыша */
 if(d.mans&&rt!=="flat"&&rt!=="shed"){const rg2=new T.Group();if(L)rg2.rotation.y=Math.PI/2;g.add(rg2);const hb=b/2+.25,yy=Math.min(1.3,rh*.4),
@@ -1097,7 +1097,7 @@ let sx=1,sz=1;if(wt){const vx=wt.x+wt.w/2-cx,vz=wt.y+wt.h/2-cz,lx=vx*Math.cos(ra
 const px=sx*(o.w/2+.25),pz=sz*(o.h/2+.25),ph=wh+bh;g.add(mesh(new T.CylinderGeometry(.05,.05,ph,8),gm2,px,wh-ph/2,pz,0))}
 if(d.balc&&(+d.fl||1)>1){const S2=sideAt(d.balc),wd=Math.min(3.2,S2.len*.5);slab(d.balc,1.2,wd,2.7,.15,M(0xB9B5AC));slab(d.balc,1.2,wd,3.25,.9,M(0xDDEBF2,{transparent:true,opacity:.35,depthWrite:false}))}
 if(d.porch==="canopy")slab(dr,1.1,1.8,Math.min(2.05,wh*.85)+.35,.1,rc);
-if(d.porch==="veranda"){const S2=sideAt(dr),wd=Math.min(S2.len,4.5),dp=2.6,vh=Math.min(2.6,wh);slab(dr,dp,wd,.05,.1,TM("der","#B88A5A",wd,dp));slab(dr,dp+.3,wd+.3,vh+.08,.12,rc);
+if(d.porch==="veranda"){const S2=sideAt(dr),wd=Math.min(S2.len,4.5),dp=2.6,vh=Math.min(2.6,wh);slab(dr,dp,wd,.05,.1,TM("der","#B88A5A",wd,dp));if(bh>.15)slab(dr,dp,wd,-bh/2,bh,TM("blok","#8C8A84",wd,bh));  /* настил на цоколе, не в воздухе */slab(dr,dp+.3,wd+.3,vh+.08,.12,rc);
 [[-1],[1]].forEach(([q])=>{const ox=S2.fx?S2.fx*(S2.off+dp-.1):q*(wd/2-.1),oz=S2.fz?S2.fz*(S2.off+dp-.1):q*(wd/2-.1);g.add(mesh(new T.BoxGeometry(.14,vh,.14),M(0xB88A5A),S2.fx?ox:ox,vh/2,S2.fz?oz:oz))})}
 g.add=gadd;block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
 else if(K[7]==="z"){const Z={lawn:["grass","#86C466"],gravel:["gravel","#CFC8BA"],tiles:["tile","#DCD2C2"],garden:["rows","#7A5A3A"]}[kind]||["sht",f];
