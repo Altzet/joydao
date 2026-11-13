@@ -660,12 +660,12 @@ function pSlope(cb){const s=plot.site||{},q=String(s.ll||s.map||"").trim();if(!q
 API("/slope","POST",{q}).then(r=>{const site=plot.site=plot.site||{},L=Math.max(pnum(site.a)||0,pnum(site.b)||0);site.ll=r.lat+", "+r.lon;Object.assign(site,{slopePct:r.pct,slopeAz:r.az,slopeSrc:r.src,elev:r.z});
 site.slope=r.pct<.5?`Почти ровный (≈${pm1(r.pct)} %)`:`Понижение на ${dir8(r.az)}, ≈${pm1(r.pct)} %${L?` — на ${pm1(L)} м это ≈${pm1(L*r.pct/100)} м`:""}`;savePlot();cb(r)},
 st=>cb(null,st===422?"Не нашёл координаты: нажми «Я на участке» или вставь ссылку на точку в Google Картах.":"Сервис рельефа не ответил. Попробуй позже."))}
-function plotHome(){setNav("plot");pMig();
+function plotHome(){setNav("plot");nav.back=()=>plotMap();pMig();
 app.innerHTML=`<button class="n" id="pmap" style="align-self:flex-start">← Карта участка</button><h1>Анкета участка</h1><div class="card"><p style="margin:0">Исходные данные для макета участка и учёта ресурсов. Заполняй по разделам, в любом темпе: всё сохраняется само.</p>
 <p class="note" style="margin:0">Принцип: берём столько, сколько участок даёт без истощения. Ни одно улучшение не уводит другой поток в минус.</p></div>
 <div class="card">${PF.map(([k,t,,d],i)=>{const[a,b]=pDone(k,d);return`<button class="n prow" data-s="${i}"><span style="flex:1">${esc(t)}</span><span class="tag ${b?a>=b?"open":"fog":a?"open":"fog"}">${b?a+" из "+b:a}</span></button>`}).join("")}</div>`;
 $("pmap").onclick=()=>plotMap();app.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>plotSec(+b.dataset.s))}
-function plotSec(i){setNav("plot");pMig();const[k,title,hint,d]=PF[i],v=pRows(k,d);let body;
+function plotSec(i){setNav("plot");nav.back=plotHome;pMig();const[k,title,hint,d]=PF[i],v=pRows(k,d);let body;
 if(d.f)body=`<div class="card"><div class="pgrid">${d.f.map(f=>pIn(k,f,v[f[0]])).join("")}</div></div>`+(k==="site"?pSidesCard():"");
 else if(d.l)body=`<div class="card"><div class="row"><input id="pl" maxlength="120" placeholder="Бочка под водосток у дома"><button class="main-btn" id="pla">Добавить</button></div><span class="err" id="ple"></span>
 ${v.length?v.map((t,j)=>`<div class="prow"><span style="flex:1">${esc(t)}</span><button class="t" data-sow="${j}">В сад</button><button class="n" data-del="${j}" aria-label="Убрать план">×</button></div>`).join(""):`<p class="note" style="margin:0">Пока пусто.</p>`}</div>`;
@@ -678,6 +678,7 @@ const err=id=>app.querySelector(`[data-e="${id}"]`);
 app.querySelectorAll("[data-p]").forEach(x=>x.oninput=x.onchange=()=>{const val=x.value.trim(),ok=!x.dataset.num||val===""||/^-?\d+([.,]\d+)?$/.test(val);
 err(x.id).textContent=ok?"":"Только число, например 12,5";if(ok){pSet(x.dataset.p,x.dataset.k,val);if($("pshape"))$("pshape").textContent=pShapeTxt()}});
 if($("pf-site-n"))$("pf-site-n").addEventListener("change",()=>plotSec(i));
+app.querySelectorAll('[data-p^="sides"],[data-p^="diags"],#pf-site-n').forEach(x=>{let h;x.addEventListener("focus",()=>h=pSnap());x.addEventListener("change",()=>{if(h&&h!==pSnap())pHist(h);h=pSnap()})});
 app.querySelectorAll("[data-cmp]").forEach(b=>b.onclick=()=>{const s=$(b.dataset.cmp),e=err(s.id);b.disabled=true;e.style.color="";e.textContent="";b.textContent="Держи телефон ровно…";
 compass((deg,msg)=>{b.disabled=false;b.textContent="Определить компасом";if(deg==null){e.textContent=msg;return}
 s.value=dir8(deg);pSet("site","face",s.value);pSet("site","faceDeg",Math.round(deg));e.style.color="var(--muted)";e.textContent=`${Math.round(deg)}° — ${dir8(deg)}. Сверь с компасом телефона.`})});
@@ -800,7 +801,12 @@ if(pK(o)[2]!=="c")r.rot=pm1(pNorm((o.rot||0)-pSideAng(s1)));r.h=pm1(o.hh||0);r.w
 function pLink(o){const g=pK(o)[7];if(o.pts||!"bgt".includes(g))return;const t=g==="b"?"build":"beds",rows=plot[t]||(plot[t]=[]),
 r={what:o.n,oid:o.id};if(t==="beds")r.type=({warmbed:"Тёплая",raised:"Высокая",tree:"Дерево",fruit:"Дерево",bush:"Кусты"})[o.k]||"Обычная";
 rows.push(r);pBack(o)}
-function pHist(){PS.hist.push(JSON.stringify(pM().objs));if(PS.hist.length>40)PS.hist.shift()}
+/* ↶ откатывает весь участок: объекты, число углов, стороны, диагонали, снимок (одинаковые подряд не копим) */
+const pSnap=()=>J({o:pM().objs,n:(plot.site||{}).n,s:plot.sides,d:plot.diags,t:plot.sat});
+function pHist(h){h=h||pSnap();if(PS.hist[PS.hist.length-1]!==h)PS.hist.push(h);if(PS.hist.length>40)PS.hist.shift()}
+function pUndo(){let h;while((h=PS.hist.pop())===pSnap());if(!h)return false;h=JSON.parse(h);if(Array.isArray(h))h={o:h,n:(plot.site||{}).n,s:plot.sides,d:plot.diags,t:plot.sat};
+pM().objs=h.o;plot.site=plot.site||{};h.n==null?delete plot.site.n:plot.site.n=h.n;for(const[k,v]of[["sides",h.s],["diags",h.d],["sat",h.t]])v==null?delete plot[k]:plot[k]=v;
+pM().objs.forEach(pBack);if(PS.sel&&!pO(PS.sel))PS.sel=null;pSave();return true}
 /* въезд и калитка стоят на границе: сторона i, сколько метров от угла i (её начала), ширина */
 const pEdgeLen=i=>pSideV(i).L;
 function pEdgeSeg(o){const{a,u,L}=pSideV(o.side),s=Math.max(0,Math.min(o.at,L-o.w)),e=s+Math.min(o.w,L);return[[a[0]+u[0]*s,a[1]+u[1]*s],[a[0]+u[0]*e,a[1]+u[1]*e]]}
@@ -905,14 +911,14 @@ set(pv);
 const P=new Map();let G=null,lp=0,lastTap=0;
 const near=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 svg.onpointerdown=e=>{anim++;P.set(e.pointerId,{x:e.clientX,y:e.clientY});clearTimeout(lp);
-if(P.size===2){const[a,c]=[...P.values()];if(PS.tool==="sat"&&pSatOn()){G={mode:"satrot",a0:Math.atan2(c.y-a.y,c.x-a.x),r0:plot.sat.r||0,moved:true};return}
+if(P.size===2){const[a,c]=[...P.values()];if(PS.tool==="sat"&&pSatOn()){pHist();G={mode:"satrot",a0:Math.atan2(c.y-a.y,c.x-a.x),r0:plot.sat.r||0,moved:true};return}
 G={mode:"pinch",pd:Math.hypot(a.x-c.x,a.y-c.y),moved:true};PS.rect=null;return}
 if(P.size>2)return;const pt=toSvg(e.clientX,e.clientY),t=e.target,oe=t.closest&&t.closest("[data-o]"),o=oe&&pO(oe.dataset.o),sl=PS.sel&&pO(PS.sel);
 G={pt0:pt,c0:{x:e.clientX,y:e.clientY},moved:false,target:t};
 if(t.closest&&t.closest("[data-h]")&&sl){G.mode="h";G.o=sl}
 else if(o&&sl&&o.id===sl.id&&(!o.fix||PS.unlock||o.side)){G.mode="obj";G.o=o;G.ox=o.x;G.oy=o.y;G.pts=o.pts&&o.pts.map(p=>[...p])}
 else if(PS.tool==="rect"&&!PS.place)G.mode="rect";
-else if(PS.tool==="sat"&&pSatOn()){G.mode="sat";G.d0=[plot.sat.dx||0,plot.sat.dy||0]}
+else if(PS.tool==="sat"&&pSatOn()){G.mode="sat";G.h=pSnap();G.d0=[plot.sat.dx||0,plot.sat.dy||0]}
 else G.mode="pan";
 if(PS.tool==="move"&&!PS.place&&!(t.closest&&t.closest("[data-sd]"))&&G.mode==="pan")lp=setTimeout(()=>{if(G&&!G.moved&&P.size===1){G.mode="done";pPlantAt(pt,o)}},550)};
 svg.onpointermove=e=>{const prev=P.get(e.pointerId);if(!prev||!G)return;const cur={x:e.clientX,y:e.clientY};
@@ -929,7 +935,7 @@ else if(G.mode==="sat"){plot.sat.dx=Math.round((G.d0[0]+pt[0]-G.pt0[0])*100)/100
 else if(G.mode==="rect"){const a=G.pt0.map(psnap),b=pt.map(psnap);PS.rect={x:Math.min(a[0],b[0]),y:Math.min(a[1],b[1]),w:psnap(Math.abs(b[0]-a[0])),h:psnap(Math.abs(b[1]-a[1]))};pDrawSoon()}
 P.set(e.pointerId,cur)};
 const up=e=>{if(!P.has(e.pointerId))return;P.delete(e.pointerId);clearTimeout(lp);if(!G)return;const g=G;
-if(g.mode==="pinch"||g.mode==="satrot"){if(!P.size){G=null;if(g.mode==="satrot"){pSave();pPanel()}}return}G=null;if(g.mode==="sat"&&g.moved){pSave();pPanel();return}
+if(g.mode==="pinch"||g.mode==="satrot"){if(!P.size){G=null;if(g.mode==="satrot"){pSave();pPanel()}}return}G=null;if(g.mode==="sat"&&g.moved){pHist(g.h);pSave();pPanel();return}
 if(g.moved){if(g.mode==="obj"||g.mode==="h"){pBack(g.o);pSave();pDraw();pPanel()}
 if(g.mode==="rect"){if(PS.rect&&PS.rect.w>=.2&&PS.rect.h>=.2){PS.pal=true;PS.sel=null;PS.seed=null;$("sh").classList.remove("min")}else PS.rect=null;pDraw();pPanel()}return}
 if(g.mode==="done")return;pTap(g.pt0,g.target)};
@@ -938,7 +944,7 @@ svg.addEventListener("wheel",e=>{e.preventDefault();const p=toSvg(e.clientX,e.cl
 const mid=()=>{const r=svg.getBoundingClientRect(),sh=$("sh"),b=sh&&!sh.classList.contains("min")?Math.max(r.top+80,sh.getBoundingClientRect().top):r.bottom;return toSvg(r.left+r.width/2,(r.top+b)/2)};  /* центр видимой части над карточкой */
 $("zi").onclick=()=>{const[c,d]=mid();zoomAt(c,d,1.6)};$("zo").onclick=()=>{const[c,d]=mid();zoomAt(c,d,1/1.6)};
 $("zm").onclick=()=>{const f=fit();flyTo(f.x+f.w/2,f.y+f.h/2,f.w)};
-$("pu").onclick=()=>{const h=PS.hist.pop();if(!h)return;pM().objs=JSON.parse(h);pM().objs.forEach(pBack);if(PS.sel&&!pO(PS.sel))PS.sel=null;pSave();pDraw();pPanel()};
+$("pu").onclick=()=>{const k=pDim().key;if(!pUndo()){try{TG.HapticFeedback.notificationOccurred("warning")}catch(e){}return}if(pDim().key!==k)return plotMap();pSatDraw();pDraw();pPanel()};
 PS.mid=mid;PS.fly=flyTo;PS.dbl=(p)=>{const now=Date.now();if(now-lastTap<320){zoomAt(p[0],p[1],1.8);lastTap=0;return true}lastTap=now;return false}}
 function pTap(pt,t){const sp=pt.map(psnap),sd=t.closest&&t.closest("[data-sd]"),oe=t.closest&&t.closest("[data-o]");
 if(PS.place!=null){const o=oe&&pO(oe.dataset.o);if(PS.place==="new"){PS.place=null;return pPlantAt(pt,o)}const x=seeds[PS.place];x.loc=pLoc(pt,o);x.place=o?o.n:"Участок";saveSeeds();PS.seed=PS.place;PS.place=null;pDraw();pPanel();return}
@@ -1005,16 +1011,16 @@ pn.innerHTML=h;$("msx").onclick=()=>pMode("move");if(!M)return;
 $("mjr").onclick=()=>{const j=plot.meas=plot.meas||{},id=pid();j[id]={a:d[0],b:d[1],d:psnap(M.d),az:M.az==null?null:Math.round(M.az),dz:M.dz==null?null:Math.round(M.dz*100)/100,note:$("mnt").value.trim().slice(0,80),t:today(),src:sat?"карта":"чертёж"};pSave();$("mjr").textContent="✓ В журнале";$("mjr").disabled=true};
 $("mwr").onclick=()=>{const v=$("msw").value,b=$("mwr");if(!v){$("mer").textContent="Выбери, что это";return}const[t,i]=v.split("."),cur=((plot[t]||{})[i]||{});
 if(cur.src==="рулетка"&&b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Заменить рулетку?";$("mer").textContent="Тут замер рулеткой — он точнее карты.";return}
-pSet(t+"."+i,"l",pm1(M.d));pSet(t+"."+i,"src","карта");PS.meas=null;plotMap()};
+pHist();pSet(t+"."+i,"l",pm1(M.d));pSet(t+"."+i,"src","карта");PS.meas=null;plotMap()};
 if($("mcb"))$("mcb").onclick=()=>{const r=pnum($("mcal").value);if(!(r>0&&r<2000)){$("mer").textContent="Впиши длину рулеткой, например 6,2";return}
-const S=plot.sat;S.k=Math.round((S.k||1)*r/M.d*10000)/10000;S.cal={real:r,map:psnap(M.d),t:today()};PS.meas=null;pSave();pSatDraw();pDraw();pPanel()};return}
+pHist();const S=plot.sat;S.k=Math.round((S.k||1)*r/M.d*10000)/10000;S.cal={real:r,map:psnap(M.d),t:today()};PS.meas=null;pSave();pSatDraw();pDraw();pPanel()};return}
 if(PS.tool==="sat"){if(!pSatOn()){PS.tool="move";return pPanel()}const S=plot.sat;
 h=`<div class="prow"><span style="flex:1">🛰 Пальцем — сдвиг, двумя — поворот</span><button class="n pi" id="stx" aria-label="Готово">✓</button></div>
 <div class="row" style="align-items:center;flex-wrap:nowrap">${[[-1,"−1°"],[-.2,"−0,2"]].map(([v,t])=>`<button class="n pi" data-sr="${v}">${t}</button>`).join("")}<input type="range" id="srot" min="-45" max="45" step=".1" value="${S.r||0}" style="flex:1;min-width:0" aria-label="Поворот снимка">${[[.2,"+0,2"],[1,"+1°"]].map(([v,t])=>`<button class="n pi" data-sr="${v}">${t}</button>`).join("")}</div>
 <p class="note" style="margin:0">Поворот <b id="srv" style="font-weight:500">${pm1(S.r||0)}°</b>. Совмести забор на снимке с жёлтым контуром. Масштаб — калибровкой в 📏.</p>`;
 pn.innerHTML=h;$("stx").onclick=()=>pMode("move");
-$("srot").oninput=()=>{S.r=+$("srot").value;$("srv").textContent=pm1(S.r)+"°";pSatT()};$("srot").onchange=pSave;
-pn.querySelectorAll("[data-sr]").forEach(b=>b.onclick=()=>{S.r=Math.round(((S.r||0)+ +b.dataset.sr)*10)/10;pSatT();pSave();pPanel()});
+$("srot").onpointerdown=()=>pHist();$("srot").oninput=()=>{S.r=+$("srot").value;$("srv").textContent=pm1(S.r)+"°";pSatT()};$("srot").onchange=pSave;
+pn.querySelectorAll("[data-sr]").forEach(b=>b.onclick=()=>{pHist();S.r=Math.round(((S.r||0)+ +b.dataset.sr)*10)/10;pSatT();pSave();pPanel()});
 return}
 if(PS.tool==="rect"){h=`<div class="prow"><span style="flex:1">▭ Проведи пальцем — получится рамка</span><button class="n pi" id="rcx" aria-label="Выйти из черчения">✕</button></div>
 <p class="note" style="margin:0">Потом выбери, что это: грядка, сарай или своё.</p>`;pn.innerHTML=h;$("rcx").onclick=()=>pMode("move");return}
@@ -1109,7 +1115,7 @@ $("pslb").onclick=()=>{const b=$("pslb");b.disabled=true;b.textContent="Спра
 ["","w","m","s"].forEach(k=>$("su-"+k).onclick=()=>{PS.sun=k;pDraw();pPanel()});
 if($("shr")){$("shr").oninput=()=>{PS.hr=+$("shr").value;pDraw();$("shr").nextElementSibling.textContent=`${String(Math.floor(PS.hr)).padStart(2,"0")}:${PS.hr%1?"30":"00"}`};$("shr").onchange=pPanel}
 $("hm0").onclick=()=>{PS.hideMob=false;pDraw();pPanel()};$("hm1").onclick=()=>{PS.hideMob=true;pDraw();pPanel()};
-const sat=f=>{f(plot.sat);pSave();pSatDraw();pDraw();pPanel()};
+const sat=f=>{pHist();f(plot.sat);pSave();pSatDraw();pDraw();pPanel()};
 $("sat0").onclick=()=>{if(plot.sat)sat(S=>S.on=0)};
 $("sat1").onclick=()=>{const go=()=>{plot.sat=plot.sat||{k:1};sat(S=>S.on=1)};if(pLL())return go();const b=$("sat1");b.textContent="Ищу координаты…";
 pSlope((r,msg)=>{if(r)return go();b.textContent="🛰 Снимок";$("sate").textContent=msg})};
@@ -1147,11 +1153,11 @@ const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15
 ["plot","Участок","M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M12 9v3",()=>plotMap()],
 ["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];
 const nav={cur:undefined};
-function setNav(s){if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
+function setNav(s){nav.back=null;if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
 if(!el){el=document.createElement("nav");el.id="nav";el.setAttribute("aria-label","Меню");document.body.appendChild(el);document.body.classList.add("has-nav");
 el.innerHTML=`<div>${NAV.map(([k,l,d])=>`<button data-n="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${d}"/></svg>${l}</button>`).join("")}</div>`;
 el.onclick=e=>{const b=e.target.closest("button");if(b)NAV.find(x=>x[0]===b.dataset.n)[3]()};
-try{TG.BackButton.onClick(()=>world())}catch(e){}}
+try{TG.BackButton.onClick(()=>{const f=nav.back;nav.back=null;f?f():world()})}catch(e){}}
 el.querySelectorAll("button").forEach(b=>b.dataset.n===s?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
 try{s==="map"?TG.BackButton.hide():TG.BackButton.show()}catch(e){}}
 /* бутылка: случайная чужая, не друга, ещё не выловленная мной */
