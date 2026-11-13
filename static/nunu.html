@@ -65,8 +65,8 @@ input,textarea,select{font:inherit;padding:9px 12px;border-radius:10px;border:1p
 #pm .lb.dm{fill:#3B2F1A;font-size:11px}#pm .lb.sd{fill:#5A4128;font-size:11px}#pm .em{font-size:18px;text-anchor:middle;dominant-baseline:central}#pm .t1 .lb{display:none}#pm .t0{display:none}
 #pm [data-o],#pm [data-sd],#pm [data-h]{cursor:pointer}
 .seg2{display:grid;grid-template-columns:1.7fr 1fr;gap:8px}.seg2 button{text-align:center;align-self:stretch}
-.pmode{position:absolute;left:10px;top:96px;display:flex;flex-direction:column;gap:8px}
-.pmode button{width:44px;height:44px;border-radius:12px;border:0;background:rgba(255,248,231,.8);color:#3B2F1A;font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.pmode{position:absolute;left:10px;top:96px;display:flex;flex-direction:column;gap:var(--pg,8px)}
+.pmode button{width:var(--pb,44px);height:var(--pb,44px);border-radius:12px;border:0;background:rgba(255,248,231,.8);color:#3B2F1A;font-size:var(--pf,19px);line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
 .pmode button[aria-pressed="true"]{background:var(--acc);color:var(--acc-fg);box-shadow:0 0 0 2px #fff}
 .pw #sh.min{max-height:84px}.pi{min-width:42px;min-height:44px;text-align:center;padding:4px;flex:none}
 .pslope{position:absolute;left:60px;top:22px;display:flex;align-items:center;gap:4px;font-size:11px;color:#1F4E66;background:rgba(255,248,231,.85);border-radius:10px;padding:3px 8px 3px 4px;pointer-events:none}.pslope:empty{display:none}
@@ -901,7 +901,7 @@ function plotMap(opt){opt=opt||{};setNav("plot");document.body.classList.add("on
 app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="pu" aria-label="Отменить">↶</button></div>
 <div class="pcomp" aria-hidden="true">${pComp()}</div><div id="patt" style="position:absolute;right:62px;top:12px;font-size:10px;color:#3B2F1A;background:rgba(255,248,231,.8);border-radius:6px;padding:1px 6px;pointer-events:none"${pSatOn()?"":" hidden"}>© Esri, Maxar</div><div class="pslope" id="pslope">${pSlopeChip()}</div><div class="pscale" id="pscale"></div><div class="pmode" id="pmode" role="toolbar" aria-label="Режимы карты"></div>
 <div class="card min" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
-fitMap();pPanel();pCtl();$("grab").onclick=()=>$("sh").classList.toggle("min");
+fitMap();pPanel();pCtl();pModeFit();addEventListener("resize",pModeFit);$("grab").onclick=()=>$("sh").classList.toggle("min");
 $("sh").addEventListener("click",e=>{const s=e.currentTarget;if(s.classList.contains("min")&&!e.target.closest("button,input,select,label,a"))s.classList.remove("min")});
 if(opt.fresh!=null){try{TG&&TG.HapticFeedback&&TG.HapticFeedback.notificationOccurred("success")}catch(e){}setTimeout(()=>{PS.fresh=null},1400)}}
 function pCtl(){const svg=$("pm"),{W,H,X0,Y0,key}=pDim(),pad=Math.max(2.5,Math.max(W-X0,H-Y0)*.12),base={x:X0-pad,y:Y0-pad,w:W-X0+2*pad,h:H-Y0+2*pad};
@@ -985,7 +985,11 @@ PS.draft=null;PS.tool="move";PS.sel=o.id;pSave();pDraw();pPanel()}
 /* режимы — кнопками на карте; карточка внизу свёрнута до одной строки: что происходит и главное действие */
 const PMODE=[["move","✋","Двигать и выбирать"],["corners","📐","Углы участка: тяни точки"],["plant","🌱","Посадить: нажми на место"],["add","＋","Добавить объект"],["rect","▭","Чертить рамку"],["line","╱","Линия: дорожка, забор, труба"],["measure","📏","Рулетка"]];
 function pModes(){const b=$("pmode");if(!b)return;b.innerHTML=PMODE.concat(pSatOn()?[["sat","🛰","Подогнать снимок: тяни пальцем, двумя — поворот"]]:[]).map(([k,i,l])=>`<button data-m="${k}" aria-label="${l}" title="${l}" aria-pressed="${k==="add"?!!PS.pal:!PS.pal&&PS.place==null&&PS.tool===k}">${i}</button>`).join("");
-b.querySelectorAll("[data-m]").forEach(x=>x.onclick=()=>pMode(x.dataset.m))}
+b.querySelectorAll("[data-m]").forEach(x=>x.onclick=()=>pMode(x.dataset.m));pModeFit()}
+/* кнопки режимов не уходят под нижнюю карточку: считаем по свёрнутой карточке и ужимаем до 30 px */
+function pModeFit(){const b=$("pmode"),w=$("mapw"),sh=$("sh");if(!b||!w||!sh)return;if(sh.classList.contains("min"))PS.shH=sh.getBoundingClientRect().height||PS.shH;
+const n=b.children.length,lim=w.getBoundingClientRect().bottom-(PS.shH||110)-16-b.getBoundingClientRect().top,g=lim<n*44+(n-1)*8?5:8,
+sz=Math.max(30,Math.min(44,Math.floor((lim-g*(n-1))/n)));b.style.setProperty("--pb",sz+"px");b.style.setProperty("--pg",g+"px");b.style.setProperty("--pf",sz<40?"16px":"19px")}
 function pMode(m){PS.cmsg=null;const again=m!=="add"&&m!=="move"&&PS.tool===m&&!PS.pal;PS.draft=PS.meas=PS.rect=PS.own=null;PS.sel=PS.seed=PS.place=null;PS.unlock=false;const sh=$("sh");
 if(m==="add"){PS.pal=!PS.pal;PS.tool="move";if(sh)sh.classList.toggle("min",!PS.pal)}else{PS.pal=false;PS.tool=again?"move":m;if(sh)sh.classList.toggle("min",PS.tool!=="sat")}
 pDraw();pPanel()}
