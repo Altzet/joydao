@@ -1011,9 +1011,10 @@ $("own-f").onclick=()=>{PS.own.f=1;pPanel()};$("own-m").onclick=()=>{PS.own.f=0;
 $("own-ok").onclick=()=>{const n=PS.own.n.trim();if(!n){$("own-e").textContent="Напиши, что это";return}const o=pAdd("own",PS.rect);o.n=n.slice(0,40);o.fix=PS.own.f;o.k=PS.own.c?"ownc":"own";
 if(PS.own.c){o.w=o.h=Math.max(o.w,o.h)}PS.own=null;PS.unlock=!o.fix;pSave();pDraw();pPanel()}}
 return}
-if(PS.tool==="line"){const d=PS.draft||(PS.draft=[]);h=`<div class="prow"><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">╱ ${d.length<2?"Ставь точки на карте":pm1(pLen(d))+" м"}</span>
-${d.length>1?["path","fence","pipe"].map(k=>`<button class="n pi" data-lk="${k}" aria-label="${PK[k][0]}" title="${PK[k][0]}">${PK[k][1]}</button>`).join(""):""}<button class="n pi" id="lnx" aria-label="Выйти из линии">✕</button></div>
-<p class="note" style="margin:0">Каждое нажатие ставит точку. Потом выбери: 👣 дорожка, 🧱 забор или 〰️ шланг, труба.</p>${d.length?`<button class="n" id="lnu" style="align-self:flex-start">↶ Убрать последнюю точку</button>`:""}`;
+if(PS.tool==="line"){const d=PS.draft||(PS.draft=[]);h=`<div class="prow"><span style="flex:1;min-width:0">╱ ${d.length<2?"Ставь точки на карте":pm1(pLen(d))+" м"}</span>${d.length>1?`<button class="main-btn" data-lk="${PS.lineK||"path"}">✓ Сохранить ${PK[PS.lineK||"path"][1]}</button>`:""}<button class="n pi" id="lnx" aria-label="Выйти из линии">✕</button></div>
+${d.length>1?`<div class="zone">Или сохранить как</div>`:""}
+${d.length>1?`<div class="row">${["path","fence","pipe"].map(k=>`<button class="main-btn" data-lk="${k}" style="flex:1;padding-left:8px;padding-right:8px">${PK[k][1]} ${k==="path"?"Дорожка":k==="fence"?"Забор":"Труба"}</button>`).join("")}</div>`:""}
+<p class="note" style="margin:0">Каждое нажатие ставит точку. Потом нажми, что это: дорожка, забор или шланг, труба — и линия сохранится.</p>${d.length?`<button class="n" id="lnu" style="align-self:flex-start">↶ Убрать последнюю точку</button>`:""}`;
 pn.innerHTML=h;pn.querySelectorAll("[data-lk]").forEach(b=>b.onclick=()=>pLineDone(b.dataset.lk));
 if($("lnu"))$("lnu").onclick=()=>{d.pop();pDraw();pPanel()};$("lnx").onclick=()=>pMode("move");return}
 if(PS.tool==="measure"){const d=PS.meas||[],M=d.length>1&&pMeasure(d[0],d[1]),n=pN(),sat=pSatOn();
