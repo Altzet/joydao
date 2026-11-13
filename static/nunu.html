@@ -745,7 +745,14 @@ f+=Math.acos(cs);P.push([b*Math.cos(f),b*Math.sin(f)])}
 if(f>=2*Math.PI)err=err||"Стороны и диагонали не складываются в участок: проверь замеры.";
 return{n,P,S,guess,err,real:!miss}}
 let pPC=null;function pDim(){const key=J([pN(),plot.sides,plot.diags]);if(!pPC||pPC.key!==key){const g=pPoly(),xs=g.P.map(p=>p[0]),ys=g.P.map(p=>p[1]);
-pPC={key,...g,X0:Math.min(...xs),Y0:Math.min(...ys),W:Math.max(...xs),H:Math.max(...ys)}}return pPC}
+pPC={key,...g,X0:Math.min(...xs),Y0:Math.min(...ys),W:Math.max(...xs),H:Math.max(...ys)}}
+if(PS.Ptmp){const P=PS.Ptmp,xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);return{...pPC,P,n:P.length,X0:Math.min(...xs),Y0:Math.min(...ys),W:Math.max(...xs),H:Math.max(...ys)}}return pPC}
+/* углы, сдвинутые на карте → длины сторон и диагоналей (источник «карта»); замер рулеткой, если он изменился, отмечаем */
+const pLen2=x=>String(Math.round(x*100)/100).replace(".",",");
+function pSetPoly(P){const n=P.length,d=(a,b)=>Math.hypot(P[a][0]-P[b][0],P[a][1]-P[b][1]),gone=[];plot.site=plot.site||{};plot.site.n=String(n);
+const put=(t,i,L)=>{const T=plot[t]=plot[t]||{},o=T[i]=T[i]||{};if(pnum(o.l)!=null&&Math.abs(pnum(o.l)-L)<.05)return;if(o.src==="рулетка")gone.push(t==="sides"?"сторона "+i:"диагональ 1 → "+i);o.l=pLen2(L);o.src="карта"};
+for(let i=1;i<=n;i++)put("sides",i,d(i-1,i%n));for(let k=3;k<n;k++)put("diags",k,d(0,k-1));
+for(const i in plot.sides)if(+i>n)delete plot.sides[i];for(const k in plot.diags||{})if(+k<3||+k>=n)delete plot.diags[k];return gone}
 const pShapeTxt=()=>{const D=pDim();return D.err?"⚠ "+D.err:!D.real?"Не все стороны заданы — недостающие взяты примерно.":D.guess&&D.n>3?"Форма примерная: нет диагоналей.":"✓ Форма задана. Замер рулеткой главнее карты."};
 /* сторона i: начало a, длина L, единичный вектор u, наружу out; отступ точки внутрь — pIn1 */
 function pSideV(i){const{P,n}=pDim(),a=P[(i-1+n)%n],b=P[i%n],L=Math.hypot(b[0]-a[0],b[1]-a[1])||1;return{a,b,L,u:[(b[0]-a[0])/L,(b[1]-a[1])/L],out:[(b[1]-a[1])/L,-(b[0]-a[0])/L]}}
@@ -871,6 +878,7 @@ const dot=p=>`<g class="fix" style="transform:translate(${p[0]}px,${p[1]}px) sca
 if(PS.rect){const r=PS.rect;g+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="var(--acc)" fill-opacity=".18" stroke="var(--acc)" stroke-width="2"${ve} stroke-dasharray="6 4" pointer-events="none"/><g class="fix" style="transform:translate(${r.x+r.w/2}px,${r.y+r.h/2}px) scale(var(--s))" pointer-events="none"><text class="lb dm">${pm1(r.w)} × ${pm1(r.h)} м</text></g>`}
 if(PS.draft&&PS.draft.length){const d=PS.draft;g+=`<polyline points="${d.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--acc)" stroke-width="3"${ve} stroke-linecap="round" pointer-events="none"/>`+d.map(dot).join("")}
 if(PS.meas){const d=PS.meas;g+=(d.length>1?`<line x1="${d[0][0]}" y1="${d[0][1]}" x2="${d[1][0]}" y2="${d[1][1]}" stroke="#B5482A" stroke-width="2.5"${ve} pointer-events="none"/><g class="fix" style="transform:translate(${(d[0][0]+d[1][0])/2}px,${(d[0][1]+d[1][1])/2}px) scale(var(--s))" pointer-events="none"><text class="lb dm" y="-8">${pm1(Math.hypot(d[1][0]-d[0][0],d[1][1]-d[0][1]))} м${(()=>{const M=pMeasure(d[0],d[1]);return M.az==null?"":" · "+dir8(M.az)})()}</text></g>`:"")+d.map(dot).join("")}
+if(PS.tool==="corners")P.forEach((p,i)=>g+=`<g class="fix" data-c="${i+1}" style="transform:translate(${f2(p[0])}px,${f2(p[1])}px) scale(var(--s))"><circle r="22" fill="transparent"/><circle r="12" fill="${i?"var(--acc)":"#B5482A"}" fill-opacity="${i?.85:.5}" stroke="#fff" stroke-width="3"/>${i===1?`<path d="M-6 0H6M-6 0l3-3M-6 0l3 3M6 0l-3-3M6 0l-3 3" stroke="#fff" stroke-width="1.8" fill="none" transform="rotate(${f1(pSideAng(1))})"/>`:i?"":`<path d="M-3-1v-3a3 3 0 0 1 6 0v3M-4.5-1h9v6h-9z" stroke="#fff" stroke-width="1.6" fill="none"/>`}</g>`);
 const lab=(s,x,y,o)=>`<g class="fix" style="transform:translate(${f2(x)}px,${f2(y)}px) scale(var(--s))" pointer-events="none"><text class="lb sd" x="${f1(o[0]*16)}" y="${f1(o[1]*16+4)}">${s}</text></g>`;
 for(let i=1;i<=D.n;i++){const{a,b,L,out}=pSideV(i),src=((plot.sides||{})[i]||{}).src;g+=lab(`${i} · ${pm1(L)} м${src==="рулетка"?" ✓":""}`,(a[0]+b[0])/2,(a[1]+b[1])/2,out);
 const o2=pSideV(i===1?D.n:i-1).out,c=[out[0]+o2[0],out[1]+o2[1]],k=Math.hypot(...c)||1;
@@ -915,7 +923,8 @@ if(P.size===2){const[a,c]=[...P.values()];if(PS.tool==="sat"&&pSatOn()){pHist();
 G={mode:"pinch",pd:Math.hypot(a.x-c.x,a.y-c.y),moved:true};PS.rect=null;return}
 if(P.size>2)return;const pt=toSvg(e.clientX,e.clientY),t=e.target,oe=t.closest&&t.closest("[data-o]"),o=oe&&pO(oe.dataset.o),sl=PS.sel&&pO(PS.sel);
 G={pt0:pt,c0:{x:e.clientX,y:e.clientY},moved:false,target:t};
-if(t.closest&&t.closest("[data-h]")&&sl){G.mode="h";G.o=sl}
+if(PS.tool==="corners"&&t.closest&&t.closest("[data-c]")&&+t.closest("[data-c]").dataset.c>1){G.mode="corner";G.k=+t.closest("[data-c]").dataset.c;G.h=pSnap()}
+else if(t.closest&&t.closest("[data-h]")&&sl){G.mode="h";G.o=sl}
 else if(o&&sl&&o.id===sl.id&&(!o.fix||PS.unlock||o.side)){G.mode="obj";G.o=o;G.ox=o.x;G.oy=o.y;G.pts=o.pts&&o.pts.map(p=>[...p])}
 else if(PS.tool==="rect"&&!PS.place)G.mode="rect";
 else if(PS.tool==="sat"&&pSatOn()){G.mode="sat";G.h=pSnap();G.d0=[plot.sat.dx||0,plot.sat.dy||0]}
@@ -931,15 +940,17 @@ if(G.mode==="pan"){const a=toSvg(prev.x,prev.y);set({...pv,x:pv.x-(pt[0]-a[0]),y
 else if(G.mode==="obj"){const dx=pt[0]-G.pt0[0],dy=pt[1]-G.pt0[1],o=G.o;if(o.side){[o.side,o.at]=pNearSide(pt,o.w)}else if(o.pts)o.pts=G.pts.map(p=>[psnap(p[0]+dx),psnap(p[1]+dy)]);
 else{let x=psnap(G.ox+dx),y=psnap(G.oy+dy);[[0,"x",0],[W-o.w,"x",1],[0,"y",0],[H-o.h,"y",1]].forEach(([v,k])=>{if(Math.abs((k==="x"?x:y)-v)<.25)k==="x"?x=v:y=v});o.x=x;o.y=y}pDrawSoon()}
 else if(G.mode==="h"){const o=G.o;if(pK(o)[2]==="c"){const d=Math.max(.2,psnap(Math.max(pt[0]-o.x,pt[1]-o.y)));o.w=o.h=d}else{o.w=Math.max(.2,psnap(pt[0]-o.x));o.h=Math.max(.2,psnap(pt[1]-o.y))}pDrawSoon()}
+else if(G.mode==="corner"){const P=(PS.Ptmp||pDim().P).map(p=>[...p]);P[G.k-1]=G.k===2?[Math.max(.5,psnap(pt[0])),0]:pt.map(psnap);PS.Ptmp=P;pDrawSoon()}
 else if(G.mode==="sat"){plot.sat.dx=Math.round((G.d0[0]+pt[0]-G.pt0[0])*100)/100;plot.sat.dy=Math.round((G.d0[1]+pt[1]-G.pt0[1])*100)/100;pSatT()}
 else if(G.mode==="rect"){const a=G.pt0.map(psnap),b=pt.map(psnap);PS.rect={x:Math.min(a[0],b[0]),y:Math.min(a[1],b[1]),w:psnap(Math.abs(b[0]-a[0])),h:psnap(Math.abs(b[1]-a[1]))};pDrawSoon()}
 P.set(e.pointerId,cur)};
 const up=e=>{if(!P.has(e.pointerId))return;P.delete(e.pointerId);clearTimeout(lp);if(!G)return;const g=G;
-if(g.mode==="pinch"||g.mode==="satrot"){if(!P.size){G=null;if(g.mode==="satrot"){pSave();pPanel()}}return}G=null;if(g.mode==="sat"&&g.moved){pHist(g.h);pSave();pPanel();return}
+if(g.mode==="pinch"||g.mode==="satrot"){if(!P.size){G=null;if(g.mode==="satrot"){pSave();pPanel()}}return}G=null;if(g.mode==="corner"){if(g.moved&&PS.Ptmp){pHist(g.h);const P=PS.Ptmp;PS.Ptmp=null;PS.cmsg=pSetPoly(P);pGateTxt();pSave()}else PS.Ptmp=null;pDraw();pPanel();return}
+if(g.mode==="sat"&&g.moved){pHist(g.h);pSave();pPanel();return}
 if(g.moved){if(g.mode==="obj"||g.mode==="h"){pBack(g.o);pSave();pDraw();pPanel()}
 if(g.mode==="rect"){if(PS.rect&&PS.rect.w>=.2&&PS.rect.h>=.2){PS.pal=true;PS.sel=null;PS.seed=null;$("sh").classList.remove("min")}else PS.rect=null;pDraw();pPanel()}return}
 if(g.mode==="done")return;pTap(g.pt0,g.target)};
-svg.onpointerup=up;svg.onpointercancel=e=>{P.delete(e.pointerId);clearTimeout(lp);G=null};
+svg.onpointerup=up;svg.onpointercancel=e=>{P.delete(e.pointerId);clearTimeout(lp);G=null;if(PS.Ptmp){PS.Ptmp=null;pDraw()}};
 svg.addEventListener("wheel",e=>{e.preventDefault();const p=toSvg(e.clientX,e.clientY);zoomAt(p[0],p[1],Math.exp(-e.deltaY*.0015))},{passive:false});
 const mid=()=>{const r=svg.getBoundingClientRect(),sh=$("sh"),b=sh&&!sh.classList.contains("min")?Math.max(r.top+80,sh.getBoundingClientRect().top):r.bottom;return toSvg(r.left+r.width/2,(r.top+b)/2)};  /* центр видимой части над карточкой */
 $("zi").onclick=()=>{const[c,d]=mid();zoomAt(c,d,1.6)};$("zo").onclick=()=>{const[c,d]=mid();zoomAt(c,d,1/1.6)};
@@ -972,10 +983,10 @@ PS.draft=null;PS.tool="move";PS.sel=o.id;pSave();pDraw();pPanel()}
 
 /* ---------- нижняя карточка ---------- */
 /* режимы — кнопками на карте; карточка внизу свёрнута до одной строки: что происходит и главное действие */
-const PMODE=[["move","✋","Двигать и выбирать"],["plant","🌱","Посадить: нажми на место"],["add","＋","Добавить объект"],["rect","▭","Чертить рамку"],["line","╱","Линия: дорожка, забор, труба"],["measure","📏","Рулетка"]];
+const PMODE=[["move","✋","Двигать и выбирать"],["corners","📐","Углы участка: тяни точки"],["plant","🌱","Посадить: нажми на место"],["add","＋","Добавить объект"],["rect","▭","Чертить рамку"],["line","╱","Линия: дорожка, забор, труба"],["measure","📏","Рулетка"]];
 function pModes(){const b=$("pmode");if(!b)return;b.innerHTML=PMODE.concat(pSatOn()?[["sat","🛰","Подогнать снимок: тяни пальцем, двумя — поворот"]]:[]).map(([k,i,l])=>`<button data-m="${k}" aria-label="${l}" title="${l}" aria-pressed="${k==="add"?!!PS.pal:!PS.pal&&PS.place==null&&PS.tool===k}">${i}</button>`).join("");
 b.querySelectorAll("[data-m]").forEach(x=>x.onclick=()=>pMode(x.dataset.m))}
-function pMode(m){const again=m!=="add"&&m!=="move"&&PS.tool===m&&!PS.pal;PS.draft=PS.meas=PS.rect=PS.own=null;PS.sel=PS.seed=PS.place=null;PS.unlock=false;const sh=$("sh");
+function pMode(m){PS.cmsg=null;const again=m!=="add"&&m!=="move"&&PS.tool===m&&!PS.pal;PS.draft=PS.meas=PS.rect=PS.own=null;PS.sel=PS.seed=PS.place=null;PS.unlock=false;const sh=$("sh");
 if(m==="add"){PS.pal=!PS.pal;PS.tool="move";if(sh)sh.classList.toggle("min",!PS.pal)}else{PS.pal=false;PS.tool=again?"move":m;if(sh)sh.classList.toggle("min",PS.tool!=="sat")}
 pDraw();pPanel()}
 function pPanel(){const pn=$("pn");if(!pn)return;pModes();const chip=(id,t,on,cls)=>`<button class="${on?"t":"n"}${cls?" "+cls:""}" id="${id}" aria-pressed="${!!on}">${t}</button>`;
@@ -1014,6 +1025,13 @@ if(cur.src==="рулетка"&&b.dataset.ok!=="1"){b.dataset.ok="1";b.textConten
 pHist();pSet(t+"."+i,"l",pm1(M.d));pSet(t+"."+i,"src","карта");PS.meas=null;plotMap()};
 if($("mcb"))$("mcb").onclick=()=>{const r=pnum($("mcal").value);if(!(r>0&&r<2000)){$("mer").textContent="Впиши длину рулеткой, например 6,2";return}
 pHist();const S=plot.sat;S.k=Math.round((S.k||1)*r/M.d*10000)/10000;S.cal={real:r,map:psnap(M.d),t:today()};PS.meas=null;pSave();pSatDraw();pDraw();pPanel()};return}
+if(PS.tool==="corners"){const n=pN(),cm=PS.cmsg||[];
+h=`<div class="prow"><span style="flex:1">📐 Тяни углы пальцем</span><button class="n pi" id="cnx" aria-label="Готово">✓</button></div>
+<div class="row"><button class="n" id="cadd">＋ угол на стороне ${n}</button>${n>3?`<button class="n" id="cdel">− угол ${n}</button>`:""}</div>
+<p class="note" style="margin:0">Угол 1 — начало отсчёта, он на месте; угол 2 ездит вдоль стороны 1. Весь контур относительно снимка двигай в 🛰. Длины пишутся с пометкой «карта».${cm.length?` ⚠ Замер рулеткой изменён: ${esc(cm.join(", "))} — если он верный, впиши его обратно в анкете или нажми ↶.`:""}</p><p class="note" style="margin:0">${esc(pShapeTxt())}</p>`;
+pn.innerHTML=h;$("cnx").onclick=()=>pMode("move");
+$("cadd").onclick=()=>{pHist();const P=pDim().P.map(p=>[...p]),a=P[n-1],b=P[0],o=pSideV(n).out;P.push([psnap((a[0]+b[0])/2+o[0]),psnap((a[1]+b[1])/2+o[1])]);PS.cmsg=pSetPoly(P);pSave();pDraw();pPanel()};
+if($("cdel"))$("cdel").onclick=()=>{pHist();PS.cmsg=pSetPoly(pDim().P.slice(0,-1));pSave();pDraw();pPanel()};return}
 if(PS.tool==="sat"){if(!pSatOn()){PS.tool="move";return pPanel()}const S=plot.sat;
 h=`<div class="prow"><span style="flex:1">🛰 Пальцем — сдвиг, двумя — поворот</span><button class="n pi" id="stx" aria-label="Готово">✓</button></div>
 <div class="row" style="align-items:center;flex-wrap:nowrap">${[[-1,"−1°"],[-.2,"−0,2"]].map(([v,t])=>`<button class="n pi" data-sr="${v}">${t}</button>`).join("")}<input type="range" id="srot" min="-45" max="45" step=".1" value="${S.r||0}" style="flex:1;min-width:0" aria-label="Поворот снимка">${[[.2,"+0,2"],[1,"+1°"]].map(([v,t])=>`<button class="n pi" data-sr="${v}">${t}</button>`).join("")}</div>
@@ -1141,7 +1159,7 @@ const S=plot.sat,ll=pLL(),z=S.z||19,n2=2**z,la=ll[0]*Math.PI/180,X=(ll[1]+180)/3
 R=Math.hypot(w,h)/2+30,r=Math.ceil(R/m);let t="";
 for(let ty=Math.floor(Y)-r;ty<=Math.floor(Y)+r;ty++)for(let tx=Math.floor(X)-r;tx<=Math.floor(X)+r;tx++)t+=`<svg x="${f2((tx-X)*m)}" y="${f2((ty-Y)*m)}" width="${f2(m+.1)}" height="${f2(m+.1)}" viewBox="0 0 256 256" preserveAspectRatio="none"><image href="/nunu/api/tile/${z}/${((tx%n2)+n2)%n2}/${ty}" width="256" height="256" data-t="${z},${((tx%n2)+n2)%n2},${ty}" onerror="pUp(this)"/></svg>`;
 return g+`<g id="psg" transform="${pSatTr()}" opacity="${S.op??1}">${t}</g>`}
-function pSatTr(){const S=plot.sat,{W,H,X0,Y0}=pDim();return`translate(${f2((X0+W)/2+(S.dx||0))} ${f2((Y0+H)/2+(S.dy||0))}) rotate(${f2(-(pTheta()??0)+(S.r||0))}) scale(${S.k||1})`}
+function pSatTr(){const S=plot.sat,{W,H,X0,Y0}=pDim(),a=S.a||(S.a=[psnap((X0+W)/2),psnap((Y0+H)/2)]);return`translate(${f2(a[0]+(S.dx||0))} ${f2(a[1]+(S.dy||0))}) rotate(${f2(-(pTheta()??0)+(S.r||0))}) scale(${S.k||1})`}
 const pSatT=()=>{const g=$("psg");if(g)g.setAttribute("transform",pSatTr())};
 /* нет детального снимка → берём плитку на уровень крупнее и показываем её нужную четверть (и так до масштаба 16) */
 function pUp(img){const[z,x,y]=img.dataset.t.split(",").map(Number),sv=img.parentNode,v=(sv.getAttribute("viewBox")||"0 0 256 256").split(" ").map(Number);
