@@ -905,15 +905,18 @@ set(pv);
 const P=new Map();let G=null,lp=0,lastTap=0;
 const near=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 svg.onpointerdown=e=>{anim++;P.set(e.pointerId,{x:e.clientX,y:e.clientY});clearTimeout(lp);
-if(P.size===2){const[a,c]=[...P.values()];G={mode:"pinch",pd:Math.hypot(a.x-c.x,a.y-c.y),moved:true};PS.rect=null;return}
+if(P.size===2){const[a,c]=[...P.values()];if(PS.tool==="sat"&&pSatOn()){G={mode:"satrot",a0:Math.atan2(c.y-a.y,c.x-a.x),r0:plot.sat.r||0,moved:true};return}
+G={mode:"pinch",pd:Math.hypot(a.x-c.x,a.y-c.y),moved:true};PS.rect=null;return}
 if(P.size>2)return;const pt=toSvg(e.clientX,e.clientY),t=e.target,oe=t.closest&&t.closest("[data-o]"),o=oe&&pO(oe.dataset.o),sl=PS.sel&&pO(PS.sel);
 G={pt0:pt,c0:{x:e.clientX,y:e.clientY},moved:false,target:t};
 if(t.closest&&t.closest("[data-h]")&&sl){G.mode="h";G.o=sl}
 else if(o&&sl&&o.id===sl.id&&(!o.fix||PS.unlock||o.side)){G.mode="obj";G.o=o;G.ox=o.x;G.oy=o.y;G.pts=o.pts&&o.pts.map(p=>[...p])}
 else if(PS.tool==="rect"&&!PS.place)G.mode="rect";
+else if(PS.tool==="sat"&&pSatOn()){G.mode="sat";G.d0=[plot.sat.dx||0,plot.sat.dy||0]}
 else G.mode="pan";
 if(PS.tool==="move"&&!PS.place&&!(t.closest&&t.closest("[data-sd]"))&&G.mode==="pan")lp=setTimeout(()=>{if(G&&!G.moved&&P.size===1){G.mode="done";pPlantAt(pt,o)}},550)};
 svg.onpointermove=e=>{const prev=P.get(e.pointerId);if(!prev||!G)return;const cur={x:e.clientX,y:e.clientY};
+if(G.mode==="satrot"&&P.size===2){P.set(e.pointerId,cur);const[q1,q2]=[...P.values()];plot.sat.r=Math.round((G.r0+(Math.atan2(q2.y-q1.y,q2.x-q1.x)-G.a0)*180/Math.PI)*10)/10;pSatT();return}
 if(G.mode==="pinch"&&P.size===2){const[p1,p2]=[...P.values()],m0=toSvg((p1.x+p2.x)/2,(p1.y+p2.y)/2);P.set(e.pointerId,cur);const[q1,q2]=[...P.values()],d=Math.hypot(q1.x-q2.x,q1.y-q2.y);
 if(G.pd)zoomAt(m0[0],m0[1],d/G.pd);G.pd=d;const m1=toSvg((q1.x+q2.x)/2,(q1.y+q2.y)/2);set({...pv,x:pv.x-(m1[0]-m0[0]),y:pv.y-(m1[1]-m0[1])});return}
 if(!G.moved){if(Math.hypot(cur.x-G.c0.x,cur.y-G.c0.y)<7){return}G.moved=true;clearTimeout(lp);try{svg.setPointerCapture(e.pointerId)}catch(x){}if(G.mode==="obj"||G.mode==="h")pHist()}
@@ -922,10 +925,11 @@ if(G.mode==="pan"){const a=toSvg(prev.x,prev.y);set({...pv,x:pv.x-(pt[0]-a[0]),y
 else if(G.mode==="obj"){const dx=pt[0]-G.pt0[0],dy=pt[1]-G.pt0[1],o=G.o;if(o.side){[o.side,o.at]=pNearSide(pt,o.w)}else if(o.pts)o.pts=G.pts.map(p=>[psnap(p[0]+dx),psnap(p[1]+dy)]);
 else{let x=psnap(G.ox+dx),y=psnap(G.oy+dy);[[0,"x",0],[W-o.w,"x",1],[0,"y",0],[H-o.h,"y",1]].forEach(([v,k])=>{if(Math.abs((k==="x"?x:y)-v)<.25)k==="x"?x=v:y=v});o.x=x;o.y=y}pDrawSoon()}
 else if(G.mode==="h"){const o=G.o;if(pK(o)[2]==="c"){const d=Math.max(.2,psnap(Math.max(pt[0]-o.x,pt[1]-o.y)));o.w=o.h=d}else{o.w=Math.max(.2,psnap(pt[0]-o.x));o.h=Math.max(.2,psnap(pt[1]-o.y))}pDrawSoon()}
+else if(G.mode==="sat"){plot.sat.dx=Math.round((G.d0[0]+pt[0]-G.pt0[0])*100)/100;plot.sat.dy=Math.round((G.d0[1]+pt[1]-G.pt0[1])*100)/100;pSatT()}
 else if(G.mode==="rect"){const a=G.pt0.map(psnap),b=pt.map(psnap);PS.rect={x:Math.min(a[0],b[0]),y:Math.min(a[1],b[1]),w:psnap(Math.abs(b[0]-a[0])),h:psnap(Math.abs(b[1]-a[1]))};pDrawSoon()}
 P.set(e.pointerId,cur)};
 const up=e=>{if(!P.has(e.pointerId))return;P.delete(e.pointerId);clearTimeout(lp);if(!G)return;const g=G;
-if(g.mode==="pinch"){if(!P.size)G=null;return}G=null;
+if(g.mode==="pinch"||g.mode==="satrot"){if(!P.size){G=null;if(g.mode==="satrot"){pSave();pPanel()}}return}G=null;if(g.mode==="sat"&&g.moved){pSave();pPanel();return}
 if(g.moved){if(g.mode==="obj"||g.mode==="h"){pBack(g.o);pSave();pDraw();pPanel()}
 if(g.mode==="rect"){if(PS.rect&&PS.rect.w>=.2&&PS.rect.h>=.2){PS.pal=true;PS.sel=null;PS.seed=null;$("sh").classList.remove("min")}else PS.rect=null;pDraw();pPanel()}return}
 if(g.mode==="done")return;pTap(g.pt0,g.target)};
@@ -963,10 +967,10 @@ PS.draft=null;PS.tool="move";PS.sel=o.id;pSave();pDraw();pPanel()}
 /* ---------- нижняя карточка ---------- */
 /* режимы — кнопками на карте; карточка внизу свёрнута до одной строки: что происходит и главное действие */
 const PMODE=[["move","✋","Двигать и выбирать"],["plant","🌱","Посадить: нажми на место"],["add","＋","Добавить объект"],["rect","▭","Чертить рамку"],["line","╱","Линия: дорожка, забор, труба"],["measure","📏","Рулетка"]];
-function pModes(){const b=$("pmode");if(!b)return;b.innerHTML=PMODE.map(([k,i,l])=>`<button data-m="${k}" aria-label="${l}" title="${l}" aria-pressed="${k==="add"?!!PS.pal:!PS.pal&&PS.place==null&&PS.tool===k}">${i}</button>`).join("");
+function pModes(){const b=$("pmode");if(!b)return;b.innerHTML=PMODE.concat(pSatOn()?[["sat","🛰","Подогнать снимок: тяни пальцем, двумя — поворот"]]:[]).map(([k,i,l])=>`<button data-m="${k}" aria-label="${l}" title="${l}" aria-pressed="${k==="add"?!!PS.pal:!PS.pal&&PS.place==null&&PS.tool===k}">${i}</button>`).join("");
 b.querySelectorAll("[data-m]").forEach(x=>x.onclick=()=>pMode(x.dataset.m))}
 function pMode(m){const again=m!=="add"&&m!=="move"&&PS.tool===m&&!PS.pal;PS.draft=PS.meas=PS.rect=PS.own=null;PS.sel=PS.seed=PS.place=null;PS.unlock=false;const sh=$("sh");
-if(m==="add"){PS.pal=!PS.pal;PS.tool="move";if(sh)sh.classList.toggle("min",!PS.pal)}else{PS.pal=false;PS.tool=again?"move":m;if(sh)sh.classList.add("min")}
+if(m==="add"){PS.pal=!PS.pal;PS.tool="move";if(sh)sh.classList.toggle("min",!PS.pal)}else{PS.pal=false;PS.tool=again?"move":m;if(sh)sh.classList.toggle("min",PS.tool!=="sat")}
 pDraw();pPanel()}
 function pPanel(){const pn=$("pn");if(!pn)return;pModes();const chip=(id,t,on,cls)=>`<button class="${on?"t":"n"}${cls?" "+cls:""}" id="${id}" aria-pressed="${!!on}">${t}</button>`;
 let h="";
@@ -1004,6 +1008,14 @@ if(cur.src==="рулетка"&&b.dataset.ok!=="1"){b.dataset.ok="1";b.textConten
 pSet(t+"."+i,"l",pm1(M.d));pSet(t+"."+i,"src","карта");PS.meas=null;plotMap()};
 if($("mcb"))$("mcb").onclick=()=>{const r=pnum($("mcal").value);if(!(r>0&&r<2000)){$("mer").textContent="Впиши длину рулеткой, например 6,2";return}
 const S=plot.sat;S.k=Math.round((S.k||1)*r/M.d*10000)/10000;S.cal={real:r,map:psnap(M.d),t:today()};PS.meas=null;pSave();pSatDraw();pDraw();pPanel()};return}
+if(PS.tool==="sat"){if(!pSatOn()){PS.tool="move";return pPanel()}const S=plot.sat;
+h=`<div class="prow"><span style="flex:1">🛰 Пальцем — сдвиг, двумя — поворот</span><button class="n pi" id="stx" aria-label="Готово">✓</button></div>
+<div class="row" style="align-items:center;flex-wrap:nowrap">${[[-1,"−1°"],[-.2,"−0,2"]].map(([v,t])=>`<button class="n pi" data-sr="${v}">${t}</button>`).join("")}<input type="range" id="srot" min="-45" max="45" step=".1" value="${S.r||0}" style="flex:1;min-width:0" aria-label="Поворот снимка">${[[.2,"+0,2"],[1,"+1°"]].map(([v,t])=>`<button class="n pi" data-sr="${v}">${t}</button>`).join("")}</div>
+<p class="note" style="margin:0">Поворот <b id="srv" style="font-weight:500">${pm1(S.r||0)}°</b>. Совмести забор на снимке с жёлтым контуром. Масштаб — калибровкой в 📏.</p>`;
+pn.innerHTML=h;$("stx").onclick=()=>pMode("move");
+$("srot").oninput=()=>{S.r=+$("srot").value;$("srv").textContent=pm1(S.r)+"°";pSatT()};$("srot").onchange=pSave;
+pn.querySelectorAll("[data-sr]").forEach(b=>b.onclick=()=>{S.r=Math.round(((S.r||0)+ +b.dataset.sr)*10)/10;pSatT();pSave();pPanel()});
+return}
 if(PS.tool==="rect"){h=`<div class="prow"><span style="flex:1">▭ Проведи пальцем — получится рамка</span><button class="n pi" id="rcx" aria-label="Выйти из черчения">✕</button></div>
 <p class="note" style="margin:0">Потом выбери, что это: грядка, сарай или своё.</p>`;pn.innerHTML=h;$("rcx").onclick=()=>pMode("move");return}
 if(PS.tool==="plant"){h=`<div class="prow"><span style="flex:1">🌱 Нажми на место — там вырастет намерение</span><button class="n pi" id="plx" aria-label="Выйти из посадки">✕</button></div>
@@ -1082,7 +1094,8 @@ ${PS.sun?`<div class="row" style="align-items:center"><input type="range" id="sh
 <div class="zone">Спутник</div><div class="row">${chip("sat0","Выкл",!pSatOn())}${chip("sat1","🛰 Снимок",pSatOn())}${pSatOn()?chip("satz","Детальнее: "+((plot.sat.z||19)===19?"да":"нет"),(plot.sat.z||19)===19):""}</div><span class="err" id="sate"></span>
 ${pSatOn()?`<div class="row" style="align-items:center"><span class="note">Прозрачность</span><input type="range" id="sop" min=".3" max="1" step=".05" value="${plot.sat.op??1}" style="flex:1" aria-label="Прозрачность снимка"></div>
 <div class="row">${[["←",-1,0],["→",1,0],["↑",0,-1],["↓",0,1]].map(([t,x,y])=>`<button class="n pi" data-nx="${x},${y}" aria-label="Сдвинуть снимок ${t}">${t}</button>`).join("")}<button class="n pi" data-nr="-1" aria-label="Повернуть против часовой">⟲</button><button class="n pi" data-nr="1" aria-label="Повернуть по часовой">⟳</button><button class="n" id="sat-r">Сброс</button></div>
-<p class="note" style="margin:0">Подгони снимок кнопками, чтобы забор на снимке лёг на жёлтый контур (шаг 0,5 м и 1°). Потом 📏 рулеткой меряй по снимку и записывай стороны и диагонали.${plot.sat.cal?` Калибровка: ${pm1(plot.sat.cal.real)} м рулеткой = ${pm1(plot.sat.cal.map)} м на снимке.`:""} Снимок: Esri, Maxar, Earthstar Geographics.</p>`:""}
+<button class="main-btn" id="satm" style="align-self:flex-start">✋ Подогнать снимок руками</button>
+<p class="note" style="margin:0">Или кнопками: шаг 0,5 м и 1°. Забор на снимке должен лечь на жёлтый контур. Потом 📏 рулеткой меряй по снимку и записывай стороны и диагонали.${plot.sat.cal?` Калибровка: ${pm1(plot.sat.cal.real)} м рулеткой = ${pm1(plot.sat.cal.map)} м на снимке.`:""} Снимок: Esri, Maxar, Earthstar Geographics.</p>`:""}
 ${(()=>{const j=Object.entries(plot.meas||{}).sort((a,b)=>String(b[1].t).localeCompare(String(a[1].t))).slice(0,12);return j.length?`<div class="zone">Журнал замеров</div>${j.map(([id,x])=>`<div class="prow"><button class="n" data-jm="${id}" style="flex:1;text-align:left;min-width:0">${esc(x.note||"Замер")} — ${pm1(x.d)} м${x.az!=null?", "+dir8(x.az):""}${x.dz?`, ${x.dz<0?"ниже":"выше"} на ${pm1(Math.abs(x.dz))} м`:""} <span class="note">${esc(x.src||"")}</span></button><button class="n pi" data-jd="${id}" aria-label="Убрать замер">×</button></div>`).join("")}`:""})()}
 <button class="n" id="pq" style="align-self:flex-start">📋 Анкета участка</button>`:""}`;
 pn.innerHTML=h;
@@ -1104,6 +1117,7 @@ if($("satz"))$("satz").onclick=()=>sat(S=>S.z=(S.z||19)===19?18:19);
 if($("sop"))$("sop").oninput=()=>{plot.sat.op=+$("sop").value;pSatDraw()},$("sop")&&($("sop").onchange=pSave);
 pn.querySelectorAll("[data-nx]").forEach(b=>b.onclick=()=>{const[x,y]=b.dataset.nx.split(",").map(Number);sat(S=>{S.dx=psnap((S.dx||0)+x*.5);S.dy=psnap((S.dy||0)+y*.5)})});
 pn.querySelectorAll("[data-nr]").forEach(b=>b.onclick=()=>sat(S=>S.r=psnap((S.r||0)+ +b.dataset.nr)));
+if($("satm"))$("satm").onclick=()=>pMode("sat");
 if($("sat-r"))$("sat-r").onclick=()=>sat(S=>{S.dx=S.dy=S.r=0;S.k=1;delete S.cal});
 pn.querySelectorAll("[data-jm]").forEach(b=>b.onclick=()=>{const x=plot.meas[b.dataset.jm];PS.tool="measure";PS.meas=[x.a,x.b];$("sh").classList.add("min");pDraw();pPanel()});
 pn.querySelectorAll("[data-jd]").forEach(b=>b.onclick=()=>{if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="?";return}delete plot.meas[b.dataset.jd];pSave();pPanel()});}
@@ -1118,9 +1132,11 @@ function pLL(){const s=plot.site||{},m=String(s.ll||s.map||"").match(/(-?\d{1,2}
 const pSatOn=()=>!!(plot.sat&&plot.sat.on&&pLL());
 function pBg(){const{W,H,X0,Y0}=pDim(),w=W-X0,h=H-Y0;let g=`<rect x="${f2(X0-w*3)}" y="${f2(Y0-h*3)}" width="${f2(w*7)}" height="${f2(h*7)}" fill="#D3DEC6"/>`;if(!pSatOn())return g;
 const S=plot.sat,ll=pLL(),z=S.z||19,n2=2**z,la=ll[0]*Math.PI/180,X=(ll[1]+180)/360*n2,Y=(1-Math.log(Math.tan(la)+1/Math.cos(la))/Math.PI)/2*n2,m=40075016.686*Math.cos(la)/n2,
-R=Math.hypot(w,h)/2+30,r=Math.ceil(R/m),c=[(X0+W)/2+(S.dx||0),(Y0+H)/2+(S.dy||0)];let t="";
+R=Math.hypot(w,h)/2+30,r=Math.ceil(R/m);let t="";
 for(let ty=Math.floor(Y)-r;ty<=Math.floor(Y)+r;ty++)for(let tx=Math.floor(X)-r;tx<=Math.floor(X)+r;tx++)t+=`<svg x="${f2((tx-X)*m)}" y="${f2((ty-Y)*m)}" width="${f2(m+.1)}" height="${f2(m+.1)}" viewBox="0 0 256 256" preserveAspectRatio="none"><image href="/nunu/api/tile/${z}/${((tx%n2)+n2)%n2}/${ty}" width="256" height="256" data-t="${z},${((tx%n2)+n2)%n2},${ty}" onerror="pUp(this)"/></svg>`;
-return g+`<g transform="translate(${f2(c[0])} ${f2(c[1])}) rotate(${f2(-(pTheta()??0)+(S.r||0))}) scale(${S.k||1})" opacity="${S.op??1}">${t}</g>`}
+return g+`<g id="psg" transform="${pSatTr()}" opacity="${S.op??1}">${t}</g>`}
+function pSatTr(){const S=plot.sat,{W,H,X0,Y0}=pDim();return`translate(${f2((X0+W)/2+(S.dx||0))} ${f2((Y0+H)/2+(S.dy||0))}) rotate(${f2(-(pTheta()??0)+(S.r||0))}) scale(${S.k||1})`}
+const pSatT=()=>{const g=$("psg");if(g)g.setAttribute("transform",pSatTr())};
 /* нет детального снимка → берём плитку на уровень крупнее и показываем её нужную четверть (и так до масштаба 16) */
 function pUp(img){const[z,x,y]=img.dataset.t.split(",").map(Number),sv=img.parentNode,v=(sv.getAttribute("viewBox")||"0 0 256 256").split(" ").map(Number);
 if(z<=16)return img.remove();sv.setAttribute("viewBox",[v[0]/2+(x&1)*128,v[1]/2+(y&1)*128,v[2]/2,v[3]/2].join(" "));img.dataset.t=[z-1,x>>1,y>>1].join(",");img.setAttribute("href",`/nunu/api/tile/${z-1}/${x>>1}/${y>>1}`)}
