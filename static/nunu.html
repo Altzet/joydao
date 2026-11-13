@@ -1009,7 +1009,7 @@ app.innerHTML=`<div id="mapw" class="pw" style="background:#BFE3F2;touch-action:
 fitMap();$("x3").onclick=()=>plotMap();$("o3").innerHTML=`<p class="note" style="margin:0">Строю участок…</p>`;
 let T;try{T=await import(P3D)}catch(e){$("o3").innerHTML=`<p class="err" style="margin:0">Не загрузился 3D-движок. Проверь интернет и открой снова.</p>`;return}
 if(!$("c3"))return;p3Stop();p3=p3Scene(T)}
-function p3Stop(){if(!p3)return;cancelAnimationFrame(p3.raf);removeEventListener("keydown",p3.kd);removeEventListener("keyup",p3.ku);removeEventListener("resize",p3.rs);p3.r.dispose();p3=null}
+function p3Stop(){if(!p3)return;cancelAnimationFrame(p3.raf);removeEventListener("keydown",p3.kd);removeEventListener("keyup",p3.ku);removeEventListener("resize",p3.rs);removeEventListener("blur",p3.kx);document.removeEventListener("visibilitychange",p3.kx);p3.r.dispose();p3=null}
 function p3Scene(T){const cv=$("c3"),D=pDim(),P=D.P,r=new T.WebGLRenderer({canvas:cv,antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;
 const S=new T.Scene(),cam=new T.PerspectiveCamera(70,1,.1,600);cam.rotation.order="YXZ";S.fog=new T.Fog(0xBFE3F2,60,260);
 const hemi=new T.HemisphereLight(0xE8F4FF,0x6B7A4A,.9),sun=new T.DirectionalLight(0xFFF2D6,2.2);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);S.add(hemi,sun,sun.target);
@@ -1142,10 +1142,14 @@ else{const k=Math.PI/cv.clientWidth;me.yaw-=(e.clientX-p.x)*k;me.pitch=Math.max(
 cv.onpointerup=cv.onpointercancel=e=>{const p=ptr.get(e.pointerId);ptr.delete(e.pointerId);if(!p)return;if(p.L){me.mv=[0,0];stk.hidden=true;$("hm").style.visibility=""}
 if(Math.hypot(e.clientX-p.x0,e.clientY-p.y0)<8&&performance.now()-p.t<350){const b=cv.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1),cam);
 const h=ray.intersectObjects(pick,false).find(h=>h.distance<40);info(h&&h.object.userData);if(h)done("p")}};
-const kd=e=>{me.keys[e.key.toLowerCase()]=1},ku=e=>{me.keys[e.key.toLowerCase()]=0},rs=()=>{const w=cv.clientWidth,h=cv.clientHeight;r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()};
-addEventListener("keydown",kd);addEventListener("keyup",ku);addEventListener("resize",rs);rs();
-let last=performance.now();const st3={r,kd,ku,rs,raf:0,me,S,cam};
-const loop=n=>{const dt=Math.min(.05,(n-last)/1000);last=n;const K=me.keys;let f=-me.mv[1]+(K.w||K.arrowup?1:0)-(K.s||K.arrowdown?1:0),s=me.mv[0]+(K.d?1:0)-(K.a?1:0);
+/* клавиши по коду (раскладка не важна); отпускание теряется при уходе фокуса — тогда сбрасываем всё */
+const KC={KeyW:"w",KeyA:"a",KeyS:"s",KeyD:"d",ArrowUp:"arrowup",ArrowDown:"arrowdown",ArrowLeft:"arrowleft",ArrowRight:"arrowright"},
+kd=e=>{const k=KC[e.code];if(!k||e.target.closest&&e.target.closest("input,select,textarea"))return;e.preventDefault();me.keys[k]=performance.now()},ku=e=>{const k=KC[e.code];if(k)me.keys[k]=0},
+kx=()=>{me.keys={};me.mv=[0,0]},rs=()=>{const w=cv.clientWidth,h=cv.clientHeight;r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()};
+addEventListener("keydown",kd);addEventListener("keyup",ku);addEventListener("resize",rs);addEventListener("blur",kx);document.addEventListener("visibilitychange",kx);rs();
+t3.addEventListener("change",()=>t3.blur());
+let last=performance.now();const st3={r,kd,ku,rs,kx,raf:0,me,S,cam};
+const loop=n=>{const dt=Math.min(.05,(n-last)/1000);last=n;const K=me.keys;for(const k in K)if(K[k]&&n-K[k]>1500)K[k]=0;  /* нет повторов 1,5 с — клавишу отпустили, но событие потерялось */let f=-me.mv[1]+(K.w||K.arrowup?1:0)-(K.s||K.arrowdown?1:0),s=me.mv[0]+(K.d?1:0)-(K.a?1:0);
 if(K.arrowleft)me.yaw+=1.8*dt;if(K.arrowright)me.yaw-=1.8*dt;const sp=1.6*dt,sy=Math.sin(me.yaw),cy=Math.cos(me.yaw),nx=me.x+(-sy*f+cy*s)*sp,nz=me.z+(-cy*f-sy*s)*sp;
 const ox=me.x,oz=me.z;if(free(nx,me.z))me.x=nx;if(free(me.x,nz))me.z=nz;if(!HD.m&&(walked+=Math.hypot(me.x-ox,me.z-oz))>1.5)done("m");cam.position.set(me.x,1.65,me.z);cam.rotation.set(me.pitch,me.yaw,0);r.render(S,cam);st3.raf=requestAnimationFrame(loop)};
 st3.raf=requestAnimationFrame(loop);$("o3").innerHTML="";return st3}
