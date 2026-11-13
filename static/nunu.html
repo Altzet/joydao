@@ -1119,8 +1119,11 @@ const pSatOn=()=>!!(plot.sat&&plot.sat.on&&pLL());
 function pBg(){const{W,H,X0,Y0}=pDim(),w=W-X0,h=H-Y0;let g=`<rect x="${f2(X0-w*3)}" y="${f2(Y0-h*3)}" width="${f2(w*7)}" height="${f2(h*7)}" fill="#D3DEC6"/>`;if(!pSatOn())return g;
 const S=plot.sat,ll=pLL(),z=S.z||19,n2=2**z,la=ll[0]*Math.PI/180,X=(ll[1]+180)/360*n2,Y=(1-Math.log(Math.tan(la)+1/Math.cos(la))/Math.PI)/2*n2,m=40075016.686*Math.cos(la)/n2,
 R=Math.hypot(w,h)/2+30,r=Math.ceil(R/m),c=[(X0+W)/2+(S.dx||0),(Y0+H)/2+(S.dy||0)];let t="";
-for(let ty=Math.floor(Y)-r;ty<=Math.floor(Y)+r;ty++)for(let tx=Math.floor(X)-r;tx<=Math.floor(X)+r;tx++)t+=`<image href="/nunu/api/tile/${z}/${((tx%n2)+n2)%n2}/${ty}" x="${f2((tx-X)*m)}" y="${f2((ty-Y)*m)}" width="${f2(m+.1)}" height="${f2(m+.1)}" preserveAspectRatio="none"/>`;
+for(let ty=Math.floor(Y)-r;ty<=Math.floor(Y)+r;ty++)for(let tx=Math.floor(X)-r;tx<=Math.floor(X)+r;tx++)t+=`<svg x="${f2((tx-X)*m)}" y="${f2((ty-Y)*m)}" width="${f2(m+.1)}" height="${f2(m+.1)}" viewBox="0 0 256 256" preserveAspectRatio="none"><image href="/nunu/api/tile/${z}/${((tx%n2)+n2)%n2}/${ty}" width="256" height="256" data-t="${z},${((tx%n2)+n2)%n2},${ty}" onerror="pUp(this)"/></svg>`;
 return g+`<g transform="translate(${f2(c[0])} ${f2(c[1])}) rotate(${f2(-(pTheta()??0)+(S.r||0))}) scale(${S.k||1})" opacity="${S.op??1}">${t}</g>`}
+/* нет детального снимка → берём плитку на уровень крупнее и показываем её нужную четверть (и так до масштаба 16) */
+function pUp(img){const[z,x,y]=img.dataset.t.split(",").map(Number),sv=img.parentNode,v=(sv.getAttribute("viewBox")||"0 0 256 256").split(" ").map(Number);
+if(z<=16)return img.remove();sv.setAttribute("viewBox",[v[0]/2+(x&1)*128,v[1]/2+(y&1)*128,v[2]/2,v[3]/2].join(" "));img.dataset.t=[z-1,x>>1,y>>1].join(",");img.setAttribute("href",`/nunu/api/tile/${z-1}/${x>>1}/${y>>1}`)}
 function pSatDraw(){const g=$("psat");if(g)g.innerHTML=pBg();const a=$("patt");if(a)a.hidden=!pSatOn()}
 
 const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],

@@ -315,17 +315,25 @@ def test_state_versions(tmp_path, monkeypatch):
 
 
 def test_tile(tmp_path, monkeypatch):
-    """Спутниковая плитка: только крупные масштабы, тянется один раз и дальше берётся с диска; не-картинку не кэшируем."""
+    """Спутниковая плитка: только крупные масштабы, тянется один раз и дальше с диска; не-картинку не кэшируем;
+    заглушку «нет снимка» (как посреди океана или повтор на другом месте) отдаём 404 — клиент возьмёт масштаб крупнее."""
     monkeypatch.setattr(nunu, "TILES", tmp_path / "t")
+    nunu._NOTILE.clear(); nunu._SEEN.clear()
     calls = []
 
     def fake(url, timeout=8):
         calls.append(url)
-        return url, (b"<html>" if "/19/1/" in url else b"\xff\xd8jpeg")
+        if "/19/1/" in url:
+            return url, b"<html>"
+        if "/19/262144/" in url or "/18/" in url:  # океан и мой участок на 18 — одна и та же заглушка
+            return url, b"\xff\xd8blank"
+        return url, b"\xff\xd8" + url.encode()
     monkeypatch.setattr(nunu, "_get", fake)
     c = TestClient(pause.app)
     assert c.get("/nunu/api/tile/12/1/1").status_code == 404
     r = c.get("/nunu/api/tile/19/300000/180000")
-    assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg" and "/19/180000/300000" in calls[0]
-    assert c.get("/nunu/api/tile/19/300000/180000").content == b"\xff\xd8jpeg" and len(calls) == 1
+    assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg"
+    n = len(calls)
+    assert c.get("/nunu/api/tile/19/300000/180000").status_code == 200 and len(calls) == n  # с диска
     assert c.get("/nunu/api/tile/19/1/1").status_code == 502
+    assert c.get("/nunu/api/tile/18/150000/90000").status_code == 404  # заглушка = океан

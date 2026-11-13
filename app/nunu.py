@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import math
@@ -677,25 +678,52 @@ TILES = DB.parent / "tiles"
 ESRI_TILE = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
 
 
+# Где детального снимка нет, Esri отдаёт 200 с заглушкой «Map data not yet available» — одинаковой картинкой для любых
+# плиток этого масштаба. Узнаём её по отпечатку: совпала с плиткой посреди Тихого океана или уже встречалась на другом месте →
+# отвечаем 404, а клиент берёт плитку на масштаб крупнее и растягивает. ponytail: эвристика; однотонная вода тоже совпадёт — и это правильно.
+_NOTILE: set = set()
+_SEEN: dict = {}
+
+
+async def _fetch_tile(z: int, x: int, y: int) -> bytes:
+    f = TILES / str(z) / str(x) / f"{y}"
+    if f.exists():
+        return f.read_bytes()
+    key = os.environ.get("ESRI_KEY", "")
+    url = ESRI_TILE.format(z=z, x=x, y=y) + (f"?token={urllib.parse.quote(key)}" if key else "")
+    try:
+        _, raw = await asyncio.to_thread(_get, url, 10)
+    except Exception:
+        raise HTTPException(502, "Снимок сейчас недоступен")
+    if not raw.startswith((b"\xff\xd8", b"\x89PNG")):
+        raise HTTPException(502, "Снимок сейчас недоступен")
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_bytes(raw)
+    return raw
+
+
+async def _is_blank(z: int, x: int, y: int, raw: bytes) -> bool:
+    h = hashlib.md5(raw).hexdigest()
+    if (z, "ocean") not in _SEEN:
+        _SEEN[(z, "ocean")] = 1
+        try:
+            _NOTILE.add(hashlib.md5(await _fetch_tile(z, int(2 ** z * 40 / 360), 2 ** (z - 1))).hexdigest())
+        except HTTPException:
+            pass
+    first = _SEEN.setdefault(h, (z, x, y))
+    if first != (z, x, y):
+        _NOTILE.add(h)
+    return h in _NOTILE
+
+
 @router.get("/tile/{z}/{x}/{y}")
 async def tile(z: int, x: int, y: int):
     from fastapi.responses import Response
     if not (16 <= z <= 20 and 0 <= x < 2 ** z and 0 <= y < 2 ** z):
         raise HTTPException(404)
-    f = TILES / str(z) / str(x) / f"{y}"
-    if f.exists():
-        raw = f.read_bytes()
-    else:
-        key = os.environ.get("ESRI_KEY", "")
-        url = ESRI_TILE.format(z=z, x=x, y=y) + (f"?token={urllib.parse.quote(key)}" if key else "")
-        try:
-            _, raw = await asyncio.to_thread(_get, url, 10)
-        except Exception:
-            raise HTTPException(502, "Снимок сейчас недоступен")
-        if not raw.startswith((b"\xff\xd8", b"\x89PNG")):
-            raise HTTPException(502, "Снимок сейчас недоступен")
-        f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_bytes(raw)
+    raw = await _fetch_tile(z, x, y)
+    if await _is_blank(z, x, y, raw):
+        raise HTTPException(404, "Здесь нет снимка такой детальности")
     return Response(raw, media_type="image/png" if raw.startswith(b"\x89PNG") else "image/jpeg",
                     headers={"Cache-Control": "public, max-age=2592000"})
 
