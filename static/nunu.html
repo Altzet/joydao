@@ -225,6 +225,11 @@ const C1=[
 const DEEP=[6,20,29,38,17,31,49,48,21,23,41,50,51,52];
 const C3=[["Чувства","Завтра важный разговор. Как я сплю ночью?",["Как младенец","Прокручиваю всё в голове","Встаю и делаю дела","Сплю, но снится, что опоздал"]],
 ["Чувства","Что быстрее всего выбьет меня из колеи?",["Когда не ценят старание","Когда лезут в моё","Хаос и шум","Почти ничего, я танк"]]];
+/* правки из комнаты администратора (/nunu/admin) приходят в window.NUNU_CFG до этого скрипта.
+Карточки по номеру партии: колода 1 — встроенный набор, считается до правок; новые колоды пишет админка при публикации */
+const DECK1={C0:[...C0.keys()],C1:[...C1.keys()],P2:S.map((_,k)=>k).filter(k=>k<50&&!DEEP.includes(k)),P3:[...DEEP.map(k=>"s"+k),...C3.map((_,k)=>"c"+k)]},
+CFG=window.NUNU_CFG||{},TX=CFG.T||{};for(const[k,a]of[["S",S],["C0",C0],["C1",C1],["C3",C3],["DEEP",DEEP]])if(Array.isArray(CFG[k])&&CFG[k].length>=a.length)a.splice(0,a.length,...CFG[k]);
+const DECKS={1:DECK1,...(CFG.decks||{})},DLAST=Math.max(...Object.keys(DECKS).map(Number));
 const N=10,$=id=>document.getElementById(id),app=$("app");
 const TG=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData?Telegram.WebApp:null;if(TG){TG.ready();TG.expand();try{if(TG.isVersionAtLeast("7.7"))TG.disableVerticalSwipes()}catch(e){}}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -305,19 +310,19 @@ let st=ls.get("nunu2")||{name:"",s:[],g:[],friend:null},draft=null;
 if(!(st.seed>=0))st.s=st.g=[],st.friend=null;
 /* набор из 10 по номеру: у друга тот же номер, значит те же карточки. Лестница 3 разминки → 2 → 3 → 2 (Aron 1997);
 номера до V0 — партии, сыгранные до разминки: у них прежняя лестница 3 → 4 → 3 */
-const V0=1679616,warm=a=>({c:"Разминка",q:a[0],o:a[1],e:a[2],lv:0});
-const P2=S.map((_,k)=>k).filter(k=>k<50&&!DEEP.includes(k)),picked={};
+const V0=1679616,warm=a=>({c:TX.lv0||"Разминка",q:a[0],o:a[1],e:a[2],lv:0});
+const picked={};
 const scene=(k,lv)=>({c:S[k][0],q:S[k][1],o:[...S[k][2],...S[k][3],...S[k][4]],z:1,lv});
 /* в «Кто я, по-твоему?» можно два образа: человек бывает и тем, и другим; в сценах — один поступок */
-const crd=(a,lv,b)=>({c:lv===1?"Кто я, по-твоему?":a[0],q:b&&a[4]?a[4]:a[1],o:a[2],gift:!!a[3],lv,multi:lv===1});
+const crd=(a,lv,b)=>({c:lv===1?TX.lv1||"Кто я, по-твоему?":a[0],q:b&&a[4]?a[4]:a[1],o:a[2],gift:!!a[3],lv,multi:lv===1});
 function pick(seed){if(picked[seed])return picked[seed];let a=seed>>>0||1;const r=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const sh=n=>{const ix=[...Array(n).keys()];for(let k=n-1;k>0;k--){const j=Math.floor(r()*(k+1));[ix[k],ix[j]]=[ix[j],ix[k]]}return ix};
 /* ponytail: A/B формулировок (образ или прямо) по чётности номера; замер ждёт этапа 2 с сервером */
-const ab=seed%2,P3=[...DEEP.map(k=>()=>scene(k,3)),...C3.map(c=>()=>crd(c,3))];
-if(seed<V0)return picked[seed]=[...sh(C1.length).slice(0,3).map(k=>crd(C1[k],1,ab)),...sh(P2.length).slice(0,4).map(k=>scene(P2[k],2)),...sh(P3.length).slice(0,3).map(k=>P3[k]())];
-const o1=sh(C1.length),a1=o1.find(k=>!C1[k][3]);
-return picked[seed]=[...sh(C0.length).slice(0,3).map(k=>warm(C0[k])),...[a1,o1.find(k=>k!==a1)].map(k=>crd(C1[k],1,ab)),...sh(P2.length).slice(0,3).map(k=>scene(P2[k],2)),...sh(P3.length).slice(0,2).map(k=>P3[k]())]}
-const sit=k=>pick(st.seed)[k],newSeed=()=>V0+Math.floor(Math.random()*V0);
+const ab=seed%2,D=seed<V0?DECK1:DECKS[Math.floor(seed/V0)]||DECK1,p3=k=>k[0]==="c"?crd(C3[+k.slice(1)],3):scene(+k.slice(1),3),P2=D.P2;
+if(seed<V0)return picked[seed]=[...sh(D.C1.length).slice(0,3).map(k=>crd(C1[D.C1[k]],1,ab)),...sh(P2.length).slice(0,4).map(k=>scene(P2[k],2)),...sh(D.P3.length).slice(0,3).map(k=>p3(D.P3[k]))];
+const o1=sh(D.C1.length),a1=o1.find(k=>!C1[D.C1[k]][3]);
+return picked[seed]=[...sh(D.C0.length).slice(0,3).map(k=>warm(C0[D.C0[k]])),...[a1,o1.find(k=>k!==a1)].map(k=>crd(C1[D.C1[k]],1,ab)),...sh(P2.length).slice(0,3).map(k=>scene(P2[k],2)),...sh(D.P3.length).slice(0,2).map(k=>p3(D.P3[k]))]}
+const sit=k=>pick(st.seed)[k],newSeed=()=>DLAST*V0+Math.floor(Math.random()*V0);  /* номер партии в диапазоне последней колоды */
 const save=()=>ls.set("nunu2",st);
 function card(h){app.innerHTML=`<div class="card">${h}</div>`}
 function go(){setNav(null);if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
@@ -365,6 +370,7 @@ const SW=["Первым заговорить с незнакомым","Сказ�
 const SP=[["Если застесняюсь, то начну с простого вопроса: «Не подскажете, который час?»","Если буду стоять на кассе, то спрошу продавца, как у него день.","Если окажусь в очереди или в транспорте, то спрошу соседа о чём-нибудь вокруг."],
 ["Если застесняюсь, то скажу хотя бы полфразы: «Слушай, для меня это важно».","Если сяду ужинать с семьёй, то расскажу одну вещь, которая для меня важна.","Если почувствую, что меня не услышали, то скажу это вслух."],
 ["Если застесняюсь, то напишу сообщение, а не позвоню.","Если в пятницу открою Telegram, то первым делом напишу другу.","Если не придумаю повод, то позову на то, что и так собирался делать."]];
+for(const[k,a]of[["SW",SW],["SO",SO],["SP",SP]])if(Array.isArray(CFG[k])&&CFG[k].length)a.splice(0,a.length,...CFG[k]);
 /* что показал остров: тот же счёт, что под картой (все семена сада), а не одна партия — иначе цифры спорят */
 /* всход семени при отметке: 1,7 с анимации на месте карточки, потом сад. Кто просил меньше движения — сразу итог на миг */
 function sprouted(card,same){try{const T=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.HapticFeedback;T&&T.notificationOccurred("success")}catch(e){}
@@ -379,8 +385,8 @@ return`На твоём острове больше всего ${top.map(k=>P[k])
 const sd=d=>d&&d.length>=10?d.slice(8,10)+"."+d.slice(5,7):d||"",fmtD=d=>{try{return new Date(d+"T12:00").toLocaleDateString("ru-RU",{weekday:"short",day:"numeric",month:"long"})}catch(e){return d}},today=()=>new Date().toISOString().slice(0,10);
 function stepWeek(fr,what,loc){setNav("week");fr=typeof fr==="string"?fr:"";let w=0,o=0,tg=!!fr,mateSel=fr?{id:curFid,name:fr}:null;
 const own={what:typeof what==="string"?what:"",due:"",at:"",where:"",act:"",who:"",obs:""},ins=insight(),W=["Своё дело…",...SW],O=[...SO,"Свой вариант…"],FR=(W0()||{friends:[]}).friends||[];
-const obs=()=>{const x=o<3?SO[o]:own.obs.trim()||"…";return x[0].toLowerCase()+x.slice(1)},ownAct=()=>w===0||o===3;
-const plan=()=>{const d=own.due?fmtD(own.due)+(own.at?" в "+own.at:""):own.at?"в "+own.at:"";if(w>0&&o<3)return(d?d+". ":"")+SP[w-1][o];
+const obs=()=>{const x=o<SO.length?SO[o]:own.obs.trim()||"…";return x[0].toLowerCase()+x.slice(1)},ownAct=()=>w===0||o===SO.length;
+const plan=()=>{const d=own.due?fmtD(own.due)+(own.at?" в "+own.at:""):own.at?"в "+own.at:"";if(w>0&&o<SO.length)return(d?d+". ":"")+SP[w-1][o];
 const head=w===0?`«${own.what||"…"}»${d?" — "+d:""}${own.where.trim()?", "+own.where.trim():""}`:`${W[w]}${d?" — "+d:""}`;return`${head}. Если ${obs()}, то ${own.act.trim().replace(/[.!]$/,"")||"…"}${own.act.trim()?".":""}`};
 const mate=()=>mateSel?mateSel.name:own.who.trim();
 const bonus=()=>mateSel&&mateSel.id?`${mateSel.name} получит сообщение и это дело в свой сад. Когда отметите «Так и сделал», ваш мост получит +3 доски.`
@@ -393,7 +399,7 @@ ${w===0?fld("ow",tg?"Что сделаем":"Что сделаю","Испечь 
 <div class="zone">Когда (по желанию)</div><div class="row" style="gap:8px"><input type="date" id="od" min="${today()}" value="${own.due}" style="flex:none"><input type="time" id="ot" value="${own.at}" aria-label="Во сколько напомнить" style="flex:none"></div>
 ${w===0?fld("on","Где (по желанию)","У меня во дворе",own.where,60):""}
 <div class="zone">2. Что может помешать</div>${chips(O,"co",o)}
-${o===3?fld("ob","Моя помеха","Устану после работы",own.obs,80):""}
+${o===SO.length?fld("ob","Моя помеха","Устану после работы",own.obs,80):""}
 ${ownAct()?fld("oa","Если помешает, что я сделаю","Напишу ему первым, а не буду ждать",own.act,100):""}
 <div class="zone">3. Мой план</div><div class="q" id="pl">${esc(plan())}</div>
 <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"${tg?" checked":""}> ${fr?"Сделаем вдвоём: я и "+esc(fr):"Сделаем вместе с другом"}</label>
@@ -409,7 +415,7 @@ $("od").onchange=$("od").oninput=()=>{own.due=$("od").value&&$("od").value>=toda
 if($("cf"))$("cf").onclick=e=>{const b=e.target.closest("button");if(!b)return;const f=FR.find(f=>String(f.id)===b.dataset.f);mateSel=mateSel&&mateSel.id===f.id?null:{id:f.id,name:f.name};draw()};
 $("tg").onchange=()=>{tg=$("tg").checked;if(!tg&&!fr)mateSel=null;draw()};
 $("bk").onclick=()=>loc?plotMap():st.started?go():home();
-$("pt").onclick=()=>{const miss=w===0&&!own.what.trim()?"Напиши, что сделаешь":o===3&&!own.obs.trim()?"Напиши, что может помешать":ownAct()&&!own.act.trim()?"Напиши, что сделаешь, если помешает":"";if(miss){$("er").textContent=miss;return}
+$("pt").onclick=()=>{const miss=w===0&&!own.what.trim()?"Напиши, что сделаешь":o===SO.length&&!own.obs.trim()?"Напиши, что может помешать":ownAct()&&!own.act.trim()?"Напиши, что сделаешь, если помешает":"";if(miss){$("er").textContent=miss;return}
 tg=$("tg").checked;const ld=x=>new Date(x-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),now=new Date();if(own.at&&!own.due)own.due=ld(own.at>now.toTimeString().slice(0,5)?now:new Date(+now+864e5));const m=tg?mate():"",fid=tg&&mateSel&&mateSel.id||null,pid=Math.random().toString(36).slice(2,10),r=plan();
 seeds.push({c:"Удиви себя",q:(w>0?W[w]:"Своё дело")+" · помеха: "+obs()+(tg?" · вдвоём: я и "+(m||"друг"):""),r,z:-1,d:today(),due:own.due||null,at:own.due&&own.at||null,tz:new Date().getTimezoneOffset(),life:null,mine:false,step:1,with:m,fid,pid,...(loc?{loc:{x:loc.x,y:loc.y,o:loc.o||null,dx:loc.dx||0,dy:loc.dy||0},place:loc.name||"Участок"}:{})});saveSeeds();
 if(fid&&API)API("/friend/"+fid+"/plan","POST",{pid,text:r.split(". Если ")[0],due:own.due||null,at:own.due&&own.at||null,tz:new Date().getTimezoneOffset()}).catch(()=>{});loc?plotMap({fresh:seeds.length-1}):garden()}};draw()}
@@ -1601,7 +1607,7 @@ function pSatDraw(){const g=$("psat");if(g)g.innerHTML=pBg();const a=$("pvw");if
 const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],
 ["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],
 ["plot","Участок","M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M12 9v3",()=>plotMap()],
-["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];
+["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];NAV.forEach(n=>{if(TX["nav."+n[0]])n[1]=TX["nav."+n[0]]});
 const nav={cur:undefined};
 function setNav(s){nav.back=null;if(typeof p3Stop==="function")p3Stop();if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
 if(!el){el=document.createElement("nav");el.id="nav";el.setAttribute("aria-label","Меню");document.body.appendChild(el);document.body.classList.add("has-nav");

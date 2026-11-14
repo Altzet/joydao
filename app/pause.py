@@ -18,7 +18,7 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMa
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import config, db, nunu
+from . import config, db, nunu, nunu_admin
 from .nunu import remind_loop  # имя nunu ниже занято маршрутом /nunu
 
 TEXT = (
@@ -76,6 +76,7 @@ async def any_callback(cb: CallbackQuery):
 
 app = FastAPI()
 app.include_router(nunu.router)  # до catch-all внизу
+app.include_router(nunu_admin.router)  # комната администратора /nunu/admin
 CHAT_URL = config.COMMUNITY_CHAT_URL
 # Страница Mini App: светлая карточка в стиле промо, не зависит от темы Telegram.
 # Ссылки t.me открываем через Telegram.WebApp — иначе WebView грузит их внутри себя.
@@ -117,8 +118,9 @@ if(tg){{tg.ready();tg.expand();try{{tg.setHeaderColor("#FFF7FA");tg.setBackgroun
 # Маршрут /nunu обязан стоять до catch-all ниже, иначе игру перехватит заглушка.
 @app.get("/nunu")
 async def nunu():
-    """Игра «Ну-ну» работает и на паузе. Файл читается при каждом запросе: обновлять без перезапуска."""
-    return FileResponse(Path(__file__).resolve().parent.parent / "static" / "nunu.html")
+    """Игра «Ну-ну» работает и на паузе. Файл перечитывается, если изменился: обновлять без перезапуска.
+    Правки из админки подставляются в страницу."""
+    return nunu_admin.page()
 
 
 @app.get("/{path:path}")

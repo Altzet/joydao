@@ -20,6 +20,7 @@ FEED_LIMIT = int(os.environ.get("FEED_LIMIT", "100"))
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "")  # чат премодерации (опционально)
 
 # --- Агент-контентщик канала ---
+NUNU_ADMIN_KEY = os.environ.get("NUNU_ADMIN_KEY", "")  # комната администратора /nunu/admin; пусто — выключена
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 CHANNEL_ID = os.environ.get("CHANNEL_ID", "")        # @joydao — куда публиковать

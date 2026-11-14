@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Ну-ну · админка</title>
+<style>
+:root{--bg:#F4F1EA;--card:#fff;--ink:#22302A;--mute:#6B776F;--line:#E2DDD2;--acc:#1D7A5C;--acc2:#E8F3EE;--warn:#B5452F;--warn2:#FBEDEA;--gold:#B7862B;--r:12px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+*{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:9px;padding:7px 12px}button:hover{border-color:#C9C2B3}
+button.p{background:var(--acc);border-color:var(--acc);color:#fff}button.p:hover{filter:brightness(1.08)}button:disabled{opacity:.45;cursor:default}
+button.d{color:var(--warn)}button.s{padding:4px 9px;font-size:13px}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff}
+input:focus,textarea:focus,select:focus{outline:2px solid #9CCBB8;border-color:var(--acc)}textarea{resize:vertical;min-height:84px}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:10px 18px;background:#fffdf8;border-bottom:1px solid var(--line)}
+.top b{font-size:17px}.top .st{margin-left:auto;font-size:13px;color:var(--mute)}.top .st.dirty{color:var(--gold)}
+.wrap{display:grid;grid-template-columns:210px 1fr;min-height:calc(100vh - 53px)}
+nav{border-right:1px solid var(--line);padding:12px 8px;background:#FBF9F4}nav button{display:flex;justify-content:space-between;width:100%;border:0;background:none;text-align:left;padding:9px 12px;border-radius:9px;margin-bottom:2px}
+nav button[aria-current]{background:var(--acc2);color:var(--acc);font-weight:600}nav .n{font-size:12px;color:var(--mute);font-weight:400}
+main{padding:20px 24px;min-width:0}h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 18px}
+.split{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:18px;align-items:start}
+.list{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.tools{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line);flex-wrap:wrap}.tools input,.tools select{flex:1;min-width:110px;padding:6px 9px}
+.rows{max-height:calc(100vh - 230px);overflow:auto}
+.row{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #F0ECE3;border-radius:0;padding:9px 12px;background:none}
+.row:hover{background:#FAF8F3}.row[aria-current]{background:var(--acc2)}.row .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px}
+.row .m{font-size:12px;color:var(--mute);display:flex;gap:6px;flex-wrap:wrap;margin-bottom:2px}.row.h .t{opacity:.5}
+.tag{font-size:11px;border-radius:20px;padding:1px 8px;background:#EFEBE2;color:var(--mute)}.tag.new{background:#E3F0FA;color:#2C6A99}.tag.ch{background:#FBF1DC;color:var(--gold)}.tag.hd{background:#ECEAE6}.tag.dp{background:#F1E6F5;color:#7A4A8C}
+.ed{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.ed h2{font-size:17px;margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grp{border:1px solid var(--line);border-radius:10px;padding:4px 12px 12px}.grp label{margin-top:8px}.grp .hd{font-size:13px;font-weight:600;margin-top:8px}
+.chk{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;margin:12px 0 0}.chk input{width:auto}
+.prev{margin-top:18px;background:var(--bg);border-radius:var(--r);padding:16px}.prev .c{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.prev .q{font-weight:600;margin:6px 0 12px;font-size:16px}.prev .o{display:grid;grid-template-columns:1fr 1fr;gap:8px}.prev .o span{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}.tile b{display:block;font-size:26px}.tile span{font-size:13px;color:var(--mute)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:16px}.box h3{margin:0 0 10px;font-size:16px}
+.err{background:var(--warn2);color:var(--warn);border-radius:10px;padding:10px 14px;margin:10px 0}.err li{margin:2px 0}.ok{background:var(--acc2);color:var(--acc);border-radius:10px;padding:10px 14px;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px 6px;border-bottom:1px solid #F0ECE3;text-align:left;vertical-align:top}th{color:var(--mute);font-weight:500;font-size:13px}
+.login{max-width:380px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px}
+.empty{color:var(--mute);padding:30px;text-align:center}.hint{font-size:13px;color:var(--mute);margin-top:6px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}nav{display:flex;overflow:auto;border-right:0;border-bottom:1px solid var(--line);padding:6px}nav button{width:auto;white-space:nowrap;gap:6px}
+.split{grid-template-columns:1fr}.rows{max-height:260px}.g3{grid-template-columns:1fr}main{padding:14px}}
+</style></head><body><div id="app"></div>
+<script>
+/* Комната администратора «Ну-ну». Правки копятся в черновике на сервере (автосохранение),
+«Опубликовать» делает их живыми. Карточки не удаляются, а скрываются: номера партий держатся за них */
+const $=s=>document.querySelector(s),app=$("#app"),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])),
+J=x=>JSON.stringify(x),clone=x=>JSON.parse(J(x));
+let KEY=sessionStorage.getItem("nk")||localStorage.getItem("nk")||"",B,L,W,VER=0,TEXTS={},DECKS={},sec="home",sel={S:0,C0:0,C1:0,C3:0,SW:0},q="",cat="",flt="all",saveT=null,state="",errs=[],msg="",hist=null,stats=null;
+const KINDS={S:{t:"Ситуации",one:"Ситуация",sub:"Сцены уровней 2 и 3: тема, текст и шесть поступков — по два на цветы, деревья и скалы."},
+C0:{t:"Разминка",one:"Разминка",sub:"Уровень 0: лёгкий вопрос, два ответа и два значка."},
+C1:{t:"Кто я, по-твоему?",one:"Карточка",sub:"Уровень 1: черта, вопрос, четыре образа. «Подарок» — оценочная черта, её сажает только ответ друга."},
+C3:{t:"Личное",one:"Карточка",sub:"Уровень 3: вопросы о чувствах, четыре ответа. Личные ситуации отмечаются галочкой в «Ситуациях»."}};
+const ZN=[["🌸 Цветы","иду к людям"],["🌳 Деревья","беру паузу, отхожу"],["🪨 Скалы","стою за своё"]];
+async function api(p,o={}){const r=await fetch("/nunu/admin/api/"+p,{...o,headers:{"X-Admin-Key":KEY,"Content-Type":"application/json"}});
+let j={};try{j=await r.json()}catch(e){}if(r.status===401&&p!=="login"){logout("Ключ больше не подходит");throw new Error("401")}
+if(!r.ok){const e=new Error(typeof j.detail==="string"?j.detail:"Ошибка "+r.status);e.j=j;throw e}return j}
+function logout(m){KEY="";sessionStorage.removeItem("nk");localStorage.removeItem("nk");login(m)}
+function login(m){app.innerHTML=`<form class="login" id="lf"><h1>Комната администратора</h1><p class="sub">Ну-ну · JoyDAO. Ключ лежит на сервере в .env (NUNU_ADMIN_KEY).</p>
+<label for="k">Ключ</label><input id="k" type="password" autocomplete="current-password" required autofocus>
+<label class="chk"><input type="checkbox" id="rm"> Запомнить на этом устройстве</label>${m?`<div class="err">${esc(m)}</div>`:""}
+<div class="bar" style="border:0;padding:0"><button class="p">Войти</button></div></form>`;
+$("#lf").onsubmit=async e=>{e.preventDefault();KEY=$("#k").value.trim();try{await api("login",{method:"POST"});($("#rm").checked?localStorage:sessionStorage).setItem("nk",KEY);load()}catch(x){KEY="";login(x.message)}}}
+async function load(){const c=await api("content");B=c.base;L=c.live;VER=c.v;DECKS=c.decks;TEXTS=c.texts;W=c.draft||clone(L);W.T=W.T||{};W.H=W.H||{};render()}
+/* ---------- черновик: автосохранение ---------- */
+function touch(){state="dirty";stBar();clearTimeout(saveT);saveT=setTimeout(saveDraft,700)}
+async function saveDraft(){clearTimeout(saveT);state="saving";stBar();try{await api("draft",{method:"PUT",body:J(W)});state=changes().length?"saved":"";}catch(e){state="fail"}stBar()}
+function stBar(){const e=$("#st");if(!e)return;const n=changes().length;e.className="st"+(state==="dirty"||state==="saving"?" dirty":"");
+e.textContent=state==="saving"?"Сохраняю черновик…":state==="dirty"?"Есть несохранённое…":state==="fail"?"Не сохранилось — проверь связь":n?`Черновик: ${n} ${pl(n,"изменение","изменения","изменений")} · не опубликовано`:`Всё опубликовано · версия ${VER||"встроенная"}`;
+const b=$("#nb-pub");if(b)b.querySelector(".n").textContent=n||""}
+const pl=(n,a,b,c)=>n%10===1&&n%100!==11?a:n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?b:c;
+const hid=(k,i)=>(W.H[k]||[]).includes(i),Lhid=(k,i)=>((L.H||{})[k]||[]).includes(i);
+function changes(){if(!W)return[];const r=[];for(const k in KINDS){W[k].forEach((x,i)=>{if(i>=L[k].length)r.push([k,i,"новая"]);else if(J(x)!==J(L[k][i]))r.push([k,i,"изменена"]);
+if(hid(k,i)!==Lhid(k,i))r.push([k,i,hid(k,i)?"скрыта":"снова видна"])})}
+W.DEEP.forEach(i=>{if(!L.DEEP.includes(i))r.push(["S",i,"стала личной"])});L.DEEP.forEach(i=>{if(!W.DEEP.includes(i))r.push(["S",i,"больше не личная"])});
+if(J([W.SW,W.SO,W.SP])!==J([L.SW,L.SO,L.SP]))r.push(["SW",0,"дела недели"]);if(J(clean(W.T))!==J(clean(L.T||{})))r.push(["T",0,"названия"]);return r}
+const clean=T=>Object.fromEntries(Object.entries(T||{}).filter(([k,v])=>v&&v!==TEXTS[k]).sort());
+/* ---------- каркас ---------- */
+const SECS=[["home","Обзор"],["S","Ситуации"],["C0","Разминка"],["C1","Кто я, по-твоему?"],["C3","Личное"],["SW","Дела недели"],["T","Названия"],["pub","Публикация"]];
+function render(){const sy=scrollY;app.innerHTML=`<div class="top"><b>Ну-ну · админка</b><span id="st" class="st"></span><button class="s" id="lo">Выйти</button></div>
+<div class="wrap"><nav>${SECS.map(([k,t])=>`<button id="nb-${k}" data-s="${k}"${sec===k?' aria-current="page"':""}>${t}<span class="n">${KINDS[k]?W[k].length:""}</span></button>`).join("")}</nav><main id="m"></main></div>`;
+app.querySelector("nav").onclick=e=>{const b=e.target.closest("[data-s]");if(b){sec=b.dataset.s;msg="";render();scrollTo(0,0)}};$("#lo").onclick=()=>logout();
+({home:home,SW:deeds,T:texts,pub:pub})[sec]?({home,SW:deeds,T:texts,pub})[sec]():kind(sec);stBar();scrollTo(0,sy)}
+/* ---------- обзор ---------- */
+async function home(){const m=$("#m");m.innerHTML=`<h1>Обзор</h1><p class="sub">Как живёт приложение. Колода — набор карточек для новых партий: сейчас №${Math.max(1,...Object.keys(DECKS).map(Number))}.</p><div id="sts" class="empty">Загружаю…</div>`;
+try{stats=await api("stats")}catch(e){$("#sts").textContent=e.message;return}const s=stats;if(sec!=="home"||!$("#sts"))return;
+const T=[["users","знают бот"],["players","играли в «Ну-ну»"],["active7","заходили за 7 дней"],["games","партий всего"],["games7","партий за 7 дней"],["plays","ответов друзей"],["friends","пар друзей"],["bottles","бутылок в море"],["reported","жалоб на бутылки"]];
+const days=[...Array(30)].map((_,i)=>{const d=new Date(Date.now()-(29-i)*864e5).toISOString().slice(0,10);return[d,s.days[d]||0,s.playdays[d]||0]}),mx=Math.max(1,...days.map(d=>d[1]+d[2]));
+$("#sts").outerHTML=`<div class="tiles">${T.map(([k,t])=>`<div class="tile"><b>${s[k]}</b><span>${t}</span></div>`).join("")}</div>
+<div class="box"><h3>Партии и ответы за 30 дней</h3><svg viewBox="0 0 600 150" width="100%" role="img" aria-label="Партии по дням">${days.map(([d,g,p],i)=>{const x=i*20+3,hg=g/mx*120,hp=p/mx*120;
+return`<g><title>${d}: партий ${g}, ответов ${p}</title><rect x="${x}" y="${130-hg}" width="14" height="${hg}" fill="#1D7A5C" rx="2"/><rect x="${x}" y="${130-hg-hp}" width="14" height="${hp}" fill="#9CCBB8" rx="2"/></g>`}).join("")}
+<line x1="0" y1="130.5" x2="600" y2="130.5" stroke="#E2DDD2"/><text x="0" y="146" font-size="11" fill="#6B776F">${days[0][0].slice(5)}</text><text x="600" y="146" font-size="11" fill="#6B776F" text-anchor="end">сегодня</text></svg>
+<p class="hint">■ тёмные — новые партии, ■ светлые — ответы друзей.</p></div>
+<div class="box"><h3>Содержимое</h3><table><tr><th>Раздел</th><th>Всего</th><th>Скрыто</th><th>В новых партиях</th></tr>${Object.keys(KINDS).map(k=>`<tr><td>${KINDS[k].t}</td><td>${W[k].length}</td><td>${(W.H[k]||[]).length}</td><td>${W[k].length-(W.H[k]||[]).length}</td></tr>`).join("")}
+<tr><td>Дела недели</td><td>${W.SW.length}</td><td>—</td><td>${W.SW.length} × ${W.SO.length} помехи</td></tr></table></div>`}
+/* ---------- списки карточек ---------- */
+const txt=(k,x)=>k==="C0"?x[0]:x[1],head=(k,x)=>k==="C0"?x[2].join(" "):x[0];
+function kind(k){const K=KINDS[k],A=W[k],cats=[...new Set(A.map(x=>x[0]))].sort(),m=$("#m");let i=Math.min(sel[k],A.length-1);
+const vis=A.map((x,j)=>j).filter(j=>{const x=A[j];if(q&&!J(x).toLowerCase().includes(q.toLowerCase()))return false;if(k!=="C0"&&cat&&x[0]!==cat)return false;
+if(flt==="hid"&&!hid(k,j))return false;if(flt==="vis"&&hid(k,j))return false;if(flt==="ch"&&!(j>=L[k].length||J(A[j])!==J(L[k][j])))return false;if(flt==="deep"&&!W.DEEP.includes(j))return false;return true});
+m.innerHTML=`<h1>${K.t}</h1><p class="sub">${K.sub}</p>${msg?`<div class="ok">${esc(msg)}</div>`:""}<div class="split"><div class="list"><div class="tools">
+<input id="q" placeholder="Поиск по тексту" value="${esc(q)}">${k!=="C0"?`<select id="cat"><option value="">Все темы</option>${cats.map(c=>`<option${c===cat?" selected":""}>${esc(c)}</option>`).join("")}</select>`:""}
+<select id="flt">${[["all","Все"],["vis","В игре"],["hid","Скрытые"],["ch","Изменённые"],...(k==="S"?[["deep","Личные"]]:[])].map(([v,t])=>`<option value="${v}"${flt===v?" selected":""}>${t}</option>`).join("")}</select>
+<button class="p" id="add" style="width:100%">＋ ${k==="S"?"Новая ситуация":"Новая карточка"}</button></div>
+<div class="rows">${vis.length?vis.map(j=>{const x=A[j];return`<button class="row${hid(k,j)?" h":""}" data-i="${j}"${j===i?' aria-current="true"':""}><div class="m"><span>№${j+1}</span><span>${esc(head(k,x))}</span>
+${j>=L[k].length?'<span class="tag new">новая</span>':J(x)!==J(L[k][j])?'<span class="tag ch">изменена</span>':""}${hid(k,j)?'<span class="tag hd">скрыта</span>':""}${k==="S"&&W.DEEP.includes(j)?'<span class="tag dp">личная</span>':""}${k==="C1"&&x[3]?'<span class="tag">подарок</span>':""}</div>
+<div class="t">${esc(txt(k,x))||"<i>пусто</i>"}</div></button>`}).join(""):`<div class="empty">Ничего не нашлось</div>`}</div></div><div id="ed"></div></div>`;
+$("#q").oninput=e=>{q=e.target.value;const p=e.target.selectionStart;kind(k);$("#q").focus();$("#q").setSelectionRange(p,p)};
+if($("#cat"))$("#cat").onchange=e=>{cat=e.target.value;kind(k)};$("#flt").onchange=e=>{flt=e.target.value;kind(k)};
+m.querySelector(".rows").onclick=e=>{const b=e.target.closest("[data-i]");if(b){sel[k]=+b.dataset.i;msg="";kind(k)}};
+$("#add").onclick=()=>{const t={S:[cat||A[i]&&A[i][0]||"Друзья","",["",""],["",""],["",""]],C0:["",["",""],["",""]],C1:[cat||"Открытость","",["","","",""]],C3:[cat||"Чувства","",["","","",""]]}[k];
+A.push(t);sel[k]=A.length-1;q="";flt="all";touch();render()};editor(k,i)}
+function editor(k,i){const A=W[k],x=A[i],e=$("#ed");if(!x){e.innerHTML=`<div class="ed empty">Выбери карточку слева</div>`;return}
+const isNew=i>=L[k].length,orig=isNew?null:L[k][i],bi=i<B[k].length?B[k][i]:null,cats=[...new Set(A.map(y=>y[0]))].sort();
+const inp=(p,v,ph="",max=600)=>`<input data-p="${p}" value="${esc(v)}" placeholder="${esc(ph)}" maxlength="${max}">`,ta=(p,v,ph="")=>`<textarea data-p="${p}" placeholder="${esc(ph)}" maxlength="600">${esc(v)}</textarea>`;
+let f="";
+if(k==="S")f=`<div class="g2"><div><label>Тема</label>${inp("0",x[0],"Друзья",40).replace("<input",'<input list="cats"')}</div><div></div></div>
+<label>Ситуация</label>${ta("1",x[1],"Где ты, что случилось, чего от тебя ждут…")}
+<label>Шесть поступков — по два на каждую стихию острова</label><div class="g3">${ZN.map(([n,d],g)=>`<div class="grp"><div class="hd">${n}</div><div class="hint">${d}</div>${[0,1].map(j=>`<label>Вариант ${j+1}</label>${inp((g+2)+"."+j,x[g+2][j],"",120)}`).join("")}</div>`).join("")}</div>
+<label class="chk"><input type="checkbox" id="deep"${W.DEEP.includes(i)?" checked":""}> Личная — задевает ядро «Я», идёт на уровень 3</label>`;
+if(k==="C0")f=`<label>Вопрос</label>${inp("0",x[0],"Суббота, восемь утра. Я…",200)}<div class="g2">${[0,1].map(j=>`<div class="grp"><div class="hd">Ответ ${j+1}</div><label>Текст</label>${inp("1."+j,x[1][j],"",60)}<label>Значок (эмодзи)</label>${inp("2."+j,x[2][j],"☀️",12)}</div>`).join("")}</div>`;
+if(k==="C1"||k==="C3")f=`<div class="g2"><div><label>${k==="C1"?"Черта":"Тема"}</label>${inp("0",x[0],k==="C1"?"Экстраверсия":"Чувства",40).replace("<input",'<input list="cats"')}</div><div></div></div>
+<label>Вопрос</label>${inp("1",x[1],"",300)}<label>${k==="C1"?"Четыре образа":"Четыре ответа"}</label><div class="g2">${[0,1,2,3].map(j=>inp("2."+j,x[2][j],"Вариант "+(j+1),120)).join("")}</div>
+${k==="C1"?`<label class="chk"><input type="checkbox" id="gift"${x[3]?" checked":""}> Подарок — оценочная черта (сажает только ответ друга)</label>
+<label>Другая формулировка вопроса (для A/B, необязательно)</label>${inp("4",x[4]||"","Прямой вопрос вместо образа",300)}`:""}`;
+const pv=k==="S"?{c:x[0],q:x[1],o:[...x[2],...x[3],...x[4]]}:k==="C0"?{c:"Разминка",q:x[0],o:x[1].map((o,j)=>(x[2][j]||"")+" "+o)}:{c:k==="C1"?"Кто я, по-твоему?":x[0],q:x[1],o:x[2]};
+e.innerHTML=`<div class="ed"><h2>${KINDS[k].one} №${i+1} ${isNew?'<span class="tag new">новая, ещё не в игре</span>':J(x)!==J(orig)?'<span class="tag ch">изменена</span>':""} ${hid(k,i)?'<span class="tag hd">скрыта из новых партий</span>':""}</h2>
+<datalist id="cats">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist>${f}
+<div class="bar"><button id="hide">${hid(k,i)?"Вернуть в игру":"Скрыть из новых партий"}</button><button id="dup">Копия</button>
+${!isNew&&J(x)!==J(orig)?`<button id="undo">Как опубликовано</button>`:""}${bi&&J(x)!==J(bi)?`<button id="bi">Как было изначально</button>`:""}
+${isNew?`<button class="d" id="del">Удалить</button>`:""}</div>
+<p class="hint">${isNew?"Новую карточку можно удалить до публикации.":"Опубликованные карточки не удаляются — их можно скрыть: старые партии ссылаются на них по номеру."}</p>
+<div class="prev"><div class="c">Так увидит игрок · ${esc(pv.c)}</div><div class="q">${esc(pv.q)||"…"}</div><div class="o">${pv.o.map(o=>`<span>${esc(o)||"…"}</span>`).join("")}</div></div></div>`;
+e.oninput=ev=>{const t=ev.target;if(!t.dataset.p)return;const p=t.dataset.p.split(".").map(Number);let o=x;while(p.length>1)o=o[p.shift()];o[p[0]]=t.value;
+if(k==="C1")trimC1(x);touch();const r=document.querySelector(`.row[data-i="${i}"] .t`);if(r)r.textContent=txt(k,x);updPrev()};
+const updPrev=()=>{const pv2=k==="S"?{q:x[1],o:[...x[2],...x[3],...x[4]]}:k==="C0"?{q:x[0],o:x[1].map((o,j)=>(x[2][j]||"")+" "+o)}:{q:x[1],o:x[2]};
+e.querySelector(".prev .c").textContent="Так увидит игрок · "+(k==="C0"?"Разминка":k==="C1"?"Кто я, по-твоему?":x[0]);e.querySelector(".prev .q").textContent=pv2.q||"…";e.querySelectorAll(".prev .o span").forEach((s,j)=>s.textContent=pv2.o[j]||"…")};
+if($("#deep"))$("#deep").onchange=ev=>{W.DEEP=ev.target.checked?[...W.DEEP,i]:W.DEEP.filter(j=>j!==i);touch();render()};
+if($("#gift"))$("#gift").onchange=ev=>{x[3]=ev.target.checked?1:0;trimC1(x);touch();render()};
+$("#hide").onclick=()=>{const h=W.H[k]||[];W.H[k]=hid(k,i)?h.filter(j=>j!==i):[...h,i];touch();render()};
+$("#dup").onclick=()=>{A.push(clone(x));sel[k]=A.length-1;msg="Копия добавлена в конец списка";touch();render()};
+if($("#undo"))$("#undo").onclick=()=>{A[i]=clone(orig);touch();render()};if($("#bi"))$("#bi").onclick=()=>{A[i]=clone(bi);touch();render()};
+if($("#del"))$("#del").onclick=()=>{if(!confirm("Удалить эту новую карточку?"))return;A.splice(i,1);const fix=a=>a.filter(j=>j!==i).map(j=>j>i?j-1:j);if(k==="S")W.DEEP=fix(W.DEEP);if(W.H[k])W.H[k]=fix(W.H[k]);sel[k]=Math.max(0,i-1);touch();render()}}
+function trimC1(x){if(!x[4])x.length=Math.min(x.length,4);if(x.length===4&&!x[3])x.length=3;if(x.length===5&&x[3]==null)x[3]=0}
+/* ---------- дела недели ---------- */
+function deeds(){const m=$("#m"),i=Math.min(sel.SW,W.SW.length-1);
+m.innerHTML=`<h1>Дела недели</h1><p class="sub">«Удиви себя»: игрок выбирает дело и помеху, приложение подставляет план «если помеха — то действие». План нужен на каждую пару «дело × помеха».</p>
+<div class="box"><h3>Помехи</h3><div class="g3">${W.SO.map((o,j)=>`<div style="display:flex;gap:6px"><input data-so="${j}" value="${esc(o)}" maxlength="120">${W.SO.length>1?`<button class="s d" data-sod="${j}" title="Убрать">✕</button>`:""}</div>`).join("")}</div>
+<div class="bar" style="border:0;padding-top:4px"><button id="soadd">＋ Помеха</button><span class="hint">Последним в приложении всегда идёт «Свой вариант…».</span></div></div>
+<div class="split"><div class="list"><div class="tools"><button class="p" id="swadd" style="width:100%">＋ Новое дело</button></div><div class="rows">${W.SW.map((s,j)=>`<button class="row" data-i="${j}"${j===i?' aria-current="true"':""}><div class="m"><span>№${j+1}</span></div><div class="t">${esc(s)}</div></button>`).join("")}</div></div>
+<div class="ed">${W.SW[i]==null?"":`<h2>Дело №${i+1}</h2><label>Дело</label><input data-sw value="${esc(W.SW[i])}" maxlength="120">${W.SO.map((o,j)=>`<label>Если «${esc(o)}», то…</label><textarea data-sp="${j}" maxlength="300" style="min-height:60px">${esc((W.SP[i]||[])[j]||"")}</textarea>`).join("")}
+<div class="bar">${W.SW.length>1?`<button class="d" id="swdel">Удалить дело</button>`:""}</div><p class="hint">Дела можно удалять: в саду игрока хранится текст, а не номер.</p>`}</div></div>`;
+m.querySelector(".rows").onclick=e=>{const b=e.target.closest("[data-i]");if(b){sel.SW=+b.dataset.i;deeds()}};
+m.oninput=e=>{const t=e.target;if(t.dataset.so!=null){W.SO[+t.dataset.so]=t.value}else if(t.dataset.sw!=null){W.SW[i]=t.value;const r=m.querySelector(`.row[data-i="${i}"] .t`);if(r)r.textContent=t.value}
+else if(t.dataset.sp!=null){W.SP[i]=W.SP[i]||[];W.SP[i][+t.dataset.sp]=t.value}else return;touch()};
+m.onclick=e=>{const d=e.target.closest("[data-sod]");if(d){const j=+d.dataset.sod;W.SO.splice(j,1);W.SP.forEach(p=>p.splice(j,1));touch();deeds()}};
+$("#soadd").onclick=()=>{W.SO.push("Новая помеха");W.SP.forEach(p=>p.push(""));touch();deeds()};
+$("#swadd").onclick=()=>{W.SW.push("Новое дело");W.SP.push(W.SO.map(()=>""));sel.SW=W.SW.length-1;touch();deeds()};
+if($("#swdel"))$("#swdel").onclick=()=>{if(!confirm("Удалить дело «"+W.SW[i]+"»?"))return;W.SW.splice(i,1);W.SP.splice(i,1);sel.SW=Math.max(0,i-1);touch();deeds()}}
+/* ---------- названия ---------- */
+const TL={"title":"Название приложения (вкладка браузера)","nav.map":"Нижнее меню: карта","nav.garden":"Нижнее меню: сад","nav.week":"Нижнее меню: «Удиви себя»","nav.plot":"Нижнее меню: участок","nav.settings":"Нижнее меню: настройки","lv0":"Уровень 0 (разминка)","lv1":"Уровень 1 (кто я)"};
+function texts(){const m=$("#m");m.innerHTML=`<h1>Названия</h1><p class="sub">Пустое поле — встроенное название. Новое название появится у игроков после публикации.</p><div class="box">
+${Object.keys(TEXTS).map(k=>`<label>${esc(TL[k]||k)}</label><input data-t="${k}" value="${esc(W.T[k]||"")}" placeholder="${esc(TEXTS[k])}" maxlength="40">`).join("")}</div>`;
+m.oninput=e=>{const k=e.target.dataset.t;if(!k)return;const v=e.target.value.trim();if(v)W.T[k]=v;else delete W.T[k];touch()}}
+/* ---------- публикация ---------- */
+async function pub(){const m=$("#m"),C=changes(),nm=(k,i)=>k==="SW"?"Дела недели":k==="T"?"Названия":`${KINDS[k].t} · №${i+1}`;
+m.innerHTML=`<h1>Публикация</h1><p class="sub">Черновик видишь только ты. После публикации правки сразу видят все игроки при следующем открытии.</p>
+<div class="box"><h3>Что изменится (${C.length})</h3>${C.length?`<table>${C.map(([k,i,w])=>`<tr><td>${esc(nm(k,i))}</td><td>${w}</td><td>${KINDS[k]?`<button class="s" data-go="${k}:${i}">Открыть</button>`:`<button class="s" data-go="${k}:0">Открыть</button>`}</td></tr>`).join("")}</table>`:`<p class="hint">Черновик совпадает с опубликованным.</p>`}
+${errs.length?`<div class="err"><b>Не опубликовано, поправь:</b><ul>${errs.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}${msg?`<div class="ok">${esc(msg)}</div>`:""}
+<label>Заметка к версии</label><input id="note" maxlength="200" placeholder="Например: 5 новых ситуаций про работу">
+<div class="bar"><button class="p" id="go"${C.length?"":" disabled"}>Опубликовать</button><button id="rst"${C.length?"":" disabled"}>Сбросить черновик</button></div>
+<p class="hint">Добавил или скрыл карточку — у новых партий будет новая колода; уже начатые партии доиграют своими карточками.</p></div>
+<div class="box"><h3>История версий</h3><div id="hv" class="hint">Загружаю…</div></div>
+<div class="box"><h3>Резервная копия</h3><div class="bar" style="border:0;padding:0"><button id="exp">Скачать черновик (JSON)</button><label class="s" style="margin:0"><button id="impb">Загрузить из файла в черновик</button><input type="file" id="imp" accept=".json,application/json" hidden></label></div></div>`;
+m.onclick=e=>{const g=e.target.closest("[data-go]");if(g){const[k,i]=g.dataset.go.split(":");sec=k;if(KINDS[k]){sel[k]=+i;q="";cat="";flt="all"}msg="";render()}};
+$("#go").onclick=async()=>{errs=[];msg="";await saveDraft();try{const r=await api("publish",{method:"POST",body:J({note:$("#note").value})});
+msg=`Опубликовано: версия ${r.v}${r.deck?`, новые партии пойдут по колоде №${r.deck}`:""}.`;await load();sec="pub"}catch(e){errs=e.j&&e.j.detail&&e.j.detail.errors||[e.message]}render()};
+$("#rst").onclick=async()=>{if(!confirm("Выбросить все неопубликованные правки?"))return;W=clone(L);W.T=W.T||{};W.H=W.H||{};await api("draft",{method:"PUT",body:"null"});state="";errs=[];msg="Черновик сброшен";render()};
+$("#exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(W,null,1)],{type:"application/json"}));a.download=`nunu-content-${new Date().toISOString().slice(0,10)}.json`;a.click()};
+$("#impb").onclick=()=>$("#imp").click();$("#imp").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.S)||!Array.isArray(d.SW))throw 0;W=d;W.T=W.T||{};W.H=W.H||{};await saveDraft();msg="Файл загружен в черновик — проверь и опубликуй";render()}catch(x){errs=["Это не файл с содержимым «Ну-ну»"];render()}};
+try{hist=await api("versions")}catch(e){return}if(sec!=="pub"||!$("#hv"))return;$("#hv").outerHTML=hist.length?`<table><tr><th>Версия</th><th>Когда (UTC)</th><th>Заметка</th><th></th></tr>${hist.map(h=>`<tr><td>${h.v}${h.v===VER?' <span class="tag new">сейчас</span>':""}</td><td>${esc(h.at)}</td><td>${esc(h.note)||"—"}</td><td>${h.v!==VER?`<button class="s" data-rv="${h.v}">В черновик</button>`:""}</td></tr>`).join("")}</table><p class="hint">«В черновик» загружает старую версию для правки; карточки, добавленные позже, останутся скрытыми.</p>`:`<p class="hint">Ещё ничего не публиковалось — в игре встроенные тексты.</p>`;
+m.querySelectorAll("[data-rv]").forEach(b=>b.onclick=async()=>{if(changes().length&&!confirm("Текущий черновик заменится. Продолжить?"))return;const r=await api("restore/"+b.dataset.rv,{method:"POST"});W=r.draft;W.T=W.T||{};W.H=W.H||{};state="saved";msg=`Версия ${b.dataset.rv} в черновике`;render()})}
+addEventListener("beforeunload",e=>{if(state==="dirty"||state==="saving"){saveDraft();e.preventDefault()}});
+KEY?api("login",{method:"POST"}).then(load,()=>logout()):login();
+</script></body></html>

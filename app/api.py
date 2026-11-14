@@ -20,8 +20,9 @@ from . import compat, config, db, joy, suisai
 from .i18n import NAMES, SUPPORTED, T, long_text, table, user_lang
 
 app = FastAPI(title="Suisai Dating API")
-from . import nunu  # noqa: E402
+from . import nunu, nunu_admin  # noqa: E402
 app.include_router(nunu.router)
+app.include_router(nunu_admin.router)
 STATIC = Path(__file__).parent.parent / "static"
 
 _bot = None  # устанавливается из main.py для нотификаций и фото
@@ -677,5 +678,5 @@ async def photo(user_id: int, x_init_data: str | None = Header(default=None)):
 
 @app.get("/nunu")
 async def nunu():
-    """Игра «Ну-ну»: самостоятельная страница, работает и в Telegram, и в браузере."""
-    return FileResponse(STATIC / "nunu.html")
+    """Игра «Ну-ну»: самостоятельная страница, работает и в Telegram, и в браузере. С правками из админки."""
+    return nunu_admin.page()
