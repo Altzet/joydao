@@ -180,6 +180,9 @@ footer{border-top:1px solid #F0F0EE;padding:36px 0;font-size:15px;color:#777}foo
 @media(max-width:860px){.hero{padding:48px 0 64px}.hero .w{grid-template-columns:1fr;gap:48px}header nav{display:none}header .btn{margin-left:auto}section{padding:72px 0}h2{margin-bottom:32px}.lead{font-size:18px}}"""
 
 
+ICON = '<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%228%20-1%2048%2059%22%3E%3Cpath%20d%3D%22M32%2058V30M32%2044c-5-2-9-6-11-11M32%2038c5-2%208-6%2010-11%22%20stroke%3D%22%23A0703C%22%20stroke-width%3D%225%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2220%22%20r%3D%2214%22%20fill%3D%22%231D7A5C%22/%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2230%22%20r%3D%229%22%20fill%3D%22%232E8F6E%22/%3E%3Ccircle%20cx%3D%2246%22%20cy%3D%2224%22%20r%3D%2210%22%20fill%3D%22%232E8F6E%22/%3E%3Ccircle%20cx%3D%2225%22%20cy%3D%2214%22%20r%3D%228%22%20fill%3D%22%233FA07E%22/%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2212%22%20r%3D%227%22%20fill%3D%22%233FA07E%22/%3E%3Ccircle%20cx%3D%2227%22%20cy%3D%2222%22%20r%3D%223.2%22%20fill%3D%22%23E2533F%22/%3E%3Ccircle%20cx%3D%2241%22%20cy%3D%2221%22%20r%3D%223.2%22%20fill%3D%22%23E2533F%22/%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2231%22%20r%3D%223%22%20fill%3D%22%23E2533F%22/%3E%3C/svg%3E">'
+
+
 def render(lp: dict) -> str:
     lp = norm(lp)
     L, off = lp["links"], set(lp.get("off") or [])
@@ -230,7 +233,7 @@ def render(lp: dict) -> str:
     return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{E(seo["title"] or lp["brand"])}</title><meta name="description" content="{E(seo["desc"])}">
 <meta property="og:title" content="{E(seo["title"] or lp["brand"])}"><meta property="og:description" content="{E(seo["desc"])}"><meta property="og:type" content="website">
-<meta name="theme-color" content="#ffffff"><script>document.documentElement.className="js"</script><style>{CSS}</style></head><body>
+<meta name="theme-color" content="#ffffff">{ICON}<script>document.documentElement.className="js"</script><style>{CSS}</style></head><body>
 <header><div class="w"><a class="logo" href="#">{E(lp["brand"])}</a><nav>{nav}</nav><a class="btn sm" href="{play}">Открыть</a></div></header>
 <main>{"".join(parts)}</main>
 <footer><div class="w"><span>{E(lp["footer"])}</span>{foot}<a class="sp" href="{play}">Играть в Telegram →</a></div></footer>
