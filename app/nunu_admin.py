@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import secrets
@@ -19,7 +20,7 @@ from pathlib import Path
 from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import config
+from . import config, landing, nunu
 from .nunu import _db
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
@@ -101,7 +102,7 @@ def base() -> dict:
     if _cache.get("base_mt") != mt:
         s = p.read_text(encoding="utf-8")
         _cache.update(base={k: _lit(s, k) for k in KEYS} | {"T": dict(TEXTS), "H": {}}, base_mt=mt, html=s)
-    return _cache["base"]
+    return _cache["base"] | {"LP": landing.default()}
 
 
 def _deck1(b: dict) -> dict:
@@ -156,6 +157,7 @@ def _check(d: dict, prev: dict) -> list[str]:
     if not d["SW"] or not d["SO"] or len(d["SP"]) != len(d["SW"]) \
             or not all(isinstance(p, list) and len(p) == len(d["SO"]) and all(_s(x, 300) for x in p) for p in d["SP"]):
         e.append("У каждого дела нужен план «если — то» на каждую помеху")
+    e += landing.check(d.get("LP"))
     T = d.get("T") or {}
     if not isinstance(T, dict) or any(k not in TEXTS or not _s(v, 40) for k, v in T.items()):
         e.append("Названия: пустое или слишком длинное")
@@ -173,7 +175,11 @@ def _check(d: dict, prev: dict) -> list[str]:
 
 def _live(c) -> tuple[int, dict]:
     r = c.execute("SELECT v, data FROM admin_versions ORDER BY v DESC LIMIT 1").fetchone()
-    return (r["v"], json.loads(r["data"])) if r else (0, base())
+    if not r:
+        return 0, base()
+    d = json.loads(r["data"])
+    d.setdefault("LP", landing.default())  # версии до лендинга
+    return r["v"], d
 
 
 def _decks(c) -> dict:
@@ -201,6 +207,14 @@ def page() -> HTMLResponse:
         if t:
             s = s.replace("<title>Ну-ну</title>", f"<title>{t.replace('<', '').replace('&', '')}</title>", 1)
     return HTMLResponse(s)
+
+
+def landing_page() -> HTMLResponse:
+    """Главная сайта: лендинг из опубликованных настроек."""
+    if "lp" not in _cache:
+        with closing(_c()) as c:
+            _cache["lp"] = landing.render(_live(c)[1]["LP"])
+    return HTMLResponse(_cache["lp"])
 
 
 # ---------- страница и API ----------
@@ -258,7 +272,7 @@ async def publish(req: Request, x_admin_key: str | None = Header(default=None)):
         e = _check(d, live)
         if e:
             raise HTTPException(422, {"errors": e[:20]})
-        d = {k: d[k] for k in KEYS} | {"T": {k: v for k, v in (d.get("T") or {}).items() if v != TEXTS[k]},
+        d = {k: d[k] for k in KEYS} | {"LP": d["LP"], "T": {k: v for k, v in (d.get("T") or {}).items() if v != TEXTS[k]},
                                          "H": {k: sorted(set(v)) for k, v in (d.get("H") or {}).items() if v}}
         decks, b = _decks(c), base()
         last = decks[max(decks, key=int)] if decks else _deck1(b)
@@ -271,6 +285,7 @@ async def publish(req: Request, x_admin_key: str | None = Header(default=None)):
         cur = c.execute("INSERT INTO admin_versions(data, note) VALUES(?, ?)", (json.dumps(d, ensure_ascii=False), note))
         c.execute("DELETE FROM admin_kv WHERE k='draft'")
     _cache.pop("cfg", None)
+    _cache.pop("lp", None)
     return {"ok": True, "v": cur.lastrowid, "deck": deck}
 
 
@@ -290,6 +305,7 @@ def restore(v: int, req: Request, x_admin_key: str | None = Header(default=None)
         if not r:
             raise HTTPException(404)
         d, (_, live) = json.loads(r["data"]), _live(c)
+        d.setdefault("LP", landing.default())
         H = {k: set(x) for k, x in (d.get("H") or {}).items()}
         for k in KEYS:
             extra = live[k][len(d[k]):]
@@ -321,3 +337,46 @@ def stats(req: Request, x_admin_key: str | None = Header(default=None)):
                 "friends": one("SELECT COUNT(*) FROM friends"), "games7": one(
                     "SELECT COUNT(*) FROM games WHERE created_at >= datetime('now','-7 day')"),
                 "days": days, "playdays": plays}
+
+
+@router.post("/api/preview")
+async def preview(req: Request, x_admin_key: str | None = Header(default=None)):
+    """Превью лендинга из черновика — в админке, до публикации."""
+    _auth(req, x_admin_key)
+    lp = await req.json()
+    e = landing.check(lp)
+    if e:
+        return HTMLResponse("<body style='font:16px system-ui;padding:24px;color:#B5452F'>" +
+                            "<br>".join(landing.E(x) for x in e) + "</body>")
+    return HTMLResponse(landing.render(lp))
+
+
+IMG = {b"\x89PNG": "png", b"\xff\xd8\xff": "jpg", b"RIFF": "webp", b"GIF8": "gif"}
+
+
+def _up() -> Path:
+    p = nunu.DB.parent / "uploads"
+    p.mkdir(exist_ok=True)
+    return p
+
+
+@router.post("/api/upload")
+async def upload(req: Request, x_admin_key: str | None = Header(default=None)):
+    """Картинка для лендинга: только PNG/JPG/WebP/GIF до 3 МБ, имя — по содержимому."""
+    _auth(req, x_admin_key)
+    raw = await req.body()
+    if len(raw) > 3_000_000:
+        raise HTTPException(413, "Картинка больше 3 МБ")
+    ext = next((x for m, x in IMG.items() if raw.startswith(m) and (x != "webp" or raw[8:12] == b"WEBP")), None)
+    if not ext:
+        raise HTTPException(415, "Нужна картинка PNG, JPG, WebP или GIF")
+    name = f"{hashlib.sha256(raw).hexdigest()[:20]}.{ext}"
+    (_up() / name).write_bytes(raw)
+    return {"url": f"/nunu/admin/up/{name}"}
+
+
+@router.get("/up/{name}")
+def uploaded(name: str):
+    if not re.fullmatch(r"[0-9a-f]{20}\.(png|jpg|webp|gif)", name) or not (_up() / name).exists():
+        raise HTTPException(404)
+    return FileResponse(_up() / name, headers={"Cache-Control": "public, max-age=31536000, immutable"})

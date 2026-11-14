@@ -125,7 +125,8 @@ async def nunu():
 
 @app.get("/{path:path}")
 async def page(path: str = ""):
-    return HTMLResponse(PAGE)
+    """Сайт: лендинг из админки (раздел «Лендинг»). Старое объявление PAGE осталось в коде на случай паузы."""
+    return nunu_admin.landing_page()
 
 
 log = logging.getLogger("joydao")

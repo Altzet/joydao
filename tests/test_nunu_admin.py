@@ -53,3 +53,31 @@ def test_admin(tmp_path, monkeypatch):
     for _ in range(10):
         c.post("/nunu/admin/api/login", headers={"X-Admin-Key": "x"})
     assert c.post("/nunu/admin/api/login", headers=K).status_code == 429  # перебор ключа тормозим
+
+
+def test_landing(tmp_path, monkeypatch):
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    monkeypatch.setattr(config, "NUNU_ADMIN_KEY", "k" * 20)
+    for k in ("cfg", "lp"):
+        nunu_admin._cache.pop(k, None)
+    nunu_admin._fails.clear()
+    c = TestClient(pause.app)
+    home = c.get("/").text
+    assert "Знаешь ли ты своих друзей?" in home and "грандиозное" not in home  # вместо старого объявления
+    d = c.get("/nunu/admin/api/content", headers=K).json()
+    w = d["live"]
+    w["LP"]["links"]["play"] = "javascript:alert(1)"
+    c.put("/nunu/admin/api/draft", json=w, headers=K)
+    assert c.post("/nunu/admin/api/publish", json={}, headers=K).status_code == 422  # чужие схемы ссылок не пускаем
+    png = b"\x89PNG\r\n\x1a\n" + b"0" * 50
+    assert c.post("/nunu/admin/api/upload", content=b"<svg>", headers=K).status_code == 415
+    url = c.post("/nunu/admin/api/upload", content=png, headers=K).json()["url"]
+    assert c.get(url).content == png
+    w["LP"]["links"]["play"] = "https://t.me/x/y"
+    w["LP"]["hero"]["title"] = "Привет <b>"
+    w["LP"]["features"]["items"][0]["img"] = url
+    w["LP"]["off"] = ["faq"]
+    c.put("/nunu/admin/api/draft", json=w, headers=K)
+    assert c.post("/nunu/admin/api/publish", json={}, headers=K).status_code == 200
+    home = c.get("/").text
+    assert "Привет &lt;b&gt;" in home and url in home and 'id="faq"' not in home and "https://t.me/x/y" in home

@@ -38,6 +38,9 @@ main{padding:20px 24px;min-width:0}h1{font-size:22px;margin:0 0 4px}.sub{color:v
 table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px 6px;border-bottom:1px solid #F0ECE3;text-align:left;vertical-align:top}th{color:var(--mute);font-weight:500;font-size:13px}
 .login{max-width:380px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px}
 .empty{color:var(--mute);padding:30px;text-align:center}.hint{font-size:13px;color:var(--mute);margin-top:6px}
+.lp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}.pv{position:sticky;top:66px}
+.pvf{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;height:calc(100vh - 120px);display:flex;justify-content:center}.pvf iframe{border:0;height:100%;background:#fff}
+@media(max-width:1100px){.lp{grid-template-columns:1fr}.pv{position:static}.pvf{height:640px}}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}nav{display:flex;overflow:auto;border-right:0;border-bottom:1px solid var(--line);padding:6px}nav button{width:auto;white-space:nowrap;gap:6px}
 .split{grid-template-columns:1fr}.rows{max-height:260px}.g3{grid-template-columns:1fr}main{padding:14px}}
 </style></head><body><div id="app"></div>
@@ -61,7 +64,7 @@ function login(m){app.innerHTML=`<form class="login" id="lf"><h1>Комната 
 <label class="chk"><input type="checkbox" id="rm"> Запомнить на этом устройстве</label>${m?`<div class="err">${esc(m)}</div>`:""}
 <div class="bar" style="border:0;padding:0"><button class="p">Войти</button></div></form>`;
 $("#lf").onsubmit=async e=>{e.preventDefault();KEY=$("#k").value.trim();try{await api("login",{method:"POST"});($("#rm").checked?localStorage:sessionStorage).setItem("nk",KEY);load()}catch(x){KEY="";login(x.message)}}}
-async function load(){const c=await api("content");B=c.base;L=c.live;VER=c.v;DECKS=c.decks;TEXTS=c.texts;W=c.draft||clone(L);W.T=W.T||{};W.H=W.H||{};render()}
+async function load(){const c=await api("content");B=c.base;L=c.live;VER=c.v;DECKS=c.decks;TEXTS=c.texts;W=c.draft||clone(L);W.T=W.T||{};W.H=W.H||{};W.LP=W.LP||clone(L.LP);render()}
 /* ---------- черновик: автосохранение ---------- */
 function touch(){state="dirty";stBar();clearTimeout(saveT);saveT=setTimeout(saveDraft,700)}
 async function saveDraft(){clearTimeout(saveT);state="saving";stBar();try{await api("draft",{method:"PUT",body:J(W)});state=changes().length?"saved":"";}catch(e){state="fail"}stBar()}
@@ -73,14 +76,14 @@ const hid=(k,i)=>(W.H[k]||[]).includes(i),Lhid=(k,i)=>((L.H||{})[k]||[]).include
 function changes(){if(!W)return[];const r=[];for(const k in KINDS){W[k].forEach((x,i)=>{if(i>=L[k].length)r.push([k,i,"новая"]);else if(J(x)!==J(L[k][i]))r.push([k,i,"изменена"]);
 if(hid(k,i)!==Lhid(k,i))r.push([k,i,hid(k,i)?"скрыта":"снова видна"])})}
 W.DEEP.forEach(i=>{if(!L.DEEP.includes(i))r.push(["S",i,"стала личной"])});L.DEEP.forEach(i=>{if(!W.DEEP.includes(i))r.push(["S",i,"больше не личная"])});
-if(J([W.SW,W.SO,W.SP])!==J([L.SW,L.SO,L.SP]))r.push(["SW",0,"дела недели"]);if(J(clean(W.T))!==J(clean(L.T||{})))r.push(["T",0,"названия"]);return r}
+if(J([W.SW,W.SO,W.SP])!==J([L.SW,L.SO,L.SP]))r.push(["SW",0,"дела недели"]);if(J(clean(W.T))!==J(clean(L.T||{})))r.push(["T",0,"названия"]);if(W.LP&&J(W.LP)!==J(L.LP))r.push(["LP",0,"лендинг"]);return r}
 const clean=T=>Object.fromEntries(Object.entries(T||{}).filter(([k,v])=>v&&v!==TEXTS[k]).sort());
 /* ---------- каркас ---------- */
-const SECS=[["home","Обзор"],["S","Ситуации"],["C0","Разминка"],["C1","Кто я, по-твоему?"],["C3","Личное"],["SW","Дела недели"],["T","Названия"],["pub","Публикация"]];
+const SECS=[["home","Обзор"],["S","Ситуации"],["C0","Разминка"],["C1","Кто я, по-твоему?"],["C3","Личное"],["SW","Дела недели"],["T","Названия"],["LP","Лендинг"],["pub","Публикация"]];
 function render(){const sy=scrollY;app.innerHTML=`<div class="top"><b>Ну-ну · админка</b><span id="st" class="st"></span><button class="s" id="lo">Выйти</button></div>
 <div class="wrap"><nav>${SECS.map(([k,t])=>`<button id="nb-${k}" data-s="${k}"${sec===k?' aria-current="page"':""}>${t}<span class="n">${KINDS[k]?W[k].length:""}</span></button>`).join("")}</nav><main id="m"></main></div>`;
 app.querySelector("nav").onclick=e=>{const b=e.target.closest("[data-s]");if(b){sec=b.dataset.s;msg="";render();scrollTo(0,0)}};$("#lo").onclick=()=>logout();
-({home:home,SW:deeds,T:texts,pub:pub})[sec]?({home,SW:deeds,T:texts,pub})[sec]():kind(sec);stBar();scrollTo(0,sy)}
+const F={home,SW:deeds,T:texts,LP:lpSec,pub};F[sec]?F[sec]():kind(sec);stBar();scrollTo(0,sy)}
 /* ---------- обзор ---------- */
 async function home(){const m=$("#m");m.innerHTML=`<h1>Обзор</h1><p class="sub">Как живёт приложение. Колода — набор карточек для новых партий: сейчас №${Math.max(1,...Object.keys(DECKS).map(Number))}.</p><div id="sts" class="empty">Загружаю…</div>`;
 try{stats=await api("stats")}catch(e){$("#sts").textContent=e.message;return}const s=stats;if(sec!=="home"||!$("#sts"))return;
@@ -162,8 +165,47 @@ const TL={"title":"Название приложения (вкладка бра�
 function texts(){const m=$("#m");m.innerHTML=`<h1>Названия</h1><p class="sub">Пустое поле — встроенное название. Новое название появится у игроков после публикации.</p><div class="box">
 ${Object.keys(TEXTS).map(k=>`<label>${esc(TL[k]||k)}</label><input data-t="${k}" value="${esc(W.T[k]||"")}" placeholder="${esc(TEXTS[k])}" maxlength="40">`).join("")}</div>`;
 m.oninput=e=>{const k=e.target.dataset.t;if(!k)return;const v=e.target.value.trim();if(v)W.T[k]=v;else delete W.T[k];touch()}}
+/* ---------- лендинг: главная сайта ---------- */
+const LB={hero:"Первый экран",how:"Как это работает",features:"Возможности",cta:"Призыв",faq:"Вопросы"};let pvT=null,pvW="pc",upP=null;
+function lpSec(){const P=W.LP,m=$("#m"),F=(p,l,v,o={})=>`<label>${l}</label>${o.ta?`<textarea data-l="${p}" maxlength="${o.max||600}" style="min-height:${o.h||70}px">${esc(v)}</textarea>`:`<input data-l="${p}" value="${esc(v)}" maxlength="${o.max||120}" placeholder="${esc(o.ph||"")}">`}`,
+img=(p,v,hint)=>`<label>Картинка</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${v?`<img src="${esc(v)}" alt="" style="height:54px;border-radius:8px;border:1px solid var(--line)">`:`<span class="hint" style="margin:0">${hint}</span>`}
+<button class="s" data-up="${p}">${v?"Заменить":"Загрузить"}</button>${v?`<button class="s d" data-rm="${p}">Убрать</button>`:""}</div>`,
+items=(k,a,b,mx,withImg)=>`${P[k].items.map((x,i)=>`<div class="grp" style="margin-top:10px"><div style="display:flex;gap:6px;align-items:center;margin-top:8px"><b style="font-size:13px">№${i+1}</b><span style="margin-left:auto"></span>
+<button class="s" data-mv="${k}:${i}:-1"${i?"":" disabled"} aria-label="Выше">↑</button><button class="s" data-mv="${k}:${i}:1"${i<P[k].items.length-1?"":" disabled"} aria-label="Ниже">↓</button><button class="s d" data-del="${k}:${i}">Удалить</button></div>
+${F(`${k}.items.${i}.${a[0]}`,a[1],x[a[0]],{max:120})}${F(`${k}.items.${i}.${b[0]}`,b[1],x[b[0]],{ta:1})}${withImg?img(`${k}.items.${i}.img`,x.img,"без картинки"):""}</div>`).join("")}
+${P[k].items.length<mx?`<div class="bar" style="border:0;padding-top:10px"><button data-add="${k}">＋ Добавить</button></div>`:""}`,
+blk={hero:()=>`${F("hero.kicker","Надпись над заголовком",P.hero.kicker,{max:60})}${F("hero.title","Заголовок",P.hero.title,{ta:1,max:120,h:56})}${F("hero.sub","Текст под заголовком",P.hero.sub,{ta:1,max:400})}
+<div class="g2"><div>${F("hero.cta","Главная кнопка (ведёт в игру)",P.hero.cta,{max:40})}</div><div>${F("hero.cta2","Вторая кнопка (к «Как это работает»)",P.hero.cta2,{max:40})}</div></div>${img("hero.img",P.hero.img,"нет — показан телефон с игрой")}`,
+how:()=>`${F("how.title","Заголовок блока",P.how.title,{max:80})}${items("how",["t","Шаг"],["d","Пояснение"],6)}`,
+features:()=>`${F("features.title","Заголовок блока",P.features.title,{max:80})}${items("features",["t","Название"],["d","Описание"],8,1)}`,
+cta:()=>`${F("cta.title","Заголовок",P.cta.title,{max:120})}${F("cta.sub","Текст",P.cta.sub,{max:300})}${F("cta.btn","Кнопка",P.cta.btn,{max:40})}`,
+faq:()=>`${F("faq.title","Заголовок блока",P.faq.title,{max:80})}${items("faq",["q","Вопрос"],["a","Ответ"],20)}`};
+m.innerHTML=`<h1>Лендинг</h1><p class="sub">Главная страница сайта. Справа — черновик; посетители увидят его после публикации.</p>
+<div class="lp"><div><div class="box"><h3>Основное</h3><div class="g2"><div>${F("brand","Название в шапке",P.brand,{max:40})}</div><div>${F("footer","Подпись внизу",P.footer,{max:200})}</div></div>
+${F("seo.title","Заголовок для поиска и вкладки",P.seo.title,{max:120})}${F("seo.desc","Описание для поиска и превью ссылки",P.seo.desc,{ta:1,max:300,h:56})}
+<div class="g2"><div>${F("links.play","Ссылка «Играть»",P.links.play,{max:500,ph:"https://t.me/…"})}</div><div>${F("links.channel","Канал",P.links.channel,{max:500,ph:"https://t.me/…"})}</div><div>${F("links.chat","Чат",P.links.chat,{max:500,ph:"https://t.me/…"})}</div></div></div>
+<div class="box"><h3>Блоки и порядок</h3><table>${P.order.map((k,i)=>`<tr><td style="width:40%">${LB[k]}</td><td><label class="chk" style="margin:0"><input type="checkbox" data-on="${k}"${P.off.includes(k)?"":" checked"}> показывать</label></td>
+<td style="text-align:right;white-space:nowrap"><button class="s" data-ord="${i}:-1"${i?"":" disabled"} aria-label="Выше">↑</button> <button class="s" data-ord="${i}:1"${i<P.order.length-1?"":" disabled"} aria-label="Ниже">↓</button></td></tr>`).join("")}</table></div>
+${P.order.map(k=>`<div class="box"${P.off.includes(k)?' style="opacity:.55"':""}><h3>${LB[k]}${P.off.includes(k)?" · скрыт":""}</h3>${blk[k]()}</div>`).join("")}<input type="file" id="lpf" accept="image/png,image/jpeg,image/webp,image/gif" hidden></div>
+<div class="pv"><div style="display:flex;gap:6px;margin-bottom:8px;align-items:center"><button class="s" data-pw="pc"${pvW==="pc"?' style="background:var(--acc2)"':""}>Компьютер</button><button class="s" data-pw="ph"${pvW==="ph"?' style="background:var(--acc2)"':""}>Телефон</button><span class="hint" style="margin:0 0 0 auto">Превью черновика</span></div>
+<div class="pvf"><iframe id="pvi" title="Превью лендинга" style="width:${pvW==="ph"?"390px":"100%"}"></iframe></div></div></div>`;
+const set=(p,v)=>{const a=p.split("."),l=a.pop();a.reduce((o,k)=>o[k],P)[l]=v};
+m.oninput=e=>{const t=e.target;if(t.dataset.l){set(t.dataset.l,t.value);touch();pvSoon()}};
+m.onchange=e=>{const t=e.target;if(t.dataset.on){P.off=t.checked?P.off.filter(k=>k!==t.dataset.on):[...P.off,t.dataset.on];touch();lpSec()}};
+m.onclick=e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+if(d.pw){pvW=d.pw;lpSec();return}if(d.ord){const[i,s2]=d.ord.split(":").map(Number);const o=P.order;[o[i],o[i+s2]]=[o[i+s2],o[i]];touch();lpSec();return}
+if(d.mv){const[k,i,s2]=d.mv.split(":");const a=P[k].items,j=+i+ +s2;[a[+i],a[j]]=[a[j],a[+i]];touch();lpSec();return}
+if(d.del){const[k,i]=d.del.split(":");if(!confirm("Удалить пункт?"))return;P[k].items.splice(+i,1);touch();lpSec();return}
+if(d.add){P[d.add].items.push(d.add==="faq"?{q:"Новый вопрос",a:""}:d.add==="features"?{t:"Новая возможность",d:"",img:""}:{t:"Новый шаг",d:""});touch();lpSec();return}
+if(d.rm){set(d.rm,"");touch();lpSec();return}if(d.up){upP=d.up;$("#lpf").click()}};
+$("#lpf").onchange=async e=>{const f=e.target.files[0];if(!f||!upP)return;try{const r=await fetch("/nunu/admin/api/upload",{method:"POST",headers:{"X-Admin-Key":KEY,"Content-Type":f.type||"application/octet-stream"},body:f});const j=await r.json();if(!r.ok)throw new Error(j.detail||"Не загрузилось");set(upP,j.url);touch();lpSec()}catch(x){alert(x.message)}};
+pv()}
+function pvSoon(){clearTimeout(pvT);pvT=setTimeout(pv,500)}
+async function pv(){const f=$("#pvi");if(!f)return;let y=0;try{y=f.contentWindow.scrollY}catch(e){}
+try{const r=await fetch("/nunu/admin/api/preview",{method:"POST",headers:{"X-Admin-Key":KEY,"Content-Type":"application/json"},body:J(W.LP)});
+f.srcdoc=(await r.text()).replace("</body>",`<script>addEventListener("load",()=>{document.querySelectorAll(".rv").forEach(e=>e.classList.add("in"));scrollTo(0,${y|0})});document.addEventListener("click",e=>{if(e.target.closest("a"))e.preventDefault()})<\/script></body>`)}catch(e){}}
 /* ---------- публикация ---------- */
-async function pub(){const m=$("#m"),C=changes(),nm=(k,i)=>k==="SW"?"Дела недели":k==="T"?"Названия":`${KINDS[k].t} · №${i+1}`;
+async function pub(){const m=$("#m"),C=changes(),nm=(k,i)=>k==="SW"?"Дела недели":k==="LP"?"Лендинг (главная сайта)":k==="T"?"Названия":`${KINDS[k].t} · №${i+1}`;
 m.innerHTML=`<h1>Публикация</h1><p class="sub">Черновик видишь только ты. После публикации правки сразу видят все игроки при следующем открытии.</p>
 <div class="box"><h3>Что изменится (${C.length})</h3>${C.length?`<table>${C.map(([k,i,w])=>`<tr><td>${esc(nm(k,i))}</td><td>${w}</td><td>${KINDS[k]?`<button class="s" data-go="${k}:${i}">Открыть</button>`:`<button class="s" data-go="${k}:0">Открыть</button>`}</td></tr>`).join("")}</table>`:`<p class="hint">Черновик совпадает с опубликованным.</p>`}
 ${errs.length?`<div class="err"><b>Не опубликовано, поправь:</b><ul>${errs.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}${msg?`<div class="ok">${esc(msg)}</div>`:""}
@@ -175,11 +217,11 @@ ${errs.length?`<div class="err"><b>Не опубликовано, поправь
 m.onclick=e=>{const g=e.target.closest("[data-go]");if(g){const[k,i]=g.dataset.go.split(":");sec=k;if(KINDS[k]){sel[k]=+i;q="";cat="";flt="all"}msg="";render()}};
 $("#go").onclick=async()=>{errs=[];msg="";await saveDraft();try{const r=await api("publish",{method:"POST",body:J({note:$("#note").value})});
 msg=`Опубликовано: версия ${r.v}${r.deck?`, новые партии пойдут по колоде №${r.deck}`:""}.`;await load();sec="pub"}catch(e){errs=e.j&&e.j.detail&&e.j.detail.errors||[e.message]}render()};
-$("#rst").onclick=async()=>{if(!confirm("Выбросить все неопубликованные правки?"))return;W=clone(L);W.T=W.T||{};W.H=W.H||{};await api("draft",{method:"PUT",body:"null"});state="";errs=[];msg="Черновик сброшен";render()};
+$("#rst").onclick=async()=>{if(!confirm("Выбросить все неопубликованные правки?"))return;W=clone(L);W.T=W.T||{};W.H=W.H||{};W.LP=W.LP||clone(L.LP);await api("draft",{method:"PUT",body:"null"});state="";errs=[];msg="Черновик сброшен";render()};
 $("#exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(W,null,1)],{type:"application/json"}));a.download=`nunu-content-${new Date().toISOString().slice(0,10)}.json`;a.click()};
-$("#impb").onclick=()=>$("#imp").click();$("#imp").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.S)||!Array.isArray(d.SW))throw 0;W=d;W.T=W.T||{};W.H=W.H||{};await saveDraft();msg="Файл загружен в черновик — проверь и опубликуй";render()}catch(x){errs=["Это не файл с содержимым «Ну-ну»"];render()}};
+$("#impb").onclick=()=>$("#imp").click();$("#imp").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.S)||!Array.isArray(d.SW))throw 0;W=d;W.T=W.T||{};W.H=W.H||{};W.LP=W.LP||clone(L.LP);await saveDraft();msg="Файл загружен в черновик — проверь и опубликуй";render()}catch(x){errs=["Это не файл с содержимым «Ну-ну»"];render()}};
 try{hist=await api("versions")}catch(e){return}if(sec!=="pub"||!$("#hv"))return;$("#hv").outerHTML=hist.length?`<table><tr><th>Версия</th><th>Когда (UTC)</th><th>Заметка</th><th></th></tr>${hist.map(h=>`<tr><td>${h.v}${h.v===VER?' <span class="tag new">сейчас</span>':""}</td><td>${esc(h.at)}</td><td>${esc(h.note)||"—"}</td><td>${h.v!==VER?`<button class="s" data-rv="${h.v}">В черновик</button>`:""}</td></tr>`).join("")}</table><p class="hint">«В черновик» загружает старую версию для правки; карточки, добавленные позже, останутся скрытыми.</p>`:`<p class="hint">Ещё ничего не публиковалось — в игре встроенные тексты.</p>`;
-m.querySelectorAll("[data-rv]").forEach(b=>b.onclick=async()=>{if(changes().length&&!confirm("Текущий черновик заменится. Продолжить?"))return;const r=await api("restore/"+b.dataset.rv,{method:"POST"});W=r.draft;W.T=W.T||{};W.H=W.H||{};state="saved";msg=`Версия ${b.dataset.rv} в черновике`;render()})}
+m.querySelectorAll("[data-rv]").forEach(b=>b.onclick=async()=>{if(changes().length&&!confirm("Текущий черновик заменится. Продолжить?"))return;const r=await api("restore/"+b.dataset.rv,{method:"POST"});W=r.draft;W.T=W.T||{};W.H=W.H||{};W.LP=W.LP||clone(L.LP);state="saved";msg=`Версия ${b.dataset.rv} в черновике`;render()})}
 addEventListener("beforeunload",e=>{if(state==="dirty"||state==="saving"){saveDraft();e.preventDefault()}});
 KEY?api("login",{method:"POST"}).then(load,()=>logout()):login();
 </script></body></html>
