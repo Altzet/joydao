@@ -79,11 +79,11 @@ W.DEEP.forEach(i=>{if(!L.DEEP.includes(i))r.push(["S",i,"стала личной
 if(J([W.SW,W.SO,W.SP])!==J([L.SW,L.SO,L.SP]))r.push(["SW",0,"дела недели"]);if(J(clean(W.T))!==J(clean(L.T||{})))r.push(["T",0,"названия"]);if(W.LP&&J(W.LP)!==J(L.LP))r.push(["LP",0,"лендинг"]);return r}
 const clean=T=>Object.fromEntries(Object.entries(T||{}).filter(([k,v])=>v&&v!==TEXTS[k]).sort());
 /* ---------- каркас ---------- */
-const SECS=[["home","Обзор"],["S","Ситуации"],["C0","Разминка"],["C1","Кто я, по-твоему?"],["C3","Личное"],["SW","Дела недели"],["T","Названия"],["LP","Лендинг"],["pub","Публикация"]];
+const SECS=[["home","Обзор"],["S","Ситуации"],["C0","Разминка"],["C1","Кто я, по-твоему?"],["C3","Личное"],["SW","Дела недели"],["T","Названия"],["LP","Лендинг"],["SUB","Ситуации участников"],["pub","Публикация"]];
 function render(){const sy=scrollY;app.innerHTML=`<div class="top"><b>Ну-ну · админка</b><span id="st" class="st"></span><button class="s" id="lo">Выйти</button></div>
 <div class="wrap"><nav>${SECS.map(([k,t])=>`<button id="nb-${k}" data-s="${k}"${sec===k?' aria-current="page"':""}>${t}<span class="n">${KINDS[k]?W[k].length:""}</span></button>`).join("")}</nav><main id="m"></main></div>`;
 app.querySelector("nav").onclick=e=>{const b=e.target.closest("[data-s]");if(b){sec=b.dataset.s;msg="";render();scrollTo(0,0)}};$("#lo").onclick=()=>logout();
-const F={home,SW:deeds,T:texts,LP:lpSec,pub};F[sec]?F[sec]():kind(sec);stBar();scrollTo(0,sy)}
+const F={home,SW:deeds,T:texts,LP:lpSec,SUB:subSec,pub};F[sec]?F[sec]():kind(sec);stBar();scrollTo(0,sy)}
 /* ---------- обзор ---------- */
 async function home(){const m=$("#m");m.innerHTML=`<h1>Обзор</h1><p class="sub">Как живёт приложение. Колода — набор карточек для новых партий: сейчас №${Math.max(1,...Object.keys(DECKS).map(Number))}.</p><div id="sts" class="empty">Загружаю…</div>`;
 try{stats=await api("stats")}catch(e){$("#sts").textContent=e.message;return}const s=stats;if(sec!=="home"||!$("#sts"))return;
@@ -206,6 +206,22 @@ function pvSoon(){clearTimeout(pvT);pvT=setTimeout(pv,500)}
 async function pv(){const f=$("#pvi");if(!f)return;let y=0;try{y=f.contentWindow.scrollY}catch(e){}
 try{const r=await fetch("/nunu/admin/api/preview",{method:"POST",headers:{"X-Admin-Key":KEY,"Content-Type":"application/json"},body:J(W.LP)});
 f.srcdoc=(await r.text()).replace("</body>",`<script>addEventListener("load",()=>{document.querySelectorAll(".rv").forEach(e=>e.classList.add("in"));scrollTo(0,${y|0})});document.addEventListener("click",e=>{if(e.target.closest("a"))e.preventDefault()})<\/script></body>`)}catch(e){}}
+/* ---------- ситуации участников: правило и очередь ---------- */
+async function subSec(){const m=$("#m");m.innerHTML=`<h1>Ситуации участников</h1><p class="sub">Игроки, прошедшие все ситуации, предлагают свои. ИИ проверяет, бот публикует в канале с опросом и сам считает голоса. Принятая ситуация сразу попадает в игру новой версией.</p><div id="sb" class="empty">Загружаю…</div>`;
+let d;try{d=await api("subs")}catch(e){$("#sb").textContent=e.message;return}if(sec!=="SUB"||!$("#sb"))return;const c=d.cfg,ST={check:"проверяется ИИ",wait:"ждёт тебя",voting:"голосование",accepted:"принята",declined:"не прошла",rejected:"отклонена ИИ",removed:"снята"};
+$("#sb").outerHTML=`<div class="box"><h3>Правило</h3>${!d.ai?`<div class="err">Ключ ИИ (ANTHROPIC_API_KEY) не задан — ситуации будут ждать твоего решения здесь.</div>`:""}${!d.channel?`<div class="err">Канал (CHANNEL_ID) не задан — публиковать некуда.</div>`:""}
+<label class="chk"><input type="checkbox" id="son"${c.on?" checked":""}> Принимать ситуации</label>
+<div class="g3"><div><label>Длительность голосования, часов</label><input id="shr" type="number" min="1" max="336" value="${c.hours}"></div><div><label>Минимум голосов</label><input id="smn" type="number" min="1" value="${c.min}"></div><div><label>«За», не меньше %</label><input id="spc" type="number" min="1" max="100" value="${c.pct}"></div></div>
+<label class="chk"><input type="checkbox" id="sex"${c.extend?" checked":""}> Если голосов не хватило — продлить один раз</label>
+<p class="hint" id="srl">${esc(d.rule)}</p><p class="hint">Правило пишется в каждом посте и фиксируется для этой ситуации: изменения касаются только новых голосований.</p>
+<div class="bar"><button class="p" id="ssv">Сохранить правило</button></div></div>
+<div class="box"><h3>Предложенные (${d.subs.length})</h3>${d.subs.length?`<table><tr><th>Ситуация</th><th>Автор</th><th>Статус</th><th>Голоса</th><th></th></tr>${d.subs.map(x=>`<tr><td><b>${esc(x.scene[0])}</b><br><span class="hint" style="margin:0">${esc(x.scene[1])}</span>${x.reason?`<br><span class="hint" style="color:var(--warn);margin:0">${esc(x.reason)}</span>`:""}</td>
+<td>${esc(x.sign)}${x.sign!==x.name?`<br><span class="hint" style="margin:0">${esc(x.name)}</span>`:""}</td><td>${ST[x.status]||x.status}${x.ends&&x.status==="voting"?`<br><span class="hint" style="margin:0">до ${esc(x.ends)} UTC</span>`:""}</td>
+<td>${x.status==="voting"||x.status==="accepted"||x.status==="declined"?`${x.yes} за · ${x.no} против`:"—"}${x.link?`<br><a href="${esc(x.link)}" target="_blank" rel="noopener">в канале</a>`:""}</td>
+<td style="white-space:nowrap">${x.status==="wait"?`<button class="s p" data-sa="${x.id}:publish">Опубликовать</button> <button class="s d" data-sa="${x.id}:reject">Отклонить</button>`:x.status==="voting"||x.status==="check"?`<button class="s d" data-sa="${x.id}:remove">Снять</button>`:""}</td></tr>`).join("")}</table>`:`<p class="hint">Пока никто не предлагал.</p>`}</div>`;
+$("#ssv").onclick=async()=>{try{const r=await api("subs/cfg",{method:"PUT",body:J({on:$("#son").checked,hours:+$("#shr").value,min:+$("#smn").value,pct:+$("#spc").value,extend:$("#sex").checked})});subSec()}catch(e){alert(e.message)}};
+m.querySelectorAll("[data-sa]").forEach(b=>b.onclick=async()=>{const[id,a]=b.dataset.sa.split(":");let why="";if(a!=="publish"){why=prompt(a==="remove"?"Почему снимаешь? Автор получит это сообщение.":"Причина для автора:","")??null;if(why===null)return}
+b.disabled=true;try{await api(`subs/${id}/${a}`,{method:"POST",body:J({why})})}catch(e){alert(e.message)}subSec()})}
 /* ---------- публикация ---------- */
 async function pub(){const m=$("#m"),C=changes(),nm=(k,i)=>k==="SW"?"Дела недели":k==="LP"?"Лендинг (главная сайта)":k==="T"?"Названия":`${KINDS[k].t} · №${i+1}`;
 m.innerHTML=`<h1>Публикация</h1><p class="sub">Черновик видишь только ты. После публикации правки сразу видят все игроки при следующем открытии.</p>

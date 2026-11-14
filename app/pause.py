@@ -18,7 +18,7 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMa
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import config, db, nunu, nunu_admin
+from . import config, db, nunu, nunu_admin, nunu_subs
 from .nunu import remind_loop  # имя nunu ниже занято маршрутом /nunu
 
 TEXT = (
@@ -61,6 +61,12 @@ async def announce(msg: Message):
     await msg.answer(f"Анонс отправлен: {sent} из {len(ids)}")
 
 
+@router.poll()
+async def poll_update(poll):
+    """Голоса в опросах «Ситуаций участников»: Telegram присылает их боту, который опрос создал."""
+    nunu_subs.on_poll(poll.id, [o.voter_count for o in poll.options])
+
+
 # Только личка: бот — админ в общем чате и канале, там отвечать нельзя.
 @router.message(F.chat.type == "private")
 async def any_message(msg: Message):
@@ -77,6 +83,7 @@ async def any_callback(cb: CallbackQuery):
 app = FastAPI()
 app.include_router(nunu.router)  # до catch-all внизу
 app.include_router(nunu_admin.router)  # комната администратора /nunu/admin
+app.include_router(nunu_subs.router)  # ситуации участников
 CHAT_URL = config.COMMUNITY_CHAT_URL
 # Страница Mini App: светлая карточка в стиле промо, не зависит от темы Telegram.
 # Ссылки t.me открываем через Telegram.WebApp — иначе WebView грузит их внутри себя.
@@ -184,7 +191,7 @@ async def main() -> None:
     dp.include_router(router)
     server = uvicorn.Server(uvicorn.Config(app, host=config.HOST, port=config.PORT, log_level="info"))
     tasks = [asyncio.create_task(dp.start_polling(bot)), asyncio.create_task(server.serve()),
-             asyncio.create_task(remind_loop())]
+             asyncio.create_task(remind_loop()), asyncio.create_task(nunu_subs.loop())]
     _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     for t in pending:
         t.cancel()

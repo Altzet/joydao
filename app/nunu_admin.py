@@ -161,6 +161,9 @@ def _check(d: dict, prev: dict) -> list[str]:
     T = d.get("T") or {}
     if not isinstance(T, dict) or any(k not in TEXTS or not _s(v, 40) for k, v in T.items()):
         e.append("Названия: пустое или слишком длинное")
+    AU = d.get("AU") or {}
+    if not isinstance(AU, dict) or any(not k.isdigit() or int(k) >= len(d["S"]) or not _s(v, 40) for k, v in AU.items()):
+        e.append("Подписи авторов сломаны")
     H = d.get("H") or {}
     if not isinstance(H, dict) or any(k not in ("S", "C0", "C1", "C3") or not isinstance(v, list)
                                       or not all(isinstance(i, int) and 0 <= i < len(d[k]) for i in v) for k, v in H.items()):
@@ -187,12 +190,49 @@ def _decks(c) -> dict:
     return json.loads(r["v"]) if r else {}
 
 
+def _bump_deck(c, d: dict) -> str | None:
+    """Другой набор карточек — новая колода, новые партии пойдут по ней."""
+    decks = _decks(c)
+    last = decks[max(decks, key=int)] if decks else _deck1(base())
+    new = _deck(d)
+    if new == last:
+        return None
+    deck = str(max([1, *map(int, decks)]) + 1)
+    decks[deck] = new
+    c.execute("INSERT OR REPLACE INTO admin_kv(k, v) VALUES('decks', ?)", (json.dumps(decks),))
+    return deck
+
+
+def add_scene(scene: list, by: str, note: str) -> int:
+    """Ситуация участника, принятая голосованием, — сразу в игру новой версией. Черновик владельца
+    получает её тоже, иначе его следующая публикация «удалила» бы карточку."""
+    with closing(_c()) as c, c:
+        _, d = _live(c)
+        d = json.loads(json.dumps(d))
+        d["S"].append(scene)
+        idx = len(d["S"]) - 1
+        if by:
+            d.setdefault("AU", {})[str(idx)] = by
+        _bump_deck(c, d)
+        c.execute("INSERT INTO admin_versions(data, note) VALUES(?, ?)", (json.dumps(d, ensure_ascii=False), note[:200]))
+        r = c.execute("SELECT v FROM admin_kv WHERE k='draft'").fetchone()
+        if r:
+            dr = json.loads(r["v"])
+            if len(dr.get("S", [])) == idx:
+                dr["S"].append(scene)
+                if by:
+                    dr.setdefault("AU", {})[str(idx)] = by
+                c.execute("UPDATE admin_kv SET v=? WHERE k='draft'", (json.dumps(dr, ensure_ascii=False),))
+    _cache.pop("cfg", None)
+    return idx
+
+
 def cfg() -> dict | None:
     """Что подставить в приложение: живые правки и колоды. None — правок не было."""
     if "cfg" not in _cache:
         with closing(_c()) as c:
             v, d = _live(c)
-            _cache["cfg"] = {k: d[k] for k in (*KEYS, "T")} | {"decks": _decks(c), "v": v} if v else None
+            _cache["cfg"] = {k: d[k] for k in (*KEYS, "T")} | {"AU": d.get("AU") or {}, "decks": _decks(c), "v": v} if v else None
     return _cache["cfg"]
 
 
@@ -272,16 +312,9 @@ async def publish(req: Request, x_admin_key: str | None = Header(default=None)):
         e = _check(d, live)
         if e:
             raise HTTPException(422, {"errors": e[:20]})
-        d = {k: d[k] for k in KEYS} | {"LP": d["LP"], "T": {k: v for k, v in (d.get("T") or {}).items() if v != TEXTS[k]},
+        d = {k: d[k] for k in KEYS} | {"LP": d["LP"], "AU": d.get("AU") or {}, "T": {k: v for k, v in (d.get("T") or {}).items() if v != TEXTS[k]},
                                          "H": {k: sorted(set(v)) for k, v in (d.get("H") or {}).items() if v}}
-        decks, b = _decks(c), base()
-        last = decks[max(decks, key=int)] if decks else _deck1(b)
-        new = _deck(d)
-        deck = None
-        if new != last:  # другой набор карточек — новая колода, новые партии пойдут по ней
-            deck = str(max([1, *map(int, decks)]) + 1)
-            decks[deck] = new
-            c.execute("INSERT OR REPLACE INTO admin_kv(k, v) VALUES('decks', ?)", (json.dumps(decks),))
+        deck = _bump_deck(c, d)
         cur = c.execute("INSERT INTO admin_versions(data, note) VALUES(?, ?)", (json.dumps(d, ensure_ascii=False), note))
         c.execute("DELETE FROM admin_kv WHERE k='draft'")
     _cache.pop("cfg", None)
@@ -306,6 +339,7 @@ def restore(v: int, req: Request, x_admin_key: str | None = Header(default=None)
             raise HTTPException(404)
         d, (_, live) = json.loads(r["data"]), _live(c)
         d.setdefault("LP", landing.default())
+        d["AU"] = (live.get("AU") or {}) | (d.get("AU") or {})
         H = {k: set(x) for k, x in (d.get("H") or {}).items()}
         for k in KEYS:
             extra = live[k][len(d[k]):]
@@ -380,3 +414,47 @@ def uploaded(name: str):
     if not re.fullmatch(r"[0-9a-f]{20}\.(png|jpg|webp|gif)", name) or not (_up() / name).exists():
         raise HTTPException(404)
     return FileResponse(_up() / name, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+
+# ---------- ситуации участников ----------
+@router.get("/api/subs")
+def subs_list(req: Request, x_admin_key: str | None = Header(default=None)):
+    _auth(req, x_admin_key)
+    from . import nunu_subs as S
+    with closing(S._c()) as c:
+        rows = c.execute("SELECT * FROM subs ORDER BY created_at DESC, rowid DESC LIMIT 300").fetchall()
+    return {"cfg": S.cfg_get(), "rule": S.rule_text(S.cfg_get()), "ai": bool(config.ANTHROPIC_API_KEY),
+            "channel": config.CHANNEL_ID, "subs": [S._pub(r) | {"name": r["name"], "at": r["created_at"]} for r in rows]}
+
+
+@router.put("/api/subs/cfg")
+async def subs_cfg(req: Request, x_admin_key: str | None = Header(default=None)):
+    _auth(req, x_admin_key)
+    from . import nunu_subs as S
+    try:
+        return S.cfg_set(await req.json())
+    except (TypeError, ValueError):
+        raise HTTPException(422, "Числа заданы неверно")
+
+
+@router.post("/api/subs/{sid}/{act}")
+async def subs_act(sid: str, act: str, req: Request, x_admin_key: str | None = Header(default=None)):
+    """Снять с голосования; для ждущих (ИИ не ответил) — опубликовать или отклонить."""
+    _auth(req, x_admin_key)
+    from . import nunu_subs as S
+    why = str((await req.json() if (await req.body()) else {}).get("why") or "")[:300]
+    if act == "remove":
+        await S.remove(sid, why)
+    elif act in ("publish", "reject"):
+        with closing(S._c()) as c:
+            r = c.execute("SELECT status FROM subs WHERE id=?", (sid,)).fetchone()
+        if not r or r["status"] != "wait":
+            raise HTTPException(409, "Решать можно только ждущие")
+        if act == "publish":
+            if not await S.publish(sid):
+                raise HTTPException(502, "Не удалось опубликовать — проверь, что бот админ канала")
+        else:
+            await S.remove(sid, why or "Не подошла под правила")
+    else:
+        raise HTTPException(404)
+    return {"ok": True}
