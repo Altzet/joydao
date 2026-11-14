@@ -166,8 +166,8 @@ function texts(){const m=$("#m");m.innerHTML=`<h1>Названия</h1><p class=
 ${Object.keys(TEXTS).map(k=>`<label>${esc(TL[k]||k)}</label><input data-t="${k}" value="${esc(W.T[k]||"")}" placeholder="${esc(TEXTS[k])}" maxlength="40">`).join("")}</div>`;
 m.oninput=e=>{const k=e.target.dataset.t;if(!k)return;const v=e.target.value.trim();if(v)W.T[k]=v;else delete W.T[k];touch()}}
 /* ---------- лендинг: главная сайта ---------- */
-const LB={hero:"Первый экран",how:"Как это работает",features:"Возможности",cta:"Призыв",faq:"Вопросы"};let pvT=null,pvW="pc",upP=null;
-function lpSec(){const P=W.LP,m=$("#m"),F=(p,l,v,o={})=>`<label>${l}</label>${o.ta?`<textarea data-l="${p}" maxlength="${o.max||600}" style="min-height:${o.h||70}px">${esc(v)}</textarea>`:`<input data-l="${p}" value="${esc(v)}" maxlength="${o.max||120}" placeholder="${esc(o.ph||"")}">`}`,
+const LB={hero:"Первый экран",how:"Как это работает",author:"От автора",features:"Возможности",science:"На чём это держится",cta:"Призыв",faq:"Вопросы"};let pvT=null,pvW="pc",upP=null;
+function lpSec(){const D=B.LP;for(const k in LB)if(!W.LP[k])W.LP[k]=clone(D[k]);W.LP.order=[...W.LP.order.filter(k=>LB[k]),...D.order.filter(k=>!W.LP.order.includes(k))];const P=W.LP,m=$("#m"),F=(p,l,v,o={})=>`<label>${l}</label>${o.ta?`<textarea data-l="${p}" maxlength="${o.max||600}" style="min-height:${o.h||70}px">${esc(v)}</textarea>`:`<input data-l="${p}" value="${esc(v)}" maxlength="${o.max||120}" placeholder="${esc(o.ph||"")}">`}`,
 img=(p,v,hint)=>`<label>Картинка</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${v?`<img src="${esc(v)}" alt="" style="height:54px;border-radius:8px;border:1px solid var(--line)">`:`<span class="hint" style="margin:0">${hint}</span>`}
 <button class="s" data-up="${p}">${v?"Заменить":"Загрузить"}</button>${v?`<button class="s d" data-rm="${p}">Убрать</button>`:""}</div>`,
 items=(k,a,b,mx,withImg)=>`${P[k].items.map((x,i)=>`<div class="grp" style="margin-top:10px"><div style="display:flex;gap:6px;align-items:center;margin-top:8px"><b style="font-size:13px">№${i+1}</b><span style="margin-left:auto"></span>
@@ -178,9 +178,11 @@ blk={hero:()=>`${F("hero.kicker","Надпись над заголовком",P.
 <div class="g2"><div>${F("hero.cta","Главная кнопка (ведёт в игру)",P.hero.cta,{max:40})}</div><div>${F("hero.cta2","Вторая кнопка (к «Как это работает»)",P.hero.cta2,{max:40})}</div></div>${img("hero.img",P.hero.img,"нет — показан телефон с игрой")}`,
 how:()=>`${F("how.title","Заголовок блока",P.how.title,{max:80})}${items("how",["t","Шаг"],["d","Пояснение"],6)}`,
 features:()=>`${F("features.title","Заголовок блока",P.features.title,{max:80})}${items("features",["t","Название"],["d","Описание"],8,1)}`,
+author:()=>`${F("author.title","Заголовок",P.author.title,{max:80})}${F("author.text","Текст (пустая строка — новый абзац)",P.author.text,{ta:1,max:2000,h:200})}${F("author.sign","Подпись",P.author.sign,{max:80})}${img("author.img",P.author.img,"нет фото — показан росток")}`,
+science:()=>`${F("science.title","Заголовок блока",P.science.title,{max:80})}${items("science",["t","Название"],["d","Пояснение"],6)}`,
 cta:()=>`${F("cta.title","Заголовок",P.cta.title,{max:120})}${F("cta.sub","Текст",P.cta.sub,{max:300})}${F("cta.btn","Кнопка",P.cta.btn,{max:40})}`,
 faq:()=>`${F("faq.title","Заголовок блока",P.faq.title,{max:80})}${items("faq",["q","Вопрос"],["a","Ответ"],20)}`};
-m.innerHTML=`<h1>Лендинг</h1><p class="sub">Главная страница сайта. Справа — черновик; посетители увидят его после публикации.</p>
+m.innerHTML=`<h1>Лендинг</h1><p class="sub">Главная страница сайта. Справа — черновик; посетители увидят его после публикации. <button class="s" id="lpdef">Вставить тексты по умолчанию</button></p>
 <div class="lp"><div><div class="box"><h3>Основное</h3><div class="g2"><div>${F("brand","Название в шапке",P.brand,{max:40})}</div><div>${F("footer","Подпись внизу",P.footer,{max:200})}</div></div>
 ${F("seo.title","Заголовок для поиска и вкладки",P.seo.title,{max:120})}${F("seo.desc","Описание для поиска и превью ссылки",P.seo.desc,{ta:1,max:300,h:56})}
 <div class="g2"><div>${F("links.play","Ссылка «Играть»",P.links.play,{max:500,ph:"https://t.me/…"})}</div><div>${F("links.channel","Канал",P.links.channel,{max:500,ph:"https://t.me/…"})}</div><div>${F("links.chat","Чат",P.links.chat,{max:500,ph:"https://t.me/…"})}</div></div></div>
@@ -196,8 +198,8 @@ m.onclick=e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
 if(d.pw){pvW=d.pw;lpSec();return}if(d.ord){const[i,s2]=d.ord.split(":").map(Number);const o=P.order;[o[i],o[i+s2]]=[o[i+s2],o[i]];touch();lpSec();return}
 if(d.mv){const[k,i,s2]=d.mv.split(":");const a=P[k].items,j=+i+ +s2;[a[+i],a[j]]=[a[j],a[+i]];touch();lpSec();return}
 if(d.del){const[k,i]=d.del.split(":");if(!confirm("Удалить пункт?"))return;P[k].items.splice(+i,1);touch();lpSec();return}
-if(d.add){P[d.add].items.push(d.add==="faq"?{q:"Новый вопрос",a:""}:d.add==="features"?{t:"Новая возможность",d:"",img:""}:{t:"Новый шаг",d:""});touch();lpSec();return}
-if(d.rm){set(d.rm,"");touch();lpSec();return}if(d.up){upP=d.up;$("#lpf").click()}};
+if(d.add){P[d.add].items.push(d.add==="faq"?{q:"Новый вопрос",a:""}:d.add==="features"?{t:"Новая возможность",d:"",img:""}:{t:d.add==="science"?"Новый пункт":"Новый шаг",d:""});touch();lpSec();return}
+if(d.rm){set(d.rm,"");touch();lpSec();return}if(b.id==="lpdef"){if(!confirm("Заменить все тексты лендинга вариантом по умолчанию? Ссылки и картинки тоже сбросятся."))return;W.LP=clone(B.LP);touch();lpSec();return}if(d.up){upP=d.up;$("#lpf").click()}};
 $("#lpf").onchange=async e=>{const f=e.target.files[0];if(!f||!upP)return;try{const r=await fetch("/nunu/admin/api/upload",{method:"POST",headers:{"X-Admin-Key":KEY,"Content-Type":f.type||"application/octet-stream"},body:f});const j=await r.json();if(!r.ok)throw new Error(j.detail||"Не загрузилось");set(upP,j.url);touch();lpSec()}catch(x){alert(x.message)}};
 pv()}
 function pvSoon(){clearTimeout(pvT);pvT=setTimeout(pv,500)}

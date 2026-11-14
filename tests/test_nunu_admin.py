@@ -63,7 +63,7 @@ def test_landing(tmp_path, monkeypatch):
     nunu_admin._fails.clear()
     c = TestClient(pause.app)
     home = c.get("/").text
-    assert "Знаешь ли ты своих друзей?" in home and "грандиозное" not in home  # вместо старого объявления
+    assert "Каждое намерение" in home and "От автора" in home and "грандиозное" not in home  # вместо старого объявления
     d = c.get("/nunu/admin/api/content", headers=K).json()
     w = d["live"]
     w["LP"]["links"]["play"] = "javascript:alert(1)"
