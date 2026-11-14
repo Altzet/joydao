@@ -361,7 +361,7 @@ function goalEdit(back){const g=goalNow(),v=g?{...g}:{t:"",why:"",by:""};
 app.innerHTML=`<h1>${g?"Моя цель":"Новая цель"}</h1><div class="card"><div class="zone">К чему иду (одной фразой)</div><input id="gt" maxlength="80" placeholder="Построить печь на участке" value="${esc(v.t)}">
 <div class="zone">Зачем мне это</div><textarea id="gw" maxlength="200" rows="3" placeholder="Хочу собирать друзей и печь хлеб сам">${esc(v.why||"")}</textarea>
 <div class="zone">К какому сроку (по желанию)</div><input type="date" id="gb" min="${today()}" value="${esc(v.by||"")}" style="align-self:flex-start">
-<div class="err" id="ge"></div><div class="row"><button class="main-btn" id="gs">${g?"Сохранить":"Посадить цель"}</button><button class="n" id="gx">Назад</button></div>
+<div class="err" id="ge"></div><div class="row"><button class="main-btn" id="gs">${g?"Сохранить":"Посадить семя"}</button><button class="n" id="gx">Назад</button></div>
 ${g?`<div class="row" style="margin-top:6px"><button class="n" id="gd">🍎 Цель достигнута</button><button class="n" id="gg">Отпустить цель</button></div>
 <p class="note" style="margin:0">«Отпустить» — если цель больше не твоя. Это не провал: сделанные шаги останутся в саду.</p>`:""}</div>`;
 const done=f=>{saveGoals();back()};$("gx").onclick=back;
