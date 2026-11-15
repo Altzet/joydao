@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS wishes (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMA
 CREATE TABLE IF NOT EXISTS deeds (a INTEGER NOT NULL, b INTEGER NOT NULL, n INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (a, b));
 CREATE TABLE IF NOT EXISTS deed_ids (pid TEXT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS plot_comments (id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL, author INTEGER NOT NULL,
+    obj TEXT NOT NULL, text TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS plot_visits (owner INTEGER NOT NULL, guest INTEGER NOT NULL, at TEXT NOT NULL, PRIMARY KEY (owner, guest));
 CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, tg_id INTEGER NOT NULL, seed TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS meets (id TEXT PRIMARY KEY, by INTEGER NOT NULL, a INTEGER NOT NULL, b INTEGER NOT NULL,
     ok_a INTEGER NOT NULL DEFAULT 0, ok_b INTEGER NOT NULL DEFAULT 0, UNIQUE (by, a, b));
@@ -351,6 +354,7 @@ class DeedIn(BaseModel):
 
 
 class PlanIn(BaseModel):
+    obj: str | None = None  # предложено в гостях: у какого объекта участка друга посадить
     pid: str
     text: str
     due: str | None = None  # YYYY-MM-DD
@@ -391,13 +395,18 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
     with closing(_db()) as c:
         if not _related(c, u.id, fid):
             raise HTTPException(404, "Друг не найден")
+        here = _plot_obj(c, fid, body.obj) if body.obj else None
         seed = {"c": "Удиви себя", "q": f"Общее дело · вдвоём: я и {u.first_name[:30]}", "r": text, "z": -1,
                 "d": date.today().isoformat(), "due": due, "at": (body.at or "")[:5] or None, "tz": body.tz, "life": None, "mine": False, "step": 1,
                 "with": u.first_name[:30], "fid": u.id, "pid": body.pid.strip()[:16]}
+        if here and "x" in here:  # семя встанет у этого объекта на участке друга
+            seed["loc"] = {"x": here["x"] + (here.get("w") or 0) / 2, "y": here["y"] + (here.get("h") or 0) / 2,
+                           "o": here["id"], "dx": 0, "dy": 0}
         with c:
             c.execute("INSERT INTO inbox(tg_id, seed) VALUES(?, ?)", (fid, json.dumps(seed, ensure_ascii=False)))
         _seen(c, u)
-    _bg(_notify(fid, f"{u.first_name} зовёт тебя на общее дело 🤝\n\n{text}\n\nОно уже в твоём саду. "
+    at = f" — на твоём участке у «{here.get('n', '')}»" if here else ""
+    _bg(_notify(fid, f"{u.first_name} зовёт тебя на общее дело 🤝{at}\n\n{text}\n\nОно уже в твоём саду. "
                      f"Когда сделаете, отметьте «Так и сделал» — ваш мост получит +3 доски", link()))
     return {"ok": True}
 
@@ -857,3 +866,93 @@ async def remind_loop(hour_utc: int = 6) -> None:
         except Exception as e:
             log.warning("Напоминания: %s", e)
         await asyncio.sleep(60)
+
+
+# ---------- в гости на участок: только друзья по мосту, только карта и 3D, комментарии к объектам ----------
+def _owner_state(c: sqlite3.Connection, uid: int) -> dict:
+    r = c.execute("SELECT data FROM state WHERE tg_id=?", (uid,)).fetchone()
+    return json.loads(r["data"]) if r else {}
+
+
+def _plot_obj(c: sqlite3.Connection, uid: int, oid: str) -> dict | None:
+    objs = ((_owner_state(c, uid).get("nunu-plot") or {}).get("map") or {}).get("objs") or []
+    return next((o for o in objs if isinstance(o, dict) and o.get("id") == oid), None)
+
+
+def _comments(c: sqlite3.Connection, owner: int) -> list[dict]:
+    return [dict(r) for r in c.execute(
+        "SELECT pc.id, pc.obj, pc.text, pc.author, pc.created_at AS at, COALESCE(us.name, 'Друг') AS name "
+        "FROM plot_comments pc LEFT JOIN users us ON us.tg_id = pc.author WHERE pc.owner=? ORDER BY pc.id", (owner,))]
+
+
+@router.get("/visit/{fid}")
+async def visit(fid: int, x_init_data: str | None = Header(default=None)):
+    """Участок друга: форма, стороны и объекты — без анкеты, ресурсов, координат и снимка."""
+    u = _user(x_init_data)
+    with closing(_db()) as c:
+        if fid == u.id or not _related(c, u.id, fid):
+            raise HTTPException(404, "Друг не найден")
+        d = _owner_state(c, fid)
+        p, prefs = d.get("nunu-plot") or {}, d.get("nunu-prefs") or {}
+        site = p.get("site") or {}
+        plot = {"site": {"n": site.get("n"), "face": site.get("face")}, "sides": p.get("sides") or {},
+                "diags": p.get("diags") or {}, "map": {"objs": ((p.get("map") or {}).get("objs") or [])}}
+        r = c.execute("SELECT name FROM users WHERE tg_id=?", (fid,)).fetchone()
+        last = c.execute("SELECT at FROM plot_visits WHERE owner=? AND guest=?", (fid, u.id)).fetchone()
+        fresh = not last or last["at"] < (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=12)).isoformat()
+        with c:
+            c.execute("INSERT OR REPLACE INTO plot_visits(owner, guest, at) VALUES(?,?,?)", (fid, u.id, datetime.now(timezone.utc).replace(tzinfo=None).isoformat()))
+        _seen(c, u)
+        out = {"name": r["name"] if r else None, "plot": plot, "comments": _comments(c, fid)}
+    if fresh and not prefs.get("visitOff"):  # не чаще раза в 12 ч от одного друга; хозяин может выключить
+        _bg(_notify(fid, f"👋 {u.first_name} заглянул к тебе на участок", link()))
+    return out
+
+
+@router.get("/plot/comments")
+def my_comments(x_init_data: str | None = Header(default=None)):
+    u = _user(x_init_data)
+    with closing(_db()) as c:
+        return _comments(c, u.id)
+
+
+class CommentIn(BaseModel):
+    obj: str
+    text: str
+
+
+@router.post("/visit/{fid}/comment")
+async def comment(fid: int, body: CommentIn, x_init_data: str | None = Header(default=None)):
+    u = _user(x_init_data)
+    text = body.text.strip()[:300]
+    if not text:
+        raise HTTPException(422, "Пустой комментарий")
+    with closing(_db()) as c:
+        if fid == u.id or not _related(c, u.id, fid):
+            raise HTTPException(404, "Друг не найден")
+        o = _plot_obj(c, fid, body.obj)
+        if not o:
+            raise HTTPException(404, "Такого объекта уже нет")
+        if c.execute("SELECT COUNT(*) FROM plot_comments WHERE author=? AND created_at >= datetime('now','-1 day')",
+                     (u.id,)).fetchone()[0] >= 30:
+            raise HTTPException(429, "На сегодня комментариев хватит")
+        with c:
+            c.execute("INSERT INTO plot_comments(owner, author, obj, text) VALUES(?,?,?,?)", (fid, u.id, body.obj, text))
+        _seen(c, u)
+        prefs = _owner_state(c, fid).get("nunu-prefs") or {}
+        out = _comments(c, fid)
+    if not prefs.get("commOff"):
+        _bg(_notify(fid, f"💬 {u.first_name} у «{str(o.get('n', ''))[:40]}»: {text}", link()))
+    return out
+
+
+@router.delete("/comment/{cid}")
+def comment_del(cid: int, x_init_data: str | None = Header(default=None)):
+    """Удалить может автор или хозяин участка."""
+    u = _user(x_init_data)
+    with closing(_db()) as c, c:
+        r = c.execute("SELECT owner, author FROM plot_comments WHERE id=?", (cid,)).fetchone()
+        if not r or u.id not in (r["owner"], r["author"]):
+            raise HTTPException(404)
+        c.execute("DELETE FROM plot_comments WHERE id=?", (cid,))
+    return {"ok": True}
