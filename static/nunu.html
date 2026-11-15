@@ -25,6 +25,8 @@ body.has-nav{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .sw{width:44px;height:44px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line);padding:0}.sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--fg)}#nav svg{width:24px;height:24px}
 /* карта как карта: на весь экран, жесты, кнопки поверх, карточка снизу */
 body.on-map{padding-top:calc(8px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+body.full #mapw{position:fixed;left:0;right:0;bottom:0;top:calc(var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px));height:auto!important;border-radius:0;z-index:40;margin:0}
+body.full #nav{display:none}
 #mapw{position:relative;border-radius:16px;overflow:hidden;background:#6DB2C9;touch-action:none;user-select:none;-webkit-user-select:none;min-height:320px}
 #mapw>svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 .mctl{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:8px}
@@ -997,7 +999,7 @@ function pComp(){const th=pTheta();return`<svg viewBox="-22 -22 44 44" width="44
 
 /* ---------- экран ---------- */
 function plotMap(opt){opt=opt||{};setNav("plot");document.body.classList.add("on-map");pSync();if(opt.fresh!=null){PS.fresh=opt.fresh;PS.seed=opt.fresh;PS.sel=null}
-app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="p3b" aria-label="Пройтись в 3D" style="font-size:14px;font-weight:600">3D</button><button id="pu" aria-label="Отменить">↶</button></div>
+app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="p3b" aria-label="Пройтись в 3D" style="font-size:14px;font-weight:600">3D</button><button id="pu" aria-label="Отменить">↶</button>${fsBtn()}</div>
 <div class="pcomp" aria-hidden="true">${pComp()}</div><button id="pvw" aria-label="Вид карты: спутник или схема" style="position:absolute;right:62px;top:10px;font-size:12px;color:#3B2F1A;background:rgba(255,248,231,.88);border:0;border-radius:10px;padding:6px 9px;line-height:1.1;text-align:right">${pVwTxt()}</button><div class="pslope" id="pslope">${pSlopeChip()}</div><div class="pscale" id="pscale"></div><div class="pmode" id="pmode" role="toolbar" aria-label="Режимы карты"></div>
 <div class="card min" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
 fitMap();pPanel();pCtl();pModeFit();addEventListener("resize",pModeFit);$("grab").onclick=()=>$("sh").classList.toggle("min");
@@ -1099,9 +1101,18 @@ const P3D="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js"
 function p3Sun(hr){const R=Math.PI/180,d0=new Date(),doy=Math.floor((d0-new Date(d0.getFullYear(),0,0))/864e5),D=23.44*Math.sin(2*Math.PI*(284+doy)/365)*R,f=(pLat()??48.4)*R,H=15*(hr-12)*R;
 const el=Math.asin(Math.sin(f)*Math.sin(D)+Math.cos(f)*Math.cos(D)*Math.cos(H)),az=(Math.atan2(Math.sin(H),Math.cos(H)*Math.sin(f)-Math.tan(D)*Math.cos(f))/R+180+360)%360;return{el:el/R,az}}
 const p3Hr=()=>{const n=new Date(),ll=pLL();return Math.round(((n.getUTCHours()+n.getUTCMinutes()/60+(ll?ll[1]:22.7)/15)%24)*2)/2};  /* солнечное время ≈ UTC + долгота/15 */
+/* участок и 3D во весь экран: карта на весь экран поверх меню; в Telegram 8.0+ ещё и без его шапки, в браузере — системный полный экран.
+Режим держится при переходе карта ↔ 3D и снимается при уходе из «Участка» */
+const tgFS=()=>TG&&TG.requestFullscreen&&TG.isVersionAtLeast&&TG.isVersionAtLeast("8.0");
+function setFull(on){document.body.classList.toggle("full",on);try{if(tgFS()){on?TG.requestFullscreen():TG.isFullscreen&&TG.exitFullscreen()}
+else if(on){const d=document.documentElement;d.requestFullscreen&&d.requestFullscreen().catch(()=>{})}else if(document.fullscreenElement)document.exitFullscreen()}catch(e){}
+document.querySelectorAll(".fsb").forEach(b=>{b.textContent=on?"🗗":"⛶";b.setAttribute("aria-label",on?"Свернуть":"Во весь экран")});setTimeout(()=>{fitMap();addEventListener&&dispatchEvent(new Event("resize"))},80)}
+const fsBtn=()=>{const on=document.body.classList.contains("full");return`<button class="fsb" aria-label="${on?"Свернуть":"Во весь экран"}">${on?"🗗":"⛶"}</button>`};
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement&&!tgFS()&&document.body.classList.contains("full"))setFull(false)});
+document.addEventListener("click",e=>{if(e.target.closest(".fsb"))setFull(!document.body.classList.contains("full"))});
 async function plot3d(){setNav("plot");nav.back=()=>plotMap();document.body.classList.add("on-map");
 app.innerHTML=`<div id="mapw" class="pw" style="background:#BFE3F2;touch-action:none"><canvas id="c3" style="width:100%;height:100%;display:block;touch-action:none"></canvas>
-<div class="mctl"><button id="x3" aria-label="Назад к карте">✕</button><button id="q3" aria-label="Показать подсказки">?</button></div><div id="stk" hidden style="position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(255,255,255,.18);pointer-events:none"><i style="position:absolute;left:34px;top:34px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9)"></i></div>
+<div class="mctl"><button id="x3" aria-label="Назад к карте">✕</button><button id="q3" aria-label="Показать подсказки">?</button>${fsBtn()}</div><div id="stk" hidden style="position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(255,255,255,.18);pointer-events:none"><i style="position:absolute;left:34px;top:34px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9)"></i></div>
 <div style="position:absolute;left:50%;top:45%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none"></div>
 <div class="h3" id="hm" style="left:14px;bottom:96px"><span class="r3"><i></i></span>Тяни здесь —<br>идти</div>
 <div class="h3" id="hl" style="right:14px;bottom:96px;text-align:right"><span class="r3 sw">👆</span>Веди здесь —<br>смотреть</div>
@@ -1673,7 +1684,7 @@ const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15
 ["plot","Участок","M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M12 9v3",()=>plotMap()],
 ["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];NAV.forEach(n=>{if(TX["nav."+n[0]])n[1]=TX["nav."+n[0]]});
 const nav={cur:undefined};
-function setNav(s){nav.back=null;if(typeof p3Stop==="function")p3Stop();if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
+function setNav(s){nav.back=null;if(typeof p3Stop==="function")p3Stop();if(s!=="plot"&&document.body.classList.contains("full"))setFull(false);if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
 if(!el){el=document.createElement("nav");el.id="nav";el.setAttribute("aria-label","Меню");document.body.appendChild(el);document.body.classList.add("has-nav");
 el.innerHTML=`<div>${NAV.map(([k,l,d])=>`<button data-n="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${d}"/></svg>${l}</button>`).join("")}</div>`;
 el.onclick=e=>{const b=e.target.closest("button");if(b)NAV.find(x=>x[0]===b.dataset.n)[3]()};
