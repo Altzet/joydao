@@ -1176,7 +1176,7 @@ let cr;if(shp==="cone"||shp==="narrow")cr=mesh(new T.ConeGeometry(o.w/2*(shp==="
 else{cr=mesh(new T.SphereGeometry(o.w/2,16,12),cm,0,tr+ch/2,0);cr.scale.y=Math.max(.4,ch/o.w)*(shp==="tall"?1.15:shp==="pine"?.7:1);if(shp==="wide")cr.scale.x=cr.scale.z=1.15}
 if(op<.5)cr.castShadow=false;g.add(cr)}
 /* варианты объектов: беседка, печь, теплица, колодец */
-else if(o.k==="gazebo"){const d=o.d3||{},v=d.var||"open",wh=Math.max(2.1,hh*.7),rh=Math.max(.8,hh-wh),rc=M(d.rc||"#7A5530"),wd=M(0xB88A5A);
+else if(o.k==="gazebo_old"){const d=o.d3||{},v=d.var||"open",wh=Math.max(2.1,hh*.7),rh=Math.max(.8,hh-wh),rc=M(d.rc||"#7A5530"),wd=M(0xB88A5A);
 g.add(mesh(new T.BoxGeometry(o.w,.15,o.h),TM("der","#A57A4C",o.w,o.h),0,.075,0));const cg=new T.ConeGeometry(Math.SQRT1_2,1,4,1);cg.rotateY(Math.PI/4);const rf=mesh(cg,rc,0,wh+rh/2,0);rf.scale.set(o.w+.5,rh,o.h+.5);g.add(rf);
 if(v==="closed"){g.add(mesh(new T.BoxGeometry(o.w,wh,o.h),TM("der","#B88A5A",o.w,wh),0,wh/2,0));const fm=M(0xF4F1EA),gm=M(0x35556E);
 for(const[k,fx,fz]of[["s",0,1],["n",0,-1],["e",1,0],["w",-1,0]]){const len=fx?o.h:o.w,n=Math.max(1,Math.floor(len/1.4));for(let i=0;i<n;i++){const t=(i+1)/(n+1)*len-len/2;if(k==="s"&&Math.abs(t)<.7&&n>0)continue;
@@ -1201,10 +1201,17 @@ if(v==="house"){const ph=1.9;[1,-1].forEach(q=>g.add(mesh(new T.BoxGeometry(.1,p
 const tri=new T.Shape([new T.Vector2(-r-.35,0),new T.Vector2(r+.35,0),new T.Vector2(0,.7)]),eg=new T.ExtrudeGeometry(tri,{depth:2*r+.5,bevelEnabled:false});eg.translate(0,0,-(r+.25));const rf=mesh(eg,M(0x7A5530),0,ph,0);rf.rotation.y=Math.PI/2;g.add(rf)}
 block.push({x:cx,z:cz,r:r+.3})}
 else if(K[2]==="c"){g.add(mesh(new T.CylinderGeometry(o.w/2,o.w/2,hh,20),M(col),0,hh/2,0));if(hh>.5&&o.fix)block.push({x:cx,z:cz,r:o.w/2+.3})}
-else if(kind==="house"||kind==="roof"){const d=o.d3||{},fl=+d.fl||0,L=o.w>=o.h,a=L?o.w:o.h,b=L?o.h:o.w,rt=d.roof||"gable",bh=(PBS[d.base]||PBS.none)[1],wh=fl?fl*2.7:Math.max(1.8,hh*.62),
+else if(kind==="house"||kind==="roof"){const d=o.d3||{},fl=+d.fl||0,L=o.w>=o.h,a=L?o.w:o.h,b=L?o.h:o.w,rt=pRoofK(o),WL=pWalls(o),FR=WL!=="full",bh=(PBS[d.base]||PBS.none)[1],wh=fl?fl*2.7:Math.max(FR?2.1:1.8,hh*.62),
 rh0=hh>bh+wh+.3?hh-bh-wh:rt==="flat"?.25:rt==="shed"?1:Math.max(1.2,b*.35),rh=d.mans&&rt!=="flat"&&rt!=="shed"?Math.max(rh0,3.3):rh0,rc=M(d.rc||(kind==="house"?"#9C4A35":"#7A5530"));
 if(bh)g.add(mesh(new T.BoxGeometry(o.w+.08,bh,o.h+.08),TM("blok","#8C8A84",a,bh),0,bh/2,0));const hg=new T.Group();hg.position.y=bh;g.add(hg);const gadd=g.add.bind(g);g.add=(...k)=>hg.add(...k);
-g.add(mesh(new T.BoxGeometry(o.w,wh,o.h),TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),a,wh),0,wh/2,0));
+if(!FR)g.add(mesh(new T.BoxGeometry(o.w,wh,o.h),TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),a,wh),0,wh/2,0));
+else{/* только каркас: столбы по углам и через ~2,5 м, обвязка поверху, пол; с перилами — поручень на 0,9 м с проходом спереди */
+const pc=TM("der",d.wc||"#8A6440",.2,wh),pp=.14,fy=.12,front=(pDoors(o)[0]||{}).k||d.front||(L?"s":"e");g.add(mesh(new T.BoxGeometry(o.w,fy,o.h),TM("der","#A57A4C",o.w,o.h),0,fy/2,0));
+for(const[k,fx,fz]of[["s",0,1],["n",0,-1],["e",1,0],["w",-1,0]]){const len=fx?o.h:o.w,off=(fx?o.w:o.h)/2-pp/2,n=Math.max(1,Math.ceil(len/2.5));
+for(let i=0;i<=n;i++){const t=-len/2+pp/2+i*(len-pp)/n;g.add(mesh(new T.BoxGeometry(pp,wh,pp),pc,fx?fx*off:t,wh/2,fz?fz*off:t))}
+g.add(mesh(fx?new T.BoxGeometry(pp,.16,len):new T.BoxGeometry(len,.16,pp),pc,fx*off,wh-.08,fz*off));
+if(WL==="rail"){const gap=k===front?1.2:0,seg=(a2,b2)=>{const l2=b2-a2,m2=(a2+b2)/2;if(l2<.1)return;g.add(mesh(fx?new T.BoxGeometry(.08,.08,l2):new T.BoxGeometry(l2,.08,.08),pc,fx?fx*off:m2,.9,fz?fz*off:m2),
+mesh(fx?new T.BoxGeometry(.06,.06,l2):new T.BoxGeometry(l2,.06,.06),pc,fx?fx*off:m2,.45,fz?fz*off:m2))};if(gap){seg(-len/2,-gap/2);seg(gap/2,len/2)}else seg(-len/2,len/2)}}}
 const RL=d.ridge==="short"?!L:L,RA=RL?o.w:o.h,RB=RL?o.h:o.w;  /* конёк вдоль длинной или короткой стороны */
 if(rt==="hip"){const cg=new T.ConeGeometry(Math.SQRT1_2,1,4,1);cg.rotateY(Math.PI/4);const k=mesh(cg,rc,0,wh+rh/2,0);k.scale.set(o.w+.5,rh,o.h+.5);g.add(k)}
 else if(rt==="flat")g.add(mesh(new T.BoxGeometry(o.w+.3,.25,o.h+.3),rc,0,wh+.12,0));
@@ -1214,42 +1221,42 @@ if(ax)sl.rotation.x=sp==="s"?th:-th;else sl.rotation.z=sp==="e"?-th:th;g.add(sl)
 /* боковины под скатом — цвета стен, чтобы не было щели */
 const hi=(sp==="s"||sp==="e")?-1:1,tg=new T.ShapeGeometry(new T.Shape([new T.Vector2(-span/2,0),new T.Vector2(span/2,0),new T.Vector2(hi*span/2,rh)])),
 wm=TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),span,rh,{side:T.DoubleSide});
-[1,-1].forEach(q=>{const t2=mesh(tg,wm,ax?q*o.w/2:0,wh,ax?0:q*o.h/2,0);if(ax)t2.rotation.y=-Math.PI/2;g.add(t2)});
+if(!FR)[1,-1].forEach(q=>{const t2=mesh(tg,wm,ax?q*o.w/2:0,wh,ax?0:q*o.h/2,0);if(ax)t2.rotation.y=-Math.PI/2;g.add(t2)});
 /* высокая стена под скатом — заложена стеной, в ней тоже могут быть окна */
-const HS=POPP[sp],[hfx,hfz]=PV[HS],hl=hfx?o.h:o.w;g.add(mesh(hfx?new T.BoxGeometry(.12,rh,hl):new T.BoxGeometry(hl,rh,.12),TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),hl,rh),hfx*(o.w/2-.06),wh+rh/2,hfz*(o.h/2-.06),0));
-{const wh2=Math.min(.8,rh*.6);if(wh2>=.25)for(const q of pWins(o)){if(q.f!=="g"||q.k!==HS)continue;const ww=Math.min(1,+q.w||1),t=Math.max(-hl/2+ww/2,Math.min(hl/2-ww/2,q.t||0)),px=hfx?hfx*(o.w/2+.03):t,pz=hfx?t:hfz*(o.h/2+.03);
+const HS=POPP[sp],[hfx,hfz]=PV[HS],hl=hfx?o.h:o.w;if(!FR)g.add(mesh(hfx?new T.BoxGeometry(.12,rh,hl):new T.BoxGeometry(hl,rh,.12),TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),hl,rh),hfx*(o.w/2-.06),wh+rh/2,hfz*(o.h/2-.06),0));
+{const wh2=Math.min(.8,rh*.6);if(wh2>=.25)for(const q of (FR?[]:pWins(o))){if(q.f!=="g"||q.k!==HS)continue;const ww=Math.min(1,+q.w||1),t=Math.max(-hl/2+ww/2,Math.min(hl/2-ww/2,q.t||0)),px=hfx?hfx*(o.w/2+.03):t,pz=hfx?t:hfz*(o.h/2+.03);
 g.add(mesh(hfx?new T.BoxGeometry(.04,wh2+.12,ww+.12):new T.BoxGeometry(ww+.12,wh2+.12,.04),M(0xF4F1EA),px,wh+rh/2,pz,0),mesh(hfx?new T.BoxGeometry(.05,wh2,ww):new T.BoxGeometry(ww,wh2,.05),M(0x35556E),px,wh+rh/2,pz,0))}}
 /* окна в боковинах под скатом: ближе к высокой стороне */
-const fm=M(0xF4F1EA),gm=M(0x35556E),TS=ax?{e:1,w:-1}:{s:1,n:-1};for(const w of pWins(o)){if(w.f!=="g"||!TS[w.k])continue;const q=TS[w.k];
+const fm=M(0xF4F1EA),gm=M(0x35556E),TS=ax?{e:1,w:-1}:{s:1,n:-1};for(const w of (FR?[]:pWins(o))){if(w.f!=="g"||!TS[w.k])continue;const q=TS[w.k];
 {const ww=Math.min(.8,+w.w||.8),u=Math.max(-span/2+ww/2+.1,Math.min(span/2-ww/2-.1,w.t||0)),hu=rh*(.5+hi*u/span),wh2=Math.min(.8,hu*.55);if(wh2<.25)continue;
 const yy=wh+hu*.45,px=ax?q*(o.w/2+.03):u,pz=ax?u:q*(o.h/2+.03);g.add(mesh(ax?new T.BoxGeometry(.04,wh2+.12,ww+.12):new T.BoxGeometry(ww+.12,wh2+.12,.04),fm,px,yy,pz,0),mesh(ax?new T.BoxGeometry(.05,wh2,ww):new T.BoxGeometry(ww,wh2,.05),gm,px,yy,pz,0))}}}
 else{const hb=RB/2+.25,tri=new T.Shape(rt==="mansard"?[new T.Vector2(-hb,0),new T.Vector2(hb,0),new T.Vector2(hb-.9,rh*.68),new T.Vector2(0,rh),new T.Vector2(-hb+.9,rh*.68)]:[new T.Vector2(-hb,0),new T.Vector2(hb,0),new T.Vector2(0,rh)]),rg=new T.ExtrudeGeometry(tri,{depth:RA+.4,bevelEnabled:false});rg.translate(0,0,-(RA+.4)/2);
 const rf=mesh(rg,rc,0,wh,0);if(RL)rf.rotation.y=Math.PI/2;g.add(rf);
 /* фронтоны — цвета стен, с каймой крыши по краю */
 const kx=1-.18/hb,ky=1-.16/rh,cap=new T.ShapeGeometry(new T.Shape(tri.getPoints().map(p=>new T.Vector2(p.x*kx,p.y*ky)))),cm2=TM(d.mat,d.wc||{kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"}[d.mat]||(kind==="house"?"#E9E1D0":f),RB,rh,{side:T.DoubleSide});
-[1,-1].forEach(sg=>{const c2=mesh(cap,cm2,0,0,sg*((RA+.4)/2+.008),0);rf.add(c2)})}
+if(!FR)[1,-1].forEach(sg=>{const c2=mesh(cap,cm2,0,0,sg*((RA+.4)/2+.008),0);rf.add(c2)})}
 /* окна по сторонам и этажам (таблица в паспорте, иначе авто); на стороне с дверью окна первого этажа обходят середину */
-const DRS=pDoors(o),dr=DRS.length?DRS[0].k:"none",dt0=DRS.length?DRS[0].t||0:0,fm=M(0xF4F1EA),gm=M(0x35556E),FACE={s:[0,1],n:[0,-1],e:[1,0],w:[-1,0]};
+const DRS=FR?[]:pDoors(o),dr=DRS.length?DRS[0].k:"none",dt0=DRS.length?DRS[0].t||0:0,fm=M(0xF4F1EA),gm=M(0x35556E),FACE={s:[0,1],n:[0,-1],e:[1,0],w:[-1,0]};
 const win=(k,t,y,ww,wh2)=>{const[fx,fz]=FACE[k],x=fx?fx*(o.w/2+.02):t,z=fz?fz*(o.h/2+.02):t,sd=!!fx;g.add(mesh(new T.BoxGeometry(sd?.04:ww+.15,wh2+.15,sd?ww+.15:.04),fm,x,y,z,0),mesh(new T.BoxGeometry(sd?.05:ww,wh2,sd?ww:.05),gm,x,y,z,0))};
-for(const q of pWins(o)){const k=q.k,t=q.t||0;if(q.f==="b"){if(bh>.5)hg.add(mesh(new T.BoxGeometry((k==="e"||k==="w")?.05:.8,.4,(k==="e"||k==="w")?.8:.05),gm,FACE[k][0]?FACE[k][0]*(o.w/2+.06):t,-bh*.45,FACE[k][1]?FACE[k][1]*(o.h/2+.06):t,0))}
+for(const q of (FR?[]:pWins(o))){const k=q.k,t=q.t||0;if(q.f==="b"){if(bh>.5)hg.add(mesh(new T.BoxGeometry((k==="e"||k==="w")?.05:.8,.4,(k==="e"||k==="w")?.8:.05),gm,FACE[k][0]?FACE[k][0]*(o.w/2+.06):t,-bh*.45,FACE[k][1]?FACE[k][1]*(o.h/2+.06):t,0))}
 else{const wh2=+q.h||1.2;win(k,t,(+q.f-1)*2.7+(wh2>1.8?wh2/2+.1:Math.min(1.45,wh*.55)),+q.w||1,wh2)}}  /* окна по списку: авто или вручную */
 const dz=dr==="s"?o.h/2+.04:dr==="n"?-o.h/2-.04:0,dx=dr==="e"?o.w/2+.04:dr==="w"?-o.w/2-.04:0,dh=Math.min(2.05,wh*.85);
 for(const q of DRS){const[fx,fz]=FACE[q.k];g.add(mesh(fx?new T.BoxGeometry(.06,dh,.95):new T.BoxGeometry(.95,dh,.06),M(0x5A3A22),fx?fx*(o.w/2+.04):q.t||0,dh/2,fz?fz*(o.h/2+.04):q.t||0,0))}
 /* гаражные ворота: секционные, на выбранной стороне */
-if(d.gd){const[fx,fz]=FACE[d.gd],len=fx?o.h:o.w,gw=Math.min(2.8,len*.85),gh2=Math.min(2.3,wh*.85);g.add(mesh(fx?new T.BoxGeometry(.06,gh2,gw):new T.BoxGeometry(gw,gh2,.06),TM("sayd","#C9CFC4",gw,gh2*2),fx*(o.w/2+.04),gh2/2,fz*(o.h/2+.04),0))}
+if(d.gd&&!FR){const[fx,fz]=FACE[d.gd],len=fx?o.h:o.w,gw=Math.min(2.8,len*.85),gh2=Math.min(2.3,wh*.85);g.add(mesh(fx?new T.BoxGeometry(.06,gh2,gw):new T.BoxGeometry(gw,gh2,.06),TM("sayd","#C9CFC4",gw,gh2*2),fx*(o.w/2+.04),gh2/2,fz*(o.h/2+.04),0))}
 if(bh>.15)DRS.forEach(q=>{if(q.porch==="veranda")return;const ns=Math.ceil(bh/.18),[fx,fz]=FACE[q.k],t0=q.t||0;for(let i=0;i<ns;i++){const dep=.3*(ns-i),sy=(i+.5)*bh/ns-bh;
 g.add(mesh(fx?new T.BoxGeometry(dep,bh/ns,1.3):new T.BoxGeometry(1.3,bh/ns,dep),M(0x9A968E),fx?fx*(o.w/2+dep/2):t0,sy,fz?fz*(o.h/2+dep/2):t0))}});  /* крыльцо у каждого входа: ступени по 18 см */
 /* мансарда: окна в торцах (вертикальные) и на скатах (наклонённые по крыше); считаем в осях крыши: конёк вдоль Z, при L повёрнуто как крыша */
 if(d.mans&&rt!=="flat"&&rt!=="shed"){const rg2=new T.Group();if(RL)rg2.rotation.y=Math.PI/2;g.add(rg2);const hb=RB/2+.25,yy=Math.min(1.3,rh*.4),
 X=y=>rt==="mansard"?(y<=rh*.68?hb-.9*y/(rh*.68):(hb-.9)*(1-(y-rh*.68)/(rh*.32))):hb*(1-y/rh),phi=rt==="mansard"?Math.atan2(rh*.68,.9):Math.atan2(rh,hb),
 RK=RL?{s:["x",-1],n:["x",1],e:["z",1],w:["z",-1]}:{e:["x",1],w:["x",-1],s:["z",1],n:["z",-1]};
-for(const q of pWins(o)){if(q.f!=="m")continue;const k=q.k,[ax,sg]=RK[k],t0=q.t||0;  /* место из списка окон: вдоль ската z=t, в торце x=±t */
+for(const q of (FR?[]:pWins(o))){if(q.f!=="m")continue;const k=q.k,[ax,sg]=RK[k],t0=q.t||0;  /* место из списка окон: вдоль ската z=t, в торце x=±t */
 {if(ax==="x"){const t=Math.max(-RA/2+.5,Math.min(RA/2-.5,t0)),xo=X(yy)+.04,w1=mesh(new T.BoxGeometry(.06,1.05,.95),fm,sg*xo,wh+yy,t,0),w2=mesh(new T.BoxGeometry(.07,.9,.8),gm,sg*(xo+.005),wh+yy,t,0);
 [w1,w2].forEach(m=>{m.rotation.z=sg*(Math.PI/2-phi);rg2.add(m)})}
 else{if(rt==="hip")continue;const span=Math.max(.8,2*X(yy+.6)-.6),t=Math.max(-span/2,Math.min(span/2,RL?-t0:t0)),z=sg*((RA+.4)/2+.03);rg2.add(mesh(new T.BoxGeometry(.95,1.15,.04),fm,t,wh+yy,z,0),mesh(new T.BoxGeometry(.8,1,.05),gm,t,wh+yy,z,0))}}}}
 /* окна во фронтоне (без мансарды): в треугольнике под крышей, на торцах */
 if(!d.mans&&(rt==="gable"||rt==="mansard")){const rg3=new T.Group();if(RL)rg3.rotation.y=Math.PI/2;g.add(rg3);const RK=RL?{e:1,w:-1}:{s:1,n:-1},hb=RB/2+.25,y0=Math.min(1,rh*.33);
-for(const q of pWins(o)){if(q.f!=="g"||!RK[q.k])continue;const k=q.k,span=Math.max(.6,2*hb*(1-(y0+.5)/rh)-.4),ww=Math.min(.8,span-.2),z=RK[k]*((RA+.4)/2+.03);
+for(const q of (FR?[]:pWins(o))){if(q.f!=="g"||!RK[q.k])continue;const k=q.k,span=Math.max(.6,2*hb*(1-(y0+.5)/rh)-.4),ww=Math.min(.8,span-.2),z=RK[k]*((RA+.4)/2+.03);
 {const t=Math.max(-span/2+ww/2,Math.min(span/2-ww/2,RL?-(q.t||0):q.t||0));rg3.add(mesh(new T.BoxGeometry(ww+.12,.95,.04),fm,t,wh+y0,z,0),mesh(new T.BoxGeometry(ww,.8,.05),gm,t,wh+y0,z,0))}}}
 /* труба, водостоки, балкон, козырёк или веранда */
 const sideAt=k=>{const[fx,fz]=FACE[k];return{fx,fz,len:fx?o.h:o.w,off:fx?o.w/2:o.h/2}},slab=(k,dep,wd,y,th,m)=>{const S2=sideAt(k);g.add(mesh(S2.fx?new T.BoxGeometry(dep,th,wd):new T.BoxGeometry(wd,th,dep),m,S2.fx*(S2.off+dep/2),y,S2.fz*(S2.off+dep/2)))};
@@ -1263,7 +1270,7 @@ else if(d.gut){const gm2=M(0x8A8F94);[1,-1].forEach(sg=>g.add(mesh(RL?new T.BoxG
 const wt=pM().objs.filter(q=>pK(q)[8]==="water"&&!q.pts).sort((p1,p2)=>Math.hypot(p1.x-o.x,p1.y-o.y)-Math.hypot(p2.x-o.x,p2.y-o.y))[0],ra=-(o.rot||0)*Math.PI/180;
 let sx=1,sz=1;if(wt){const vx=wt.x+wt.w/2-cx,vz=wt.y+wt.h/2-cz,lx=vx*Math.cos(ra)-vz*Math.sin(ra),lz=vx*Math.sin(ra)+vz*Math.cos(ra);sx=Math.sign(lx)||1;sz=Math.sign(lz)||1}
 const px=sx*(o.w/2+.25),pz=sz*(o.h/2+.25),ph=wh+bh;g.add(mesh(new T.CylinderGeometry(.05,.05,ph,8),gm2,px,wh-ph/2,pz,0))}
-if(d.balc&&(+d.fl||1)>1){const S2=sideAt(d.balc),wd=Math.min(3.2,S2.len*.5);slab(d.balc,1.2,wd,2.7,.15,M(0xB9B5AC));slab(d.balc,1.2,wd,3.25,.9,M(0xDDEBF2,{transparent:true,opacity:.35,depthWrite:false}))}
+if(d.balc&&!FR&&(+d.fl||1)>1){const S2=sideAt(d.balc),wd=Math.min(3.2,S2.len*.5);slab(d.balc,1.2,wd,2.7,.15,M(0xB9B5AC));slab(d.balc,1.2,wd,3.25,.9,M(0xDDEBF2,{transparent:true,opacity:.35,depthWrite:false}))}
 for(const q of DRS)if(q.porch==="canopy"){const S2=sideAt(q.k),y=Math.min(2.05,wh*.85)+.35;g.add(mesh(S2.fx?new T.BoxGeometry(1.1,.1,1.8):new T.BoxGeometry(1.8,.1,1.1),rc,S2.fx?S2.fx*(S2.off+.55):q.t||0,y,S2.fz?S2.fz*(S2.off+.55):q.t||0))}
 for(const q of DRS)if(q.porch==="veranda"){const vd=q.k,S2=sideAt(vd),wd=Math.min(S2.len,+q.vw||4.5),dp=+q.vd||2.6,vh=Math.min(2.6,wh),N=[S2.fx,S2.fz],Lv=[-S2.fz,S2.fx],
 A0=Math.max(-(S2.len-wd)/2,Math.min((S2.len-wd)/2,q.t||0))*(S2.fx?Lv[1]:Lv[0]),  /* веранда по центру своего входа, но в пределах стены */
@@ -1287,7 +1294,7 @@ if(gap&&ty!=="rail")piece(-gap/2,gap/2,2.15,vh,ty==="glass"?glassM:wallM)}  /* �
 /* лестницы: с любой стороны веранды, ступени по 18 см */
 if(bh>.15){const ns=Math.ceil(bh/.18);for(const k of["l","f","r"]){if(!ST[k])continue;for(let i=0;i<ns;i++){const dep=.3*(ns-i),sy=(i+.5)*bh/ns-bh,sm=M(0x9A968E);
 if(k==="f")vb(0,dp+dep/2,sy,1.3,dep,bh/ns,sm);else vb((k==="l"?1:-1)*(wd/2+dep/2),dp/2,sy,dep,1.3,bh/ns,sm)}}}}
-g.add=gadd;block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
+g.add=gadd;if(!FR)block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
 else if(K[7]==="z"){const Z={lawn:["grass","#86C466"],gravel:["gravel","#CFC8BA"],tiles:["tile","#DCD2C2"],garden:["rows","#7A5A3A"]}[kind]||["sht",f];
 g.add(mesh(new T.BoxGeometry(o.w,.04,o.h),TM(Z[0],Z[1],o.w,o.h),0,.025,0,0))}
 else if(kind==="glass"){g.add(mesh(new T.BoxGeometry(o.w,hh,o.h),M(0xD5ECF1,{transparent:true,opacity:.45}),0,hh/2,0,0));block.push({x:cx,z:cz,w:o.w/2+.3,h:o.h/2+.3,a:(o.rot||0)*Math.PI/180})}
@@ -1358,30 +1365,29 @@ function pSideNm(d,k,short){const f=d.front;if(!f)return PDR[k];const fv=PV[f],L
 const nm=k===f?"Фасад":k===POPP[f]?"Задняя":k===L?"Левая":"Правая";return short?nm:nm+" "+PDR[k].split(" ")[0]}
 function pD3Panel(o){const K=pK(o),d=o.d3||{},ch=(k,v,t,on)=>`<button class="${on?"t":"n"}" data-d3="${k}" data-v="${v}" aria-pressed="${!!on}">${t}</button>`,
 sw=(k,c,cur)=>`<button data-d3="${k}" data-v="${c}" aria-label="Цвет ${c}" style="width:30px;height:30px;border-radius:50%;background:${c};border:${(cur??d[k])===c?"3px solid var(--acc)":"1px solid #0003"};padding:0"></button>`,
-VAR={oven:{rustic:"Деревенская",dome:"Купольная",complex:"Комплекс с навесом"},gazebo:{open:"Открытая",rail:"С перилами",closed:"Закрытая"},greenhouse:{house:"Домиком",arch:"Арочная"},well:{house:"С домиком",open:"Открытый"}}[o.k],
+VAR={oven:{rustic:"Деревенская",dome:"Купольная",complex:"Комплекс с навесом"},greenhouse:{house:"Домиком",arch:"Арочная"},well:{house:"С домиком",open:"Открытый"}}[o.k],
 tg=(id,t)=>`<button class="n" id="d3t" aria-expanded="${!!PS.d3}" style="align-self:flex-start">${t} ${PS.d3?"▴":"▾"}</button>`,sides=(k,cur,none)=>(none?ch(k,"",none,!cur):"")+["s","n","w","e"].map(q=>ch(k,q,pSideNm(d,q),cur===q)).join("");
-if(VAR)return`<div class="zone">Вид</div><div class="row">${Object.entries(VAR).map(([k,t])=>ch("var",k,t,(d.var||Object.keys(VAR)[0])===k)).join("")}</div>`+(o.k==="gazebo"?`<div class="zone">Цвет крыши</div><div class="row">${PRC.map(c=>sw("rc",c)).join("")}</div>`:"");
+if(VAR)return`<div class="zone">Вид</div><div class="row">${Object.entries(VAR).map(([k,t])=>ch("var",k,t,(d.var||Object.keys(VAR)[0])===k)).join("")}</div>`;
 if(o.k==="fence")return`<div class="zone">Забор</div><div class="row">${Object.entries(PFN).filter(([k])=>k!=="no").map(([k,t])=>ch("ft",k,t,(d.ft||"der")===k)).join("")}</div><div class="zone">Цвет</div><div class="row">${PFCL.map(c=>sw("fc",c,d.fc||PFC[d.ft||"der"])).join("")}</div>`;
 if(o.k==="wall")return`<div class="zone">Стена</div><div class="row">${Object.entries(PWM).map(([k,t])=>ch("mat",k,t,(d.mat||"blok")===k)).join("")}</div><div class="zone">Цвет</div><div class="row">${PWC.map(c=>sw("wc",c)).join("")}</div>`;
 if(K[8]==="house"||K[8]==="roof")return tg("d3t","🎨 Как в жизни (для 3D)")+(PS.d3?`
 <div class="zone">Фасад — какая сторона главная</div><div class="row">${["s","n","w","e"].map(q=>ch("front",q,PDR[q],d.front===q)).join("")}</div>
 <div class="zone">Этажей</div><div class="row">${[1,2,3].map(n=>ch("fl",n,n,+d.fl===n)).join("")}${ch("mans",d.mans?"":"1","＋ мансарда (этаж под крышей)",!!d.mans)}</div>
 <div class="zone">Под домом</div><div class="row">${Object.entries(PBS).map(([k,v])=>ch("base",k,v[0],(d.base||"none")===k)).join("")}</div>
-<div class="zone">Крыша</div><div class="row">${Object.entries(PRF).map(([k,t])=>ch("roof",k,t,(d.roof||"gable")===k)).join("")}</div>
-${(d.roof||"gable")==="shed"?`<div class="zone">Скат опускается к стороне</div><div class="row">${sides("slope",d.slope||(o.w>=o.h?"s":"e"))}</div>`:
-["gable","mansard"].includes(d.roof||"gable")?`<div class="zone">Конёк</div><div class="row">${ch("ridge","","Вдоль длинной стороны",d.ridge!=="short")}${ch("ridge","short","Вдоль короткой (щипцом к длинной)",d.ridge==="short")}</div>`:""}
+<div class="zone">Крыша</div><div class="row">${Object.entries(PRF).map(([k,t])=>ch("roof",k,t,pRoofK(o)===k)).join("")}</div>
+${pRoofK(o)==="shed"?`<div class="zone">Скат опускается к стороне</div><div class="row">${sides("slope",d.slope||(o.w>=o.h?"s":"e"))}</div>`:
+["gable","mansard"].includes(pRoofK(o))?`<div class="zone">Конёк</div><div class="row">${ch("ridge","","Вдоль длинной стороны",d.ridge!=="short")}${ch("ridge","short","Вдоль короткой (щипцом к длинной)",d.ridge==="short")}</div>`:""}
 <div class="zone">Цвет крыши</div><div class="row">${PRC.map(c=>sw("rc",c)).join("")}</div>
 <div class="row">${ch("chim",d.chim?"":"1","🧱 Труба на крыше",!!d.chim)}${ch("gut",d.gut?"":"1","💧 Водостоки",!!d.gut)}</div>${d.gut?`<p class="note" style="margin:0">Труба водостока спускается к ближайшей бочке или колодцу на карте.</p>`:""}
-<div class="zone">Стены</div><div class="row">${Object.entries(PWM).map(([k,t])=>ch("mat",k,t,d.mat===k)).join("")}</div>
-<div class="zone">Цвет стен</div><div class="row">${PWC.map(c=>sw("wc",c)).join("")}</div>
-<div class="zone">Главный вход</div><div class="row">${(()=>{const D=pDoors(o);return sides("door",D.length?D[0].k:"")+ch("door","none","Нет",!D.length)})()}</div>
+<div class="zone">Стены</div><div class="row">${Object.entries(PWL).map(([k,t])=>ch("walls",k,t,pWalls(o)===k)).join("")}</div>${pWalls(o)!=="full"?`<p class="note" style="margin:0">Только столбы и крыша — как у навеса или открытой беседки. Окон и дверей нет.</p>`:`<div class="zone">Материал стен</div><div class="row">${Object.entries(PWM).map(([k,t])=>ch("mat",k,t,d.mat===k)).join("")}</div>`}<div class="zone">${pWalls(o)==="full"?"Цвет стен":"Цвет каркаса"}</div><div class="row">${PWC.map(c=>sw("wc",c)).join("")}</div>
+${pWalls(o)==="full"?`<div class="zone">Главный вход</div><div class="row">${(()=>{const D=pDoors(o);return sides("door",D.length?D[0].k:"")+ch("door","none","Нет",!D.length)})()}</div>
 <button class="n" id="d3dr" style="align-self:flex-start">🚪🪟 Входы и окна на карте (${pDoors(o).length} / ${pWins(o).length})</button>
 <div class="zone">Гаражные ворота</div><div class="row">${sides("gd",d.gd,"Нет")}</div>
 ${pDoors(o).length?`<div class="zone">У главного входа</div>${pPorchUI(o,0)}`:""}
 ${(+d.fl||1)>1?`<div class="zone">Балкон на 2 этаже</div><div class="row">${sides("balc",d.balc,"Нет")}</div>`:""}
 <div class="zone">Окна по сторонам; пусто = авто</div>${d.wins?`<p class="note" style="margin:0">Окна расставлены вручную — двигай их на карте кнопкой 🚪🪟 выше.</p>`:""}
 <div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px;align-items:center">${["","s","n","w","e"].map(k=>`<span class="note" style="text-align:center;font-size:11px;line-height:1.15">${k?(d.front?pSideNm(d,k,1)+"<br>":"")+PDR[k].split(" ")[0]:""}</span>`).join("")}
-${pFloors(d).filter(f=>!d.wins).map(f=>`<span class="note">${f[1]}</span>`+["s","n","w","e"].map(k=>f[0]==="g"&&!pGEnd(o,k)?`<span class="note" style="text-align:center">—</span>`:`<input data-wg="${f[0]}.${k}" inputmode="numeric" maxlength="2" aria-label="${f[1]}, ${pSideNm(d,k)}" value="${((d.wg||{})[f[0]]||{})[k]??""}" placeholder="${pAutoWin(o,f[0],k)}" style="min-width:0;text-align:center;padding-left:4px;padding-right:4px">`).join("")).join("")}</div>`:"");
+${pFloors(d).filter(f=>!d.wins).map(f=>`<span class="note">${f[1]}</span>`+["s","n","w","e"].map(k=>f[0]==="g"&&!pGEnd(o,k)?`<span class="note" style="text-align:center">—</span>`:`<input data-wg="${f[0]}.${k}" inputmode="numeric" maxlength="2" aria-label="${f[1]}, ${pSideNm(d,k)}" value="${((d.wg||{})[f[0]]||{})[k]??""}" placeholder="${pAutoWin(o,f[0],k)}" style="min-width:0;text-align:center;padding-left:4px;padding-right:4px">`).join("")).join("")}</div>`:""}`:"");
 if(K[8]==="tree"||K[8]==="bush")return tg("d3t","🎨 Порода (для 3D)")+(PS.d3?`
 <div class="row">${Object.entries(PSP).map(([k,v])=>ch("sp",k,v[0],d.sp===k)).join("")}</div><p class="note" style="margin:0">Листва в 3D меняется по сезону: весной плодовые цветут, осенью желтеют, зимой голые ветки.</p>`:"");
 if(o.side)return tg("d3t","🎨 Как в жизни (для 3D)")+(PS.d3?`
@@ -1432,7 +1438,11 @@ if(f==="m"){if(rt==="flat"||rt==="shed")return null;const rl=(d.ridge==="short")
 if(!pGEnd(o,k))return null;if(rt!=="shed")return[-len*.2,len*.2];const sp=d.slope||(L?"s":"e");if(k===POPP[sp])return[-len/2+.5,len/2-.5];
 const hi=(sp==="s"||sp==="e")?-1:1;return hi>0?[0,len*.35]:[-len*.35,0]}
 const pRoofT=(o,f,k,t)=>{if(f!=="m"&&f!=="g")return t;const S=pRoofSpan(o,f,k);return S&&psnap(Math.max(S[0],Math.min(S[1],t)))};  /* null — сюда окно этого этажа не встаёт */
-function pWinAuto(o){const d=o.d3||{};if(pK(o)[8]!=="house"&&!d.wg&&d.win==null)return[];const DRS=pDoors(o),r=[];
+/* постройки (дом, сарай, мастерская, гараж, навес, туалет, беседка): одни правила крыши; стены — сплошные или только каркас */
+const PWL={full:"Сплошные",frame:"Только каркас",rail:"Каркас с перилами"},
+pWalls=o=>{const d=o.d3||{};return d.walls||(o.k==="gazebo"?{open:"frame",rail:"rail",closed:"full"}[d.var||"open"]:o.k==="canopy"?"frame":"full")},
+pRoofK=o=>(o.d3||{}).roof||(o.k==="gazebo"?"hip":"gable");
+function pWinAuto(o){const d=o.d3||{};if(pWalls(o)!=="full"||pK(o)[8]!=="house"&&!d.wg&&d.win==null)return[];const DRS=pDoors(o),r=[];
 for(const[f2]of pFloors(d))for(const k of["s","n","w","e"]){const n=((d.wg||{})[f2]||{})[k]??pAutoWin(o,f2,k);if(!n)continue;
 if(f2==="m"||f2==="g"){const S=pRoofSpan(o,f2,k);if(S)for(let i=0;i<n;i++)r.push({k,t:psnap(S[0]+(i+.5)/n*(S[1]-S[0])),f:f2});continue}
 const len=(k==="s"||k==="n")?o.w:o.h,dk=f2==="1"?DRS.filter(q=>q.k===k).map(q=>q.t||0):[];let segs=[[-len/2+.4,len/2-.4]];
