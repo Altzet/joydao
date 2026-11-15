@@ -262,13 +262,14 @@ app.innerHTML=`<h1>Настройки</h1>
 <div class="card"><h2>Напоминания</h2><div class="row">${b("rm-on","Присылать",prefs.remind!==false)}${b("rm-off","Не надо",prefs.remind===false)}</div>
 <p class="note" style="margin:0">Бот напишет в день, который ты выбрал для дела, и не чаще раза в неделю — если семена ждут полива или сад давно без новых.</p></div>
 <div class="card"><h2>Гости на участке</h2><p style="margin:0">Друзья, с которыми есть мост, могут заглянуть на твой участок: видят только карту и 3D, оставляют комментарии и зовут на дела.</p>
-<div class="zone">Сообщать, когда друг зашёл</div><div class="row">${b("gv-on","Да",!prefs.visitOff)}${b("gv-off","Не надо",!!prefs.visitOff)}</div>
-<div class="zone">Сообщать о комментариях</div><div class="row">${b("gc-on","Да",!prefs.commOff)}${b("gc-off","Не надо",!!prefs.commOff)}</div></div>
+<div class="zone">Пускать друзей в гости</div><div class="row">${b("go-on","Да",!prefs.visitClosed)}${b("go-off","Нет, участок закрыт",!!prefs.visitClosed)}</div>
+${prefs.visitClosed?`<p class="note" style="margin:0">Участок закрыт: друзья увидят, что ты пока не пускаешь гостей.</p>`:`<div class="zone">Сообщать, когда друг зашёл</div><div class="row">${b("gv-on","Да",!prefs.visitOff)}${b("gv-off","Не надо",!!prefs.visitOff)}</div>
+<div class="zone">Сообщать о комментариях</div><div class="row">${b("gc-on","Да",!prefs.commOff)}${b("gc-off","Не надо",!!prefs.commOff)}</div>`}</div>
 ${API?`<div class="card"><h2>Свои ситуации</h2><p style="margin:0">Пройдено ситуаций: ${scenePool().filter(k=>seen.includes(k)).length} из ${scenePool().length}. Когда пройдёшь все, сможешь предложить свою — её опубликуют в канале на голосование.</p><button class="n" id="sbm" style="align-self:flex-start">Мои ситуации</button></div>`:""}`;
 if($("sbm"))$("sbm").onclick=()=>subForm(settings);
 const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
 ["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});
-[["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
+[["go","visitClosed"],["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{if(!$(id+"-on"))return;$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
 app.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{prefs.acc=x.dataset.a;save2()});
 $("rm-on").onclick=()=>{prefs.remind=true;save2()};$("rm-off").onclick=()=>{prefs.remind=false;save2()};
 $("fs-").onclick=()=>{prefs.fs=FS[Math.max(0,i-1)];save2()};$("fs+").onclick=()=>{prefs.fs=FS[Math.min(FS.length-1,i+1)];save2()}}
@@ -1010,7 +1011,7 @@ function pComp(){const th=pTheta();return`<svg viewBox="-22 -22 44 44" width="44
 /* в гости на участок друга (15.11): только друзья по мосту, только карта и 3D; комментарии к объектам; общее дело у объекта
 сажается у обоих — у хозяина семя встаёт у этого объекта. Свой план на время визита отложен в PS.guest.own */
 function guestGo(f){busy("Иду в гости…");API("/visit/"+f.id).then(v=>{if(!PS.guest)PS.guest={own:plot};Object.assign(PS.guest,{fid:f.id,name:f.name||v.name||"Друг",comm:v.comments});
-plot=v.plot;PS.sel=null;PS.tool="move";PS.doorO=null;PS.place=null;plotMap({guest:1})},e=>e===404?(card(`<h2>В гости не получилось</h2><p style="margin:0">Участок открыт только друзьям, с которыми есть мост.</p><button class="main-btn" id="gb0">Назад</button>`),$("gb0").onclick=world):oops(()=>guestGo(f)))}
+plot=v.plot;PS.sel=null;PS.tool="move";PS.doorO=null;PS.place=null;plotMap({guest:1})},e=>e===404||e===403?(card(`<h2>В гости не получилось</h2><p style="margin:0">${e===403?esc(f.name)+" пока не пускает гостей на участок. В гости — только по обоюдному желанию.":"Участок открыт только друзьям, с которыми есть мост."}</p><button class="main-btn" id="gb0">Назад</button>`),$("gb0").onclick=world):oops(()=>guestGo(f)))}
 const pCommUI=(o,mine)=>{const L=commFor(o.id);return`<div class="zone">💬 Комментарии${L.length?" · "+L.length:""}</div>${L.map(c=>`<div class="note" style="margin:0"><b>${esc(c.name)}:</b> ${esc(c.text)}${c.author===myId()||mine?` <button class="n pi" data-cdel="${c.id}" aria-label="Удалить комментарий" style="font-size:12px;padding:2px 8px">✕</button>`:""}</div>`).join("")||`<p class="note" style="margin:0">${mine?"Друзья ещё ничего не писали.":"Пока пусто — будь первым."}</p>`}`};
 function pCommBind(pn,after){pn.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=()=>API("/comment/"+b.dataset.cdel,"DELETE").then(()=>{const f=c=>String(c.id)!==b.dataset.cdel;if(PS.guest)PS.guest.comm=PS.guest.comm.filter(f);else myComm=(myComm||[]).filter(f);pDraw();after()},()=>{}))}
 function pGuestPanel(pn){const G=PS.guest,o=PS.sel&&pO(PS.sel);

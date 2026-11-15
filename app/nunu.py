@@ -395,7 +395,7 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
     with closing(_db()) as c:
         if not _related(c, u.id, fid):
             raise HTTPException(404, "Друг не найден")
-        here = _plot_obj(c, fid, body.obj) if body.obj else None
+        here = _plot_obj(c, fid, body.obj) if body.obj and not (_owner_state(c, fid).get("nunu-prefs") or {}).get("visitClosed") else None
         seed = {"c": "Удиви себя", "q": f"Общее дело · вдвоём: я и {u.first_name[:30]}", "r": text, "z": -1,
                 "d": date.today().isoformat(), "due": due, "at": (body.at or "")[:5] or None, "tz": body.tz, "life": None, "mine": False, "step": 1,
                 "with": u.first_name[:30], "fid": u.id, "pid": body.pid.strip()[:16]}
@@ -894,6 +894,8 @@ async def visit(fid: int, x_init_data: str | None = Header(default=None)):
             raise HTTPException(404, "Друг не найден")
         d = _owner_state(c, fid)
         p, prefs = d.get("nunu-plot") or {}, d.get("nunu-prefs") or {}
+        if prefs.get("visitClosed"):  # гости — по обоюдному желанию: хозяин закрыл участок
+            raise HTTPException(403, "Участок закрыт для гостей")
         site = p.get("site") or {}
         plot = {"site": {"n": site.get("n"), "face": site.get("face")}, "sides": p.get("sides") or {},
                 "diags": p.get("diags") or {}, "map": {"objs": ((p.get("map") or {}).get("objs") or [])}}
@@ -930,6 +932,8 @@ async def comment(fid: int, body: CommentIn, x_init_data: str | None = Header(de
     with closing(_db()) as c:
         if fid == u.id or not _related(c, u.id, fid):
             raise HTTPException(404, "Друг не найден")
+        if (_owner_state(c, fid).get("nunu-prefs") or {}).get("visitClosed"):
+            raise HTTPException(403, "Участок закрыт для гостей")
         o = _plot_obj(c, fid, body.obj)
         if not o:
             raise HTTPException(404, "Такого объекта уже нет")

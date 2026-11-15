@@ -57,3 +57,12 @@ def test_visit(tmp_path, monkeypatch):
     seed = c.get("/nunu/api/state", headers=evgen).json()["inbox"][0]
     seed = seed if isinstance(seed, dict) else json.loads(seed)
     assert seed["loc"]["o"] == "pech" and seed["loc"]["x"] == 5 and "у «Печь»" in sent[-1][1]
+
+    # хозяин закрыл участок — ни зайти, ни написать, дело у объекта не привяжется
+    c.put("/nunu/api/state", json={"data": {"nunu-plot": PLOT, "nunu-prefs": {"visitClosed": 1}}, "base": 2}, headers=evgen)
+    assert c.get("/nunu/api/visit/2", headers=anton).status_code == 403
+    assert c.post("/nunu/api/visit/2/comment", json={"obj": "pech", "text": "?"}, headers=anton).status_code == 403
+    c.post("/nunu/api/friend/2/plan", json=plan | {"pid": "p2"}, headers=anton)
+    inbox = c.get("/nunu/api/state", headers=evgen).json()["inbox"]
+    last = inbox[-1] if isinstance(inbox[-1], dict) else json.loads(inbox[-1])
+    assert "loc" not in last
