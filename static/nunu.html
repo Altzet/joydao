@@ -1113,6 +1113,9 @@ document.querySelectorAll(".fsb").forEach(b=>{b.textContent=on?"🗗":"⛶";b.se
 const fsBtn=()=>{const on=document.body.classList.contains("full");return`<button class="fsb" aria-label="${on?"Свернуть":"Во весь экран"}">${on?"🗗":"⛶"}</button>`};
 document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement&&!tgFS()&&document.body.classList.contains("full"))setFull(false)});
 document.addEventListener("click",e=>{if(e.target.closest(".fsb"))setFull(!document.body.classList.contains("full"))});
+/* замок: в карточке закрыты всё, что меняет место, размер и поворот; название, вид и 3D-паспорт — можно */
+function pLockUI(o){if(!o.lk)return;["ow","oh","olw","oo1","oo2","os1","os2","orr","orot","oat"].forEach(id=>{const e=$(id);if(e){e.disabled=true;e.title="Закреплено"}});
+for(let i=1;i<=pN();i++){const e=$("es-"+i);if(e)e.disabled=true}}
 function pLock(o){pHist();o.lk=o.lk?0:1;try{TG.HapticFeedback.impactOccurred("light")}catch(e){}pSave();pDraw();pPanel()}
 async function plot3d(){setNav("plot");nav.back=()=>plotMap();document.body.classList.add("on-map");
 app.innerHTML=`<div id="mapw" class="pw" style="background:#BFE3F2;touch-action:none"><canvas id="c3" style="width:100%;height:100%;display:block;touch-action:none"></canvas>
@@ -1580,13 +1583,13 @@ pn.querySelectorAll("[data-fc]").forEach(b=>b.onclick=()=>upd(x=>x.fc=b.dataset.
 $("sall").onclick=()=>{pHist();for(let j=1;j<=pN();j++){const x=plot.sides[j]=plot.sides[j]||{};x.f=sd.f;x.fc=sd.fc;x.fh=sd.fh;for(const k of["f","fc","fh"])if(x[k]==null)delete x[k]}pSave();pDraw();$("sall").textContent="✓ Применено ко всем"};return}
 const o=PS.sel&&pO(PS.sel);
 if(o&&o.side){const K=pK(o),here=seeds.filter(x=>x.loc&&x.loc.o===o.id).length,num=(id,lab,v)=>`<div class="pf"><label class="zone" for="${id}">${lab}</label><input id="${id}" inputmode="decimal" maxlength="7" value="${pm1(v)}"><span class="err" data-e="${id}"></span></div>`;
-h=`<div class="prow"><button class="n pi" id="oem" aria-label="Сменить эмодзи" aria-expanded="${!!PS.emo}" style="font-size:1.5rem">${pEm(o)}</button><input id="onm" maxlength="40" value="${esc(o.n)}" aria-label="Название"><button class="n pi" id="olk" aria-pressed="${!!o.lk}" aria-label="${o.lk?"Открепить":"Закрепить"}">${o.lk?"🔒":"🔓"}</button><button class="n pi" id="ox" aria-label="Закрыть">✕</button></div>${o.lk?`<p class="note" style="margin:0">🔒 Закреплено: на карте не сдвинется и не изменит размер. Коснись замка, чтобы открепить.</p>`:""}
+h=`<div class="prow"><button class="n pi" id="oem" aria-label="Сменить эмодзи" aria-expanded="${!!PS.emo}" style="font-size:1.5rem">${pEm(o)}</button><input id="onm" maxlength="40" value="${esc(o.n)}" aria-label="Название"><button class="n pi" id="olk" aria-pressed="${!!o.lk}" aria-label="${o.lk?"Открепить":"Закрепить"}">${o.lk?"🔒":"🔓"}</button><button class="n pi" id="ox" aria-label="Закрыть">✕</button></div>${o.lk?`<p class="note" style="margin:0">🔒 Закреплено: место, размер и поворот не меняются — ни на карте, ни здесь. Коснись замка, чтобы открепить.</p>`:""}
 <div class="zone">Сторона участка</div><div class="row">${[...Array(pN())].map((_,i)=>chip("es-"+(i+1),i+1,o.side===i+1)).join("")}</div>
 <div class="pgrid">${num("oat","От угла "+o.side+", м",o.at)}${num("ow","Ширина, м",o.w)}</div>
-<p class="note" style="margin:0">Тяни по карте — встанет на ближайшую сторону.</p>
+<p class="note" style="margin:0">${o.lk?"🔒 Закреплено — место не меняется.":"Тяни по карте — встанет на ближайшую сторону."}</p>
 <div class="row"><button class="n" id="odup">Копия</button><button class="n" id="odel">Удалить</button></div>
 <button class="main-btn" id="osd">🌱 Посадить намерение у: ${esc(o.n)}</button>${pD3Panel(o)}${here?`<p class="note" style="margin:0">Здесь уже ${here} ${pl(here,["семя","семени","семян"])}.</p>`:""}`;
-pn.innerHTML=h;if($("olk"))$("olk").onclick=()=>pLock(o);$("ox").onclick=()=>{PS.sel=null;pDraw();pPanel()};pEmBind(pn,o);
+pn.innerHTML=h;pLockUI(o);if($("olk"))$("olk").onclick=()=>pLock(o);$("ox").onclick=()=>{PS.sel=null;pDraw();pPanel()};pEmBind(pn,o);
 $("onm").onchange=()=>{const v=$("onm").value.trim();if(!v)return;pHist();o.n=v.slice(0,40);pSave();pDraw()};
 [...Array(pN())].map((_,i)=>i+1).forEach(s=>$("es-"+s).onclick=()=>{pHist();o.side=s;o.at=psnap(Math.min(o.at,Math.max(0,pEdgeLen(s)-o.w)));pSave();pDraw();pPanel()});
 [["oat","at"],["ow","w"]].forEach(([id,k])=>{const e=$(id);e.onchange=()=>{const v=pnum(e.value),L=pEdgeLen(o.side),ok=v!=null&&v>=(k==="w"?.3:0)&&v<=L;
@@ -1596,15 +1599,15 @@ $("odel").onclick=()=>{const b=$("odel");if(b.dataset.ok!=="1"){b.dataset.ok="1"
 seeds.forEach(x=>{if(x.loc&&x.loc.o===o.id){const p=pSeedPos(x);x.loc={x:p[0],y:p[1]}}});if(!pM().objs.some(x=>x.side)&&plot.site)plot.site.gate="";PS.sel=null;saveSeeds();pSave();pDraw();pPanel()};
 $("osd").onclick=()=>{const[a,b]=pEdgeSeg(o);pPlantAt([(a[0]+b[0])/2,(a[1]+b[1])/2],o)};pD3Bind(pn,o);return}
 if(o){const K=pK(o),c=K[2]==="c",here=seeds.filter(x=>x.loc&&x.loc.o===o.id).length,fld=(id,lab,v,ph)=>`<div class="pf"><label class="zone" for="${id}">${lab}</label><input id="${id}" inputmode="decimal" maxlength="7" value="${v==null?"":pm1(v)}" placeholder="${ph||""}"><span class="err" data-e="${id}"></span></div>`;
-h=`<div class="row" style="align-items:center;flex-wrap:nowrap"><button class="n pi" id="oem" aria-label="Сменить эмодзи" aria-expanded="${!!PS.emo}" style="font-size:1.5rem">${pEm(o)}</button><input id="onm" maxlength="40" value="${esc(o.n)}" aria-label="Название"><button class="n pi" id="olk" aria-pressed="${!!o.lk}" aria-label="${o.lk?"Открепить":"Закрепить"}">${o.lk?"🔒":"🔓"}</button><button class="n" id="ox" aria-label="Закрыть">✕</button></div>${o.lk?`<p class="note" style="margin:0">🔒 Закреплено: на карте не сдвинется и не изменит размер. Коснись замка, чтобы открепить.</p>`:""}
+h=`<div class="row" style="align-items:center;flex-wrap:nowrap"><button class="n pi" id="oem" aria-label="Сменить эмодзи" aria-expanded="${!!PS.emo}" style="font-size:1.5rem">${pEm(o)}</button><input id="onm" maxlength="40" value="${esc(o.n)}" aria-label="Название"><button class="n pi" id="olk" aria-pressed="${!!o.lk}" aria-label="${o.lk?"Открепить":"Закрепить"}">${o.lk?"🔒":"🔓"}</button><button class="n" id="ox" aria-label="Закрыть">✕</button></div>${o.lk?`<p class="note" style="margin:0">🔒 Закреплено: место, размер и поворот не меняются — ни на карте, ни здесь. Коснись замка, чтобы открепить.</p>`:""}
 <div class="pgrid">${o.pts?`<div class="pf"><span class="zone">Длина</span><b style="font-weight:500">${pm1(pLen(o.pts))} м</b></div>${o.k==="path"?fld("olw","Ширина, м",o.lw):""}`:
 (c?fld("ow","Диаметр, м",o.w):fld("ow","Длина, м",o.w)+fld("oh","Ширина, м",o.h))+[1,2].map(j=>{const si=j===1?o.s1||1:o.s2||pN();return`<div class="pf"><label class="zone" for="os${j}">Отступ ${j} от стороны</label><select id="os${j}">${[...Array(pN())].map((_,i)=>`<option${i+1===si?" selected":""}>${i+1}</option>`).join("")}</select></div>`+fld("oo"+j,"Отступ "+j+", м",pOffs(o,si))}).join("")+(c?"":fld("orr","Поворот, °",pNorm((o.rot||0)-pSideAng(o.s1||1)),"0 — вдоль стороны отступа 1"))}${o.pts&&!["fence","wall","posts"].includes(o.k)?"":fld("ohh","Высота, м",o.hh,"для тени")}</div>
-<div class="row">${chip("ofx","🔒 Стационарное",o.fix)}${chip("omb","⇄ Переносное",!o.fix)}</div>
+<div class="row">${chip("ofx","🏠 Стационарное",o.fix)}${chip("omb","⇄ Переносное",!o.fix)}</div>
 <div class="row">${chip("ohv","✅ Есть",!o.plan)}${chip("opl","💭 Задумка",o.plan)}</div>
-<div class="row"><span class="note" style="align-self:center">Тяни, чтобы переставить</span>
+<div class="row"><span class="note" style="align-self:center">${o.lk?"🔒 Закреплено":"Тяни, чтобы переставить"}</span>
 ${o.pts?"":`<button class="n" id="orot">↻ 90°</button>`}<button class="n" id="odup">Копия</button><button class="n" id="odel">Удалить</button></div>
 <button class="main-btn" id="osd">🌱 Посадить намерение ${o.pts?"здесь":"у: "+esc(o.n)}</button>${pD3Panel(o)}${here?`<p class="note" style="margin:0">Здесь уже ${here} ${pl(here,["семя","семени","семян"])}.</p>`:""}`;
-pn.innerHTML=h;
+pn.innerHTML=h;pLockUI(o);
 if($("olk"))$("olk").onclick=()=>pLock(o);$("ox").onclick=()=>{PS.sel=null;pDraw();pPanel()};pEmBind(pn,o);
 $("onm").onchange=()=>{const v=$("onm").value.trim();if(!v)return;pHist();o.n=v.slice(0,40);pBack(o);pSave();pDraw()};
 [["ow","w"],["oh","h"],["ohh","hh"],["olw","lw"]].forEach(([id,k])=>{const e=$(id);if(!e)return;e.onchange=()=>{const v=pnum(e.value),er=pn.querySelector(`[data-e="${id}"]`);
@@ -1618,7 +1621,7 @@ $("ohv").onclick=()=>{pHist();delete o.plan;pSave();pDraw();pPanel()};$("opl").o
 $("ofx").onclick=()=>{pHist();o.fix=1;PS.unlock=false;pSave();pDraw();pPanel()};$("omb").onclick=()=>{pHist();o.fix=0;pSave();pDraw();pPanel()};
 if($("omv"))$("omv").onclick=()=>{PS.unlock=!PS.unlock;pPanel()};
 if($("orot"))$("orot").onclick=()=>{pHist();const cx=o.x+o.w/2,cy=o.y+o.h/2;[o.w,o.h]=[o.h,o.w];o.x=psnap(cx-o.w/2);o.y=psnap(cy-o.h/2);pBack(o);pSave();pDraw();pPanel()};
-$("odup").onclick=()=>{pHist();const n=JSON.parse(JSON.stringify(o));n.id=pid();if(n.side)n.at=psnap(Math.min(n.at+n.w+.5,pEdgeLen(n.side)-n.w));else if(n.pts)n.pts=n.pts.map(p=>[p[0]+1,p[1]+1]);else{n.x+=.5;n.y+=.5}pM().objs.push(n);pLink(n);PS.sel=n.id;pSave();pDraw();pPanel()};
+$("odup").onclick=()=>{pHist();const n=JSON.parse(JSON.stringify(o));n.id=pid();delete n.lk;if(n.side)n.at=psnap(Math.min(n.at+n.w+.5,pEdgeLen(n.side)-n.w));else if(n.pts)n.pts=n.pts.map(p=>[p[0]+1,p[1]+1]);else{n.x+=.5;n.y+=.5}pM().objs.push(n);pLink(n);PS.sel=n.id;pSave();pDraw();pPanel()};
 $("odel").onclick=()=>{const b=$("odel");if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent=pRow(o)[1]?"Точно? И строку в анкете":"Точно удалить?";return}
 pHist();const[t,r]=pRow(o);if(r)plot[t].splice(plot[t].indexOf(r),1);pM().objs=pM().objs.filter(x=>x!==o);seeds.forEach(x=>{if(x.loc&&x.loc.o===o.id){const p=pSeedPos(x);x.loc={x:p[0],y:p[1]}}});
 PS.sel=null;saveSeeds();pSave();pDraw();pPanel()};
