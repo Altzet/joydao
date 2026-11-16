@@ -1464,39 +1464,40 @@ const nm=k===f?"Фасад":k===POPP[f]?"Задняя":k===L?"Левая":"Пр�
 function pD3Panel(o){const K=pK(o),d=o.d3||{},ch=(k,v,t,on)=>`<button class="${on?"t":"n"}" data-d3="${k}" data-v="${v}" aria-pressed="${!!on}">${t}</button>`,
 sw=(k,c,cur)=>`<button data-d3="${k}" data-v="${c}" aria-label="Цвет ${c}" style="width:30px;height:30px;border-radius:50%;background:${c};border:${(cur??d[k])===c?"3px solid var(--acc)":"1px solid #0003"};padding:0"></button>`,
 VAR={oven:{rustic:"Деревенская",dome:"Купольная",complex:"Комплекс с навесом"},greenhouse:{house:"Домиком",arch:"Арочная"},well:{house:"С домиком",open:"Открытый"}}[o.k],
+CAT=(id,t,b)=>{const on=(PS.d3c===undefined?"sh":PS.d3c)===id;return`<button class="n" data-d3c="${id}" aria-expanded="${on}" style="display:flex;justify-content:space-between;width:100%;font-weight:500">${t}<span>${on?"▴":"▾"}</span></button>${on?`<div style="display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 10px;border-left:2px solid var(--acc)">${b}</div>`:""}`},
 tg=(id,t)=>`<button class="n" id="d3t" aria-expanded="${!!PS.d3}" style="align-self:flex-start">${t} ${PS.d3?"▴":"▾"}</button>`,sides=(k,cur,none)=>(none?ch(k,"",none,!cur):"")+["s","n","w","e"].map(q=>ch(k,q,pSideNm(d,q),cur===q)).join("");
 if(VAR)return`<div class="zone">Вид</div><div class="row">${Object.entries(VAR).map(([k,t])=>ch("var",k,t,(d.var||Object.keys(VAR)[0])===k)).join("")}</div>`;
 if(o.k==="fence")return`<div class="zone">Забор</div><div class="row">${Object.entries(PFN).filter(([k])=>k!=="no").map(([k,t])=>ch("ft",k,t,(d.ft||"der")===k)).join("")}</div><div class="zone">Цвет</div><div class="row">${PFCL.map(c=>sw("fc",c,d.fc||PFC[d.ft||"der"])).join("")}</div>`;
 if(o.k==="wall")return`<div class="zone">Стена</div><div class="row">${Object.entries(PWM).map(([k,t])=>ch("mat",k,t,(d.mat||"blok")===k)).join("")}</div><div class="zone">Цвет</div><div class="row">${PWC.map(c=>sw("wc",c)).join("")}</div>`;
-if(K[8]==="house"||K[8]==="roof")return tg("d3t","🎨 Как в жизни (для 3D)")+(PS.d3?`
-<div class="zone">Форма в плане</div><div class="row">${Object.entries(PFPS).map(([k,t])=>ch("fp",k,t,(d.fp?(d.fpk||"poly"):"rect")===k)).join("")}</div>
+if(K[8]==="house"||K[8]==="roof")return tg("d3t","🎨 3D")+(PS.d3?`
+${CAT("sh","📐 Форма и этажи",`<div class="zone">Форма в плане</div><div class="row">${Object.entries(PFPS).map(([k,t])=>ch("fp",k,t,(d.fp?(d.fpk||"poly"):"rect")===k)).join("")}</div>
 ${d.fp?`${o.lk?"":`<button class="n" id="d3fp" style="align-self:flex-start">✏️ Форма на карте — углы и дуги</button>`}<p class="note" style="margin:0">Крыша над фигурной формой: плоская, купол или шатёр (остальные виды строятся шатром). Окон и дверей нет.</p>`:""}
 <div class="zone">Фасад — какая сторона главная</div><div class="row">${["s","n","w","e"].map(q=>ch("front",q,PDR[q],d.front===q)).join("")}</div>
 <div class="zone">Этажей</div><div class="row">${[1,2,3].map(n=>ch("fl",n,n,+d.fl===n)).join("")}${ch("mans",d.mans?"":"1","＋ мансарда (этаж под крышей)",!!d.mans)}</div>
-<div class="zone">Под домом</div><div class="row">${Object.entries(PBS).map(([k,v])=>ch("base",k,v[0],(d.base||"none")===k)).join("")}</div>
-<div class="zone">Крыша</div><div class="row">${Object.entries(PRF).map(([k,t])=>ch("roof",k,t,pRoofK(o)===k)).join("")}</div>
+<div class="zone">Под домом</div><div class="row">${Object.entries(PBS).map(([k,v])=>ch("base",k,v[0],(d.base||"none")===k)).join("")}</div>`)}
+${CAT("rf","🏠 Крыша",`<div class="zone">Крыша</div><div class="row">${Object.entries(PRF).map(([k,t])=>ch("roof",k,t,pRoofK(o)===k)).join("")}</div>
 ${pRoofK(o)==="shed"?`<div class="zone">Скат опускается к стороне</div><div class="row">${sides("slope",d.slope||(o.w>=o.h?"s":"e"))}</div>`:
 ["gable","mansard"].includes(pRoofK(o))?`<div class="zone">Конёк</div><div class="row">${ch("ridge","","Вдоль длинной стороны",d.ridge!=="short")}${ch("ridge","short","Вдоль короткой (щипцом к длинной)",d.ridge==="short")}</div>`:""}
 <div class="zone">Цвет крыши</div><div class="row">${PRC.map(c=>sw("rc",c)).join("")}</div>
 <div class="row">${d.fp?"":`<button class="n" id="d3ch">🧱 Трубы на крыше (${pChims(o).length})</button>`}${ch("gut",d.gut?"":"1","💧 Водостоки",!!d.gut)}</div>${d.gut?`<p class="note" style="margin:0">Труба водостока спускается к ближайшей бочке или колодцу на карте.</p>`:""}
 ${pRoofK(o)!=="flat"?`<div class="zone">Наклон крыши</div><div class="row">${[["","Авто"],[15,"15°"],[25,"25°"],[35,"35°"],[45,"45°"],[60,"60°"]].map(([v,t])=>ch("pitch",v,t,String(d.pitch||"")===String(v))).join("")}</div>`:""}
-<div class="zone">Свес крыши</div><div class="row">${[[0,"Нет"],[.15,"15 см"],[.25,"25 см"],[.5,"50 см"],[.8,"80 см"]].map(([v,t])=>ch("ovh",v,t,(d.ovh!=null&&d.ovh!==""?+d.ovh:.25)===v)).join("")}</div>
-<div class="zone">Стены — все сразу</div><div class="row">${Object.entries(PWL).map(([k,t])=>ch("walls",k,t,!d.ws&&pWalls(o)===k)).join("")}</div>
+<div class="zone">Свес крыши</div><div class="row">${[[0,"Нет"],[.15,"15 см"],[.25,"25 см"],[.5,"50 см"],[.8,"80 см"]].map(([v,t])=>ch("ovh",v,t,(d.ovh!=null&&d.ovh!==""?+d.ovh:.25)===v)).join("")}</div>`)}
+${CAT("wl","🧱 Стены и каркас",`<div class="zone">Стены — все сразу</div><div class="row">${Object.entries(PWL).map(([k,t])=>ch("walls",k,t,!d.ws&&pWalls(o)===k)).join("")}</div>
 ${d.fp?"":`<div class="zone">…или по сторонам</div><div class="pgrid">${["s","n","w","e"].map(k=>`<div class="pf"><label class="zone" for="ws-${k}">${pSideNm(d,k)}</label><select id="ws-${k}" data-ws="${k}">${Object.entries(PWS).map(([v,n])=>`<option value="${v}"${pSideT(o,k)===v?" selected":""}>${n}</option>`).join("")}</select></div>`).join("")}</div>`}
 ${pAllFull(o)||d.fp?"":`${["flat","hip","dome"].includes(pRoofK(o))?"":`<div class="zone">Фронтоны (треугольники под крышей)</div><div class="row">${ch("gab","","Закрыты",d.gab!=="open")}${ch("gab","open","Открыты",d.gab==="open")}</div>`}
 <button class="n" id="d3po" style="align-self:flex-start">🪵 Столбы на карте (${pPosts(o).length})</button><p class="note" style="margin:0">Угловые столбы стоят всегда; промежуточные можно двигать, добавлять и убирать. Окна и двери — только на сплошных стенах.</p>`}
-${!pAllFull(o)&&["s","n","w","e"].every(k=>pSideT(o,k)!=="full")?"":`<div class="zone">Материал стен</div><div class="row">${Object.entries(PWM).map(([k,t])=>ch("mat",k,t,d.mat===k)).join("")}</div>`}<div class="zone">${pAllFull(o)?"Цвет стен":"Цвет стен и каркаса"}</div><div class="row">${PWC.map(c=>sw("wc",c)).join("")}</div>
-${!d.fp&&["s","n","w","e"].some(k=>pSideT(o,k)==="full")?`<div class="zone">Главный вход</div><div class="row">${(()=>{const D=pDoors(o);return sides("door",D.length?D[0].k:"")+ch("door","none","Нет",!D.length)})()}</div>
+${!pAllFull(o)&&["s","n","w","e"].every(k=>pSideT(o,k)!=="full")?"":`<div class="zone">Материал стен</div><div class="row">${Object.entries(PWM).map(([k,t])=>ch("mat",k,t,d.mat===k)).join("")}</div>`}<div class="zone">${pAllFull(o)?"Цвет стен":"Цвет стен и каркаса"}</div><div class="row">${PWC.map(c=>sw("wc",c)).join("")}</div>`)}
+${!d.fp&&["s","n","w","e"].some(k=>pSideT(o,k)==="full")?CAT("dw","🚪 Входы и окна",`<div class="zone">Главный вход</div><div class="row">${(()=>{const D=pDoors(o);return sides("door",D.length?D[0].k:"")+ch("door","none","Нет",!D.length)})()}</div>
 <button class="n" id="d3dr" style="align-self:flex-start">🚪🪟 Входы и окна на карте (${pDoors(o).length} / ${pWins(o).length})</button>
 <div class="zone">Гаражные ворота</div><div class="row">${sides("gd",d.gd,"Нет")}</div>
 ${pDoors(o).length?`<div class="zone">У главного входа</div>${pPorchUI(o,0)}`:""}
 ${(+d.fl||1)>1?`<div class="zone">Балкон на 2 этаже</div><div class="row">${sides("balc",d.balc,"Нет")}</div>`:""}
 <div class="zone">Окна по сторонам; пусто = авто</div>${d.wins?`<p class="note" style="margin:0">Окна расставлены вручную — двигай их на карте кнопкой 🚪🪟 выше.</p>`:""}
 <div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px;align-items:center">${["","s","n","w","e"].map(k=>`<span class="note" style="text-align:center;font-size:11px;line-height:1.15">${k?(d.front?pSideNm(d,k,1)+"<br>":"")+PDR[k].split(" ")[0]:""}</span>`).join("")}
-${pFloors(d).filter(f=>!d.wins).map(f=>`<span class="note">${f[1]}</span>`+["s","n","w","e"].map(k=>f[0]==="g"&&!pGEnd(o,k)?`<span class="note" style="text-align:center">—</span>`:`<input data-wg="${f[0]}.${k}" inputmode="numeric" maxlength="2" aria-label="${f[1]}, ${pSideNm(d,k)}" value="${((d.wg||{})[f[0]]||{})[k]??""}" placeholder="${pAutoWin(o,f[0],k)}" style="min-width:0;text-align:center;padding-left:4px;padding-right:4px">`).join("")).join("")}</div>`:""}`:"");
-if(K[8]==="tree"||K[8]==="bush")return tg("d3t","🎨 Порода (для 3D)")+(PS.d3?`
+${pFloors(d).filter(f=>!d.wins).map(f=>`<span class="note">${f[1]}</span>`+["s","n","w","e"].map(k=>f[0]==="g"&&!pGEnd(o,k)?`<span class="note" style="text-align:center">—</span>`:`<input data-wg="${f[0]}.${k}" inputmode="numeric" maxlength="2" aria-label="${f[1]}, ${pSideNm(d,k)}" value="${((d.wg||{})[f[0]]||{})[k]??""}" placeholder="${pAutoWin(o,f[0],k)}" style="min-width:0;text-align:center;padding-left:4px;padding-right:4px">`).join("")).join("")}</div>`):""}`:"");
+if(K[8]==="tree"||K[8]==="bush")return tg("d3t","🎨 3D · порода")+(PS.d3?`
 <div class="row">${Object.entries(PSP).map(([k,v])=>ch("sp",k,v[0],d.sp===k)).join("")}</div><p class="note" style="margin:0">Листва в 3D меняется по сезону: весной плодовые цветут, осенью желтеют, зимой голые ветки.</p>`:"");
-if(o.side)return tg("d3t","🎨 Как в жизни (для 3D)")+(PS.d3?`
+if(o.side)return tg("d3t","🎨 3D")+(PS.d3?`
 <div class="zone">Полотно</div><div class="row">${Object.entries(PGT).map(([k,t])=>ch("gt",k,t,(d.gt||"solid")===k)).join("")}</div>
 <div class="zone">Цвет</div><div class="row">${PGC.map(c=>sw("gc",c,d.gc||(o.k==="gate"?"#6E3B2A":"#4A4F55"))).join("")}</div>
 <div class="row">${[1.2,1.5,1.8,2].map(h=>ch("gh",h,h+" м",(+d.gh||1.6)===h)).join("")}</div>`:"");
@@ -1512,6 +1513,7 @@ box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,m
 b.closest(".row,.prow").after(box);const set=e=>{pHist();if(e)o.em=e;else delete o.em;PS.emo=false;pSave();pDraw();pPanel()};
 box.querySelectorAll("[data-em]").forEach(x=>x.onclick=()=>set(x.dataset.em));$("emo-ok").onclick=()=>{const v=$("emo-own").value.trim();if(v)set([...v].slice(0,4).join(""))};if($("emo-def"))$("emo-def").onclick=()=>set("")}
 function pD3Bind(pn,o){if($("d3t"))$("d3t").onclick=()=>{PS.d3=!PS.d3;pPanel()};
+pn.querySelectorAll("[data-d3c]").forEach(b=>b.onclick=()=>{const c=PS.d3c===undefined?"sh":PS.d3c;PS.d3c=c===b.dataset.d3c?null:b.dataset.d3c;pPanel()});
 if($("d3dr"))$("d3dr").onclick=()=>{PS.doorO=o.id;PS.doorI=PS.winI=PS.postI=PS.chI=null;$("sh").classList.add("min");pDraw();pPanel()};
 pn.querySelectorAll("[data-d3]").forEach(b=>b.onclick=()=>{pHist();const d=o.d3=o.d3||{},k=b.dataset.d3,v=b.dataset.v;
 if(k==="door"){const D=pDoorsW(o);if(v==="none")D.length=0;else if(D.length)Object.assign(D[0],{k:v,t:0});else D.push({k:v,t:0});pSave();pDraw();pPanel();return}
