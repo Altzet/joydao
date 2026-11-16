@@ -16,9 +16,9 @@ from aiogram.filters import Command
 from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, MenuButtonWebApp, Message,
                            WebAppInfo)
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 
-from . import config, db, nunu, nunu_admin, nunu_reports, nunu_subs, rules
+from . import config, db, landing, nunu, nunu_admin, nunu_reports, nunu_subs, rules
 from .nunu import remind_loop  # имя nunu ниже занято маршрутом /nunu
 
 TEXT = (
@@ -139,10 +139,28 @@ async def rules_page():
     return rules.page()
 
 
+@app.get("/robots.txt")
+async def robots():
+    """SEO: в поиск — лендинг и правила; игра, админка и API — нет."""
+    return PlainTextResponse("User-agent: *\nAllow: /$\nAllow: /rules\nDisallow: /nunu\n"
+                             f"Sitemap: {landing.SITE}/sitemap.xml\n")
+
+
+@app.get("/sitemap.xml")
+async def sitemap():
+    u = "".join(f"<url><loc>{landing.SITE}{p}</loc><priority>{w}</priority></url>" for p, w in (("/", "1.0"), ("/rules", "0.5")))
+    return Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    + u + "</urlset>", media_type="application/xml")
+
+
 @app.get("/{path:path}")
 async def page(path: str = ""):
-    """Сайт: лендинг из админки (раздел «Лендинг»). Старое объявление PAGE осталось в коде на случай паузы."""
-    return nunu_admin.landing_page()
+    """Сайт: лендинг из админки (раздел «Лендинг»). Остальные адреса — честная 404, а не копия главной (дубли вредят поиску)."""
+    if path.strip("/") in ("", "index.html"):
+        return nunu_admin.landing_page()
+    return HTMLResponse(f'<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+                        f'<meta name="robots" content="noindex"><title>Страница не найдена · Ну-ну</title>{landing.ICON}<style>{landing.CSS}</style></head>'
+                        f'<body><main class="w" style="padding:80px 20px"><h1>Такой страницы нет</h1><p><a href="/">На главную →</a></p></main></body></html>', 404)
 
 
 log = logging.getLogger("joydao")

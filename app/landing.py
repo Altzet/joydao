@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 import html
+import json
 import re
 
 from . import config
+
+# Адрес сайта для canonical, sitemap и превью ссылок (SEO). WEBAPP_URL из .env, иначе боевой домен.
+SITE = re.sub(r"/nunu/?$", "", (config.WEBAPP_URL or "https://joylao.duckdns.org").rstrip("/"))
+
+
+def absu(u: str) -> str:
+    return SITE + u if u.startswith("/") else u
+
 
 BLOCKS = {"hero": "Первый экран", "how": "Как это работает", "author": "От автора", "features": "Возможности",
           "science": "На чём это держится", "cta": "Призыв", "faq": "Вопросы"}
@@ -84,6 +93,8 @@ def check(lp) -> list[str]:
         e.append("Лендинг: название — до 40 знаков")
     if not all(_str(lp["seo"].get(k), n) for k, n in (("title", 120), ("desc", 300))):
         e.append("Лендинг: заголовок для поиска до 120 знаков, описание до 300")
+    if not re.fullmatch(r"[\w-]{0,100}", str(lp["seo"].get("gsc", ""))) or not _url(lp["seo"].get("img", "")):
+        e.append("Лендинг: код Google Search Console — латиница, цифры, «-» и «_»; картинка превью — ссылка или загруженный файл")
     if not all(_url(lp["links"].get(k)) for k in d["links"]) or not lp["links"].get("play"):
         e.append("Лендинг: ссылки должны начинаться с https://, ссылка «Играть» обязательна")
     if not isinstance(lp.get("order"), list) or sorted(lp["order"]) != sorted(BLOCKS) \
@@ -193,7 +204,7 @@ def render(lp: dict) -> str:
             continue
         b = lp[k]
         if k == "hero":
-            pic = '<img src="%s" alt="">' % E(b["img"]) if b.get("img") else GROW
+            pic = '<img src="%s" alt="%s">' % (E(b["img"]), E(b["title"].replace("\n", " "))) if b.get("img") else GROW
             kick = '<span class="kick">%s</span>' % E(b["kicker"]) if b.get("kicker") else ""
             two = '<a class="btn g" href="#how">%s</a>' % E(b["cta2"]) if b.get("cta2") and "how" not in off else ""
             parts.append(f'<section class="hero"><div class="w"><div class="rv">{kick}<h1>{_p(b["title"])}</h1>'
@@ -206,10 +217,10 @@ def render(lp: dict) -> str:
         elif k == "features" and b["items"]:
             parts.append(f'<section id="features" class="alt"><div class="w"><h2 class="rv">{E(b["title"])}</h2><div class="cards">'
                          + "".join('<div class="card rv">%s<h3>%s</h3><p>%s</p></div>' % (
-                             '<img src="%s" alt="" loading="lazy">' % E(x["img"]) if x.get("img") else "", E(x["t"]), _p(x["d"]))
+                             '<img src="%s" alt="%s" loading="lazy">' % (E(x["img"]), E(x["t"])) if x.get("img") else "", E(x["t"]), _p(x["d"]))
                                    for x in b["items"]) + "</div></div></section>")
         elif k == "author" and b.get("text", "").strip():
-            ph = '<img class="ava" src="%s" alt="">' % E(b["img"]) if b.get("img") else '<div class="ava">%s</div>' % LEAF
+            ph = '<img class="ava" src="%s" alt="Автор приложения">' % E(b["img"]) if b.get("img") else '<div class="ava">%s</div>' % LEAF
             parts.append(f'<section id="author"><div class="w author rv">{ph}<div><h2>{E(b["title"])}</h2>'
                          + "".join(f"<p>{E(x)}</p>" for x in b["text"].split("\n") if x.strip())
                          + (f'<p class="sign">{E(b["sign"])}</p>' if b.get("sign") else "") + "</div></div></section>")
@@ -230,9 +241,22 @@ def render(lp: dict) -> str:
     nav = "".join(f'<a href="#{k}">{E(lp[k]["title"] or t)}</a>' for k, t in navs) + '<a href="/rules">Правила</a>'
     foot = "".join(f'<a href="{E(L[k])}">{t}</a>' for k, t in (("channel", "Канал"), ("chat", "Чат")) if L.get(k)) + '<a href="/rules">Правила</a>'
     seo = lp["seo"]
+    title, desc, img = seo["title"] or lp["brand"], seo["desc"], absu(seo.get("img") or "")
+    ld = [{"@context": "https://schema.org", "@type": "WebSite", "name": lp["brand"], "url": SITE + "/", "inLanguage": "ru"},
+          {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": lp["brand"], "description": desc,
+           "applicationCategory": "LifestyleApplication", "operatingSystem": "Telegram", "url": play, "inLanguage": "ru",
+           "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}]
+    if "faq" not in off and lp["faq"].get("items"):
+        ld.append({"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
+            {"@type": "Question", "name": x["q"], "acceptedAnswer": {"@type": "Answer", "text": x["a"]}} for x in lp["faq"]["items"]]})
+    head = (f'<link rel="canonical" href="{SITE}/"><meta property="og:url" content="{SITE}/"><meta property="og:site_name" content="{E(lp["brand"])}">'
+            f'<meta property="og:locale" content="ru_RU"><meta name="twitter:card" content="{"summary_large_image" if img else "summary"}">'
+            + (f'<meta property="og:image" content="{E(img)}">' if img else "")
+            + (f'<meta name="google-site-verification" content="{E(seo["gsc"])}">' if seo.get("gsc") else "")
+            + '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False).replace("</", "<\\/") + "</script>")
     return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{E(seo["title"] or lp["brand"])}</title><meta name="description" content="{E(seo["desc"])}">
-<meta property="og:title" content="{E(seo["title"] or lp["brand"])}"><meta property="og:description" content="{E(seo["desc"])}"><meta property="og:type" content="website">
+<title>{E(title)}</title><meta name="description" content="{E(desc)}">
+<meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(desc)}">{head}<meta property="og:type" content="website">
 <meta name="theme-color" content="#ffffff">{ICON}<script>document.documentElement.className="js"</script><style>{CSS}</style></head><body>
 <header><div class="w"><a class="logo" href="#">{E(lp["brand"])}</a><nav>{nav}</nav><a class="btn sm" href="{play}">Открыть</a></div></header>
 <main>{"".join(parts)}</main>

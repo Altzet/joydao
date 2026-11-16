@@ -32,3 +32,16 @@ def test_rules(tmp_path, monkeypatch):
     assert c.post("/nunu/admin/api/rules/broadcast", headers=h).json() == {"ok": True, "count": 1}
     assert sent == [2]
     assert c.get("/nunu/admin/api/rules", headers=h).json()["todo"] == 0  # второй раз тому же не шлём
+
+
+def test_seo(tmp_path, monkeypatch):
+    """robots, sitemap, canonical, микроразметка, честная 404 вместо копии главной."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    c = TestClient(pause.app)
+    r = c.get("/robots.txt").text
+    assert "Disallow: /nunu" in r and "sitemap.xml" in r
+    assert "/rules</loc>" in c.get("/sitemap.xml").text
+    h = c.get("/").text
+    assert 'rel="canonical"' in h and '"@type": "SoftwareApplication"' in h and '"FAQPage"' in h
+    assert c.get("/chto-ugodno").status_code == 404 and c.get("/").status_code == 200
+    assert 'name="robots" content="noindex"' in c.get("/nunu").text
