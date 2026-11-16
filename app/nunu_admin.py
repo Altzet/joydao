@@ -240,6 +240,8 @@ def page() -> HTMLResponse:
     """nunu.html с живыми правками: данные идут до основного скрипта, без лишнего запроса."""
     base()
     s, c = _cache["html"], cfg()
+    from . import rules
+    s = s.replace("<script>\n", f"<script>window.NUNU_RULES={rules.inject()}</script>\n<script>\n", 1)
     if c:
         js = json.dumps(c, ensure_ascii=False).replace("</", "<\\/")
         s = s.replace("<script>\n", f"<script>window.NUNU_CFG={js}</script>\n<script>\n", 1)

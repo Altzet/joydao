@@ -227,8 +227,8 @@ def render(lp: dict) -> str:
                          + "</div></section>")
     navs = [(k, t) for k, t in (("how", "Как это работает"), ("author", "От автора"), ("faq", "Вопросы"))
             if k not in off and (lp[k].get("items") or lp[k].get("text"))]
-    nav = "".join(f'<a href="#{k}">{E(lp[k]["title"] or t)}</a>' for k, t in navs)
-    foot = "".join(f'<a href="{E(L[k])}">{t}</a>' for k, t in (("channel", "Канал"), ("chat", "Чат")) if L.get(k))
+    nav = "".join(f'<a href="#{k}">{E(lp[k]["title"] or t)}</a>' for k, t in navs) + '<a href="/rules">Правила</a>'
+    foot = "".join(f'<a href="{E(L[k])}">{t}</a>' for k, t in (("channel", "Канал"), ("chat", "Чат")) if L.get(k)) + '<a href="/rules">Правила</a>'
     seo = lp["seo"]
     return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{E(seo["title"] or lp["brand"])}</title><meta name="description" content="{E(seo["desc"])}">

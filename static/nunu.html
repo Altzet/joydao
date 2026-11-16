@@ -253,6 +253,7 @@ try{TG&&TG.setHeaderColor&&TG.setHeaderColor(getComputedStyle(r).getPropertyValu
 applyPrefs();try{TG&&TG.onEvent("themeChanged",applyPrefs)}catch(e){}
 function settings(){setNav("settings");const b=(id,txt,on)=>`<button class="${on?"t":"n"}" id="${id}" aria-pressed="${on}">${txt}</button>`,i=FS.indexOf(prefs.fs);
 app.innerHTML=`<h1>Настройки</h1>
+<div class="card"><h2>Правила</h2><p style="margin:0">${prefs.rules?"Ты принял правила "+esc(fmtD(prefs.rules.at))+".":"Как мы общаемся, что видят друзья, как работают жалобы."}</p><button class="n" id="rlset" style="align-self:flex-start">📜 Свод правил</button></div>
 <div class="card"><h2>Тема</h2><div class="row">${b("th-auto","Как в Telegram",prefs.theme==="auto")}${b("th-light","Светлая",prefs.theme==="light")}${b("th-dark","Тёмная",prefs.theme==="dark")}</div></div>
 <div class="card"><h2>Цвет</h2><div class="row">${Object.entries(ACC).map(([k,a])=>`<button class="sw" data-a="${k}" aria-label="${a[0]}" aria-pressed="${prefs.acc===k}" style="background:${r_dark()?a[3]:a[1]}"></button>`).join("")}</div>
 <p class="note" style="margin:0">${ACC[prefs.acc][0]}: кнопки, меню и выделение.</p><button class="main-btn" style="align-self:flex-start">Так выглядит кнопка</button></div>
@@ -266,7 +267,7 @@ app.innerHTML=`<h1>Настройки</h1>
 ${prefs.visitClosed?`<p class="note" style="margin:0">Участок закрыт: друзья увидят, что ты пока не пускаешь гостей.</p>`:`<div class="zone">Сообщать, когда друг зашёл</div><div class="row">${b("gv-on","Да",!prefs.visitOff)}${b("gv-off","Не надо",!!prefs.visitOff)}</div>
 <div class="zone">Сообщать о комментариях</div><div class="row">${b("gc-on","Да",!prefs.commOff)}${b("gc-off","Не надо",!!prefs.commOff)}</div>`}</div>
 ${API?`<div class="card"><h2>Свои ситуации</h2><p style="margin:0">Пройдено ситуаций: ${scenePool().filter(k=>seen.includes(k)).length} из ${scenePool().length}. Когда пройдёшь все, сможешь предложить свою — её опубликуют в канале на голосование.</p><button class="n" id="sbm" style="align-self:flex-start">Мои ситуации</button></div>`:""}`;
-if($("sbm"))$("sbm").onclick=()=>subForm(settings);
+if($("sbm"))$("sbm").onclick=()=>subForm(settings);$("rlset").onclick=openRules;
 const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
 ["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});
 [["go","visitClosed"],["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{if(!$(id+"-on"))return;$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
@@ -337,6 +338,17 @@ const sit=k=>pick(st.seed)[k],newSeed=()=>{const S0=new Set(seen);let best=0,bw=
 w=pick(sd).reduce((a,c)=>a+(S0.has(c.id)?(c.id[0]==="s"?3:1):0),0);delete picked[sd];if(w<bw){bw=w;best=sd}if(!w)break}return best};  /* номер партии в диапазоне последней колоды */
 const save=()=>ls.set("nunu2",st);
 function card(h){app.innerHTML=`<div class="card">${h}</div>`}
+/* свод правил (app/rules.py → window.NUNU_RULES): прежде чем играть — прочитать и принять; поменялась версия — принять заново */
+const RL=window.NUNU_RULES||{v:1,main:[]},rulesOk=()=>!RL.main.length||!!(prefs.rules&&prefs.rules.v===RL.v),
+openRules=()=>{const u=location.origin+"/rules";try{TG.openLink(u)}catch(e){window.open(u,"_blank")}};
+function rulesGate(done){const nv=$("nav"),re=prefs.rules&&prefs.rules.v;if(nv)nv.hidden=true;
+card(`<h2>${re?"Правила обновились":"Правила «Ну-ну»"}</h2><p style="margin:0">Прежде чем играть — пять главных правил. Полный свод — по ссылке ниже.</p>
+<ol style="margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px">${RL.main.map(([t,x])=>`<li><b style="font-weight:500">${esc(t)}.</b> ${esc(x)}</li>`).join("")}</ol>
+<button class="n" id="rlf" style="align-self:flex-start">📜 Полный свод правил</button>
+<label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="checkbox" id="rlc" style="width:22px;height:22px;flex:none;margin:0"><span>Я прочитал правила и принимаю их</span></label>
+<button class="main-btn" id="rlok" disabled>Принимаю — в игру</button>`);
+$("rlf").onclick=openRules;$("rlc").onchange=()=>{$("rlok").disabled=!$("rlc").checked};
+$("rlok").onclick=()=>{prefs.rules={v:RL.v,at:new Date().toISOString().slice(0,10)};ls.set("nunu-prefs",prefs);push();if(nv)nv.hidden=false;done()}}
 function go(){setNav(null);if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
 if(st.join&&st.friend&&st.friend.pending)return st.story&&st.sg===undefined?storyGuess():sendPlay();
 if(API&&(M==="hero"||M==="duo"&&!st.friend))return shareTG(M);
@@ -2019,6 +2031,7 @@ try{const r=await API("/state"),d=r.data;tgName=r.name||"";
 if(d){adopt(dirty&&sync.base?mergeAll(sync.base,mine(),d):dirty?mergeAll({},mine(),d):d);setSync(r.rev,d)}else{setSync(r.rev||0,null);setDirty(true)}
 /* общие дела от друзей: ложатся в сад, если такого ещё нет */
 takeInbox(r.inbox);if(dirty)flush();
+if(!rulesOk())await new Promise(res=>rulesGate(res));
 const sp=(TG.initDataUnsafe||{}).start_param;
 if(sp&&sp[0]==="m"){const r=await API("/meet/"+sp+"/accept","POST");if(r.bridge){focus=r.friend.id;return world()}
 card(`<h2>Приглашение принято</h2><p style="margin:0">Мост появится, когда ${esc(r.friend.name)} тоже откроет приглашение. Бот напишет тебе.</p><button class="main-btn" id="mp">На карту</button>`);$("mp").onclick=world;return}
