@@ -1636,13 +1636,13 @@ if(PS.pal){h=`<div class="row" style="justify-content:space-between;align-items:
 ${PS.rect?`<p class="note" style="margin:0">${pm1(PS.rect.w)} × ${pm1(PS.rect.h)} м. Выбери, что это.</p>`:`<p class="note" style="margin:0">Появится в центре экрана — потом перетащи и задай размер.</p>`}
 ${PG.filter(g=>!(PS.rect&&"le".includes(g[0]))).map(([g,t])=>`<div class="zone">${t}</div><div class="row">${Object.entries(PK).filter(([k,v])=>v[7]===g&&!k.startsWith("own")).map(([k,v])=>`<button class="n" data-pk="${k}">${v[1]} ${esc(v[0])}</button>`).join("")}</div>`).join("")}
 <div class="zone">Своё</div>${PS.own?`<div class="pgrid"><div class="pf w"><label class="zone" for="own-n">Что это</label><input id="own-n" maxlength="40" placeholder="Летний душ" value="${esc(PS.own.n)}"></div></div>
-<div class="row">${chip("own-r","▭ Прямоугольник",PS.own.c===0)}${chip("own-c","○ Круг",PS.own.c===1)}</div><div class="row">${chip("own-f","Стационарное",PS.own.f===1)}${chip("own-m","Переносное",PS.own.f===0)}</div>
+<div class="row">${chip("own-r","▭ Прямоугольник",PS.own.c===0)}${chip("own-c","○ Круг",PS.own.c===1)}</div>
 <span class="err" id="own-e"></span><button class="main-btn" id="own-ok">Добавить</button>`:`<button class="n" id="own" style="align-self:flex-start">✳️ Своё…</button>`}`;
 pn.innerHTML=h;$("pcx").onclick=()=>{PS.pal=false;PS.rect=null;PS.own=null;$("sh").classList.add("min");pDraw();pPanel()};
 pn.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{const k=b.dataset.pk;if(PK[k][2]==="l"){PS.pal=false;PS.tool="line";PS.draft=[];PS.lineK=k;$("sh").classList.add("min");pPanel();return}pAdd(k,PS.rect)});
 if($("own"))$("own").onclick=()=>{PS.own={n:"",c:0,f:0};pPanel()};
 if(PS.own){$("own-n").oninput=()=>{PS.own.n=$("own-n").value;$("own-e").textContent=""};$("own-r").onclick=()=>{PS.own.c=0;pPanel()};$("own-c").onclick=()=>{PS.own.c=1;pPanel()};
-$("own-f").onclick=()=>{PS.own.f=1;pPanel()};$("own-m").onclick=()=>{PS.own.f=0;pPanel()};
+
 $("own-ok").onclick=()=>{const n=PS.own.n.trim();if(!n){$("own-e").textContent="Напиши, что это";return}const o=pAdd("own",PS.rect);o.n=n.slice(0,40);o.fix=PS.own.f;o.k=PS.own.c?"ownc":"own";
 if(PS.own.c){o.w=o.h=Math.max(o.w,o.h)}PS.own=null;PS.unlock=!o.fix;pSave();pDraw();pPanel()}}
 return}
@@ -1728,7 +1728,6 @@ if(o){const K=pK(o),c=K[2]==="c",here=seeds.filter(x=>x.loc&&x.loc.o===o.id).len
 h=`<div class="row" style="align-items:center;flex-wrap:nowrap"><button class="n pi" id="oem" aria-label="Сменить эмодзи" aria-expanded="${!!PS.emo}" style="font-size:1.5rem">${pEm(o)}</button><input id="onm" maxlength="40" value="${esc(o.n)}" aria-label="Название"><button class="n pi" id="olk" aria-pressed="${!!o.lk}" aria-label="${o.lk?"Открепить":"Закрепить"}">${o.lk?"🔒":"🔓"}</button><button class="n" id="ox" aria-label="Закрыть">✕</button></div>${o.lk?`<p class="note" style="margin:0">🔒 Закреплено: место, размер и поворот не меняются — ни на карте, ни здесь. Коснись замка, чтобы открепить.</p>`:""}
 <div class="pgrid">${o.pts?`<div class="pf"><span class="zone">Длина</span><b style="font-weight:500">${pm1(pLen(pLP(o)))} м</b></div>${o.k==="path"?fld("olw","Ширина, м",o.lw):""}`:
 (c?fld("ow","Диаметр, м",o.w):fld("ow","Длина, м",o.w)+fld("oh","Ширина, м",o.h))+[1,2].map(j=>{const si=j===1?o.s1||1:o.s2||pN();return`<div class="pf"><label class="zone" for="os${j}">Отступ ${j} от стороны</label><select id="os${j}">${[...Array(pN())].map((_,i)=>`<option${i+1===si?" selected":""}>${i+1}</option>`).join("")}</select></div>`+fld("oo"+j,"Отступ "+j+", м",pOffs(o,si))}).join("")+(c?"":fld("orr","Поворот, °",pNorm((o.rot||0)-pSideAng(o.s1||1)),"0 — вдоль стороны отступа 1"))}${o.pts&&!["fence","wall","posts"].includes(o.k)?"":fld("ohh","Высота, м",o.hh,"для тени")}</div>
-<div class="row">${chip("ofx","🏠 Стационарное",o.fix)}${chip("omb","⇄ Переносное",!o.fix)}</div>
 <div class="row">${chip("ohv","✅ Есть",!o.plan)}${chip("opl","💭 Задумка",o.plan)}</div>
 <div class="row"><span class="note" style="align-self:center">${o.lk?"🔒 Закреплено":"Тяни, чтобы переставить"}</span>
 ${o.pts?(o.lk?"":`<button class="n" id="oshp">✏️ Точки и изгибы</button>`):`<button class="n" id="orot">↻ 90°</button>`}<button class="n" id="odup">Копия</button><button class="n" id="odel">Удалить</button></div>
@@ -1744,7 +1743,7 @@ pHist();const ok=pPlace(o,s1,j===1?v:pOffs(o,s1),s2,j===2?v:pOffs(o,s2));er.text
 if($("orr"))$("orr").onchange=()=>{const v=pnum($("orr").value),er=pn.querySelector('[data-e="orr"]');if(v==null){er.textContent="Число градусов, например 15";return}
 pHist();const s1=o.s1||1,s2=o.s2||pN(),d1=pOffs(o,s1),d2=pOffs(o,s2);o.rot=pNorm(pSideAng(s1)+v);pPlace(o,s1,d1,s2,d2);pBack(o);pSave();pDraw();pPanel()};
 $("ohv").onclick=()=>{pHist();delete o.plan;pSave();pDraw();pPanel()};$("opl").onclick=()=>{pHist();o.plan=1;pSave();pDraw();pPanel()};
-$("ofx").onclick=()=>{pHist();o.fix=1;PS.unlock=false;pSave();pDraw();pPanel()};$("omb").onclick=()=>{pHist();o.fix=0;pSave();pDraw();pPanel()};
+
 if($("omv"))$("omv").onclick=()=>{PS.unlock=!PS.unlock;pPanel()};
 if($("orot"))$("orot").onclick=()=>{pHist();const cx=o.x+o.w/2,cy=o.y+o.h/2;[o.w,o.h]=[o.h,o.w];o.x=psnap(cx-o.w/2);o.y=psnap(cy-o.h/2);pBack(o);pSave();pDraw();pPanel()};
 $("odup").onclick=()=>{pHist();const n=JSON.parse(JSON.stringify(o));n.id=pid();delete n.lk;if(n.side)n.at=psnap(Math.min(n.at+n.w+.5,pEdgeLen(n.side)-n.w));else if(n.pts)n.pts=n.pts.map(p=>[p[0]+1,p[1]+1]);else{n.x+=.5;n.y+=.5}pM().objs.push(n);pLink(n);PS.sel=n.id;pSave();pDraw();pPanel()};
