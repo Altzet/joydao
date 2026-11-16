@@ -927,17 +927,23 @@ pM().objs=h.o;plot.site=plot.site||{};h.n==null?delete plot.site.n:plot.site.n=h
 pM().objs.forEach(pBack);if(PS.sel&&!pO(PS.sel))PS.sel=null;pSave();return true}
 /* въезд и калитка стоят на границе: сторона i, сколько метров от угла i (её начала), ширина */
 const pEdgeLen=i=>pSideV(i).L;
-function pEdgeSeg(o){const{a,u,L}=pSideV(o.side),s=Math.max(0,Math.min(o.at,L-o.w)),e=s+Math.min(o.w,L);return[[a[0]+u[0]*s,a[1]+u[1]*s],[a[0]+u[0]*e,a[1]+u[1]*e]]}
-function pNearSide(p,w){let best=null;for(let i=1;i<=pN();i++){const{a,u,L}=pSideV(i),t=Math.max(0,Math.min(L,(p[0]-a[0])*u[0]+(p[1]-a[1])*u[1])),d=Math.hypot(a[0]+u[0]*t-p[0],a[1]+u[1]*t-p[1]);
-if(!best||d<best[0])best=[d,i,psnap(Math.min(Math.max(t-w/2,0),Math.max(0,L-w)))]}return[best[1],best[2]]}
+function pGL(o){if(o.on){const f=pO(o.on),P=f&&f.pts&&pLP(f);if(P&&P.length>1){const i=Math.max(0,Math.min(+o.seg||0,P.length-2)),a=P[i],b=P[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1])||.01,u=[(b[0]-a[0])/L,(b[1]-a[1])/L];return{a,u,L,out:[-u[1],u[0]]}}
+o.side=1;delete o.on;delete o.seg}return pSideV(o.side)}  /* забор удалили — калитка возвращается на сторону 1 */
+const pFences=()=>pM().objs.filter(f=>f.k==="fence"&&f.pts&&f.pts.length>1);
+function pEdgeSeg(o){const{a,u,L}=pGL(o),s=Math.max(0,Math.min(o.at,L-o.w)),e=s+Math.min(o.w,L);return[[a[0]+u[0]*s,a[1]+u[1]*s],[a[0]+u[0]*e,a[1]+u[1]*e]]}
+function pNearSide(p,w){let best=null;const tr=(a,b,i,on,seg)=>{const L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(L<.05)return;const u=[(b[0]-a[0])/L,(b[1]-a[1])/L],t=Math.max(0,Math.min(L,(p[0]-a[0])*u[0]+(p[1]-a[1])*u[1])),d=Math.hypot(a[0]+u[0]*t-p[0],a[1]+u[1]*t-p[1]);
+if(!best||d<best[0])best=[d,i,psnap(Math.min(Math.max(t-w/2,0),Math.max(0,L-w))),on,seg]};
+for(let i=1;i<=pN();i++){const{a,u,L}=pSideV(i);tr(a,[a[0]+u[0]*L,a[1]+u[1]*L],i)}
+for(const f of pFences()){const P=pLP(f);for(let j=1;j<P.length;j++)tr(P[j-1],P[j],-1,f.id,j-1)}  /* и любой забор внутри участка */
+return best.slice(1)}
 const pBase=o=>o.pts?o.pts[0]:o.side?pEdgeSeg(o)[0]:[o.x,o.y];
 function pGateTxt(){const g=pM().objs.filter(o=>o.side);if(!g.length)return;plot.site=plot.site||{};
-plot.site.gate=g.map(o=>`${o.n}: сторона ${o.side}, ${pm1(o.at)} м от угла ${o.side}, ширина ${pm1(o.w)} м`).join("; ")}
+plot.site.gate=g.map(o=>o.on?`${o.n}: на заборе «${(pO(o.on)||{}).n||"забор"}», ширина ${pm1(o.w)} м`:`${o.n}: сторона ${o.side}, ${pm1(o.at)} м от угла ${o.side}, ширина ${pm1(o.w)} м`).join("; ")}
 const pSave=()=>{pGateTxt();savePlot()};
 
 /* ---------- рисунок ---------- */
 function pObjSvg(o,sel){const K=pK(o),[f,s]=PC[K[8]]||PC.own,mob=!o.fix,da=mob?' stroke-dasharray="5 4"':"",ve=' vector-effect="non-scaling-stroke"';
-if(o.side){const[a,b]=pEdgeSeg(o),N=pSideV(o.side).out,m=[(a[0]+b[0])/2,(a[1]+b[1])/2],gt=o.k==="gate",cl=gt?"#B5482A":"#D2803A";
+if(o.side){const[a,b]=pEdgeSeg(o),N=pGL(o).out,m=[(a[0]+b[0])/2,(a[1]+b[1])/2],gt=o.k==="gate",cl=gt?"#B5482A":"#D2803A";
 return`<g data-o="${o.id}"><line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="transparent" stroke-width="26"${ve} pointer-events="stroke"/>
 <line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#F4EBD6" stroke-width="7"${ve}/><line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${cl}" stroke-width="3"${ve} stroke-dasharray="${gt?"6 3":"3 3"}"/>
 <g class="fix" style="transform:translate(${m[0]}px,${m[1]}px) scale(var(--s))"><g transform="translate(${N[0]*22} ${N[1]*20})"><circle r="14" fill="#FFF8E7" stroke="${cl}" stroke-width="2"/><text class="em" style="font-size:15px">${pEm(o)}</text></g></g></g>`}
@@ -998,7 +1004,7 @@ const ord=o=>o.side?5:pK(o)[7]==="z"?-1:o.pts?0:pK(o)[7]==="t"?1:pK(o)[7]==="g"?
 g+=vis.slice().sort((a,b)=>ord(a)-ord(b)).map(o=>pObjSvg(o)).join("");
 g+=vis.filter(o=>!o.side&&!o.pts&&commFor(o.id).length).map(o=>`<g class="fix" pointer-events="none" style="transform:translate(${o.x+o.w}px,${o.y}px) scale(var(--s))"><g transform="translate(-4 4)"><rect x="-2" y="-11" width="${commFor(o.id).length>9?34:28}" height="18" rx="9" fill="#fff" stroke="#0002"/><text x="${commFor(o.id).length>9?15:12}" y="2" text-anchor="middle" font-size="11">💬${commFor(o.id).length}</text></g></g>`).join("");  /* 💬 у объекта с комментариями друзей */
 const sl=PS.sel&&pO(PS.sel);
-if(sl&&sl.side){const[a,b]=pEdgeSeg(sl),N=pSideV(sl.side).out;g+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--acc)" stroke-width="12"${ve} stroke-opacity=".45" stroke-linecap="round" pointer-events="none"/><g class="fix" style="transform:translate(${(a[0]+b[0])/2}px,${(a[1]+b[1])/2}px) scale(var(--s))" pointer-events="none"><text class="lb dm" x="${-N[0]*14}" y="${-N[1]*16}" style="text-anchor:${N[0]<0?"start":N[0]>0?"end":"middle"}">${pm1(sl.at)} м от угла ${sl.side} · ${pm1(sl.w)} м</text></g>`}
+if(sl&&sl.side){const[a,b]=pEdgeSeg(sl),N=pGL(sl).out;g+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--acc)" stroke-width="12"${ve} stroke-opacity=".45" stroke-linecap="round" pointer-events="none"/><g class="fix" style="transform:translate(${(a[0]+b[0])/2}px,${(a[1]+b[1])/2}px) scale(var(--s))" pointer-events="none"><text class="lb dm" x="${-N[0]*14}" y="${-N[1]*16}" style="text-anchor:${N[0]<0?"start":N[0]>0?"end":"middle"}">${pm1(sl.at)} м ${sl.on?"от начала пролёта":"от угла "+sl.side} · ${pm1(sl.w)} м</text></g>`}
 if(sl&&!sl.pts&&!sl.side){const{x,y,w,h}=sl;g+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${pK(sl)[2]==="c"?w/2:.1}"${sl.rot?` transform="rotate(${sl.rot} ${x+w/2} ${y+h/2})"`:""} fill="none" stroke="var(--acc)" stroke-width="2.5"${ve} stroke-dasharray="6 4" pointer-events="none"/>`;
 const dim=(x1,y1,x2,y2,t)=>Math.hypot(x2-x1,y2-y1)>.05?`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#3B2F1A" stroke-width="1.2"${ve} stroke-dasharray="3 3" pointer-events="none"/><g class="fix" style="transform:translate(${(x1+x2)/2}px,${(y1+y2)/2}px) scale(var(--s))" pointer-events="none"><text class="lb dm">${t}</text></g>`:"";
 [sl.s1||1,sl.s2||pN()].forEach(i=>{const{out}=pSideV(i),p=(pK(sl)[2]==="c"?[[x+w/2,y+h/2]]:pOut(sl)).reduce((a,b)=>pIn1(b,i)<pIn1(a,i)?b:a),d=pIn1(p,i);
@@ -1092,7 +1098,7 @@ if(G.pd)zoomAt(m0[0],m0[1],d/G.pd);G.pd=d;const m1=toSvg((q1.x+q2.x)/2,(q1.y+q2.
 if(!G.moved){if(Math.hypot(cur.x-G.c0.x,cur.y-G.c0.y)<7){return}G.moved=true;clearTimeout(lp);try{svg.setPointerCapture(e.pointerId)}catch(x){}if(G.mode==="obj"||G.mode==="h"){pHist();if(G.mode==="obj"&&PS.sel!==G.o.id){PS.sel=G.o.id;PS.seed=null;PS.pal=false;pPanel()}}}
 const pt=toSvg(cur.x,cur.y);
 if(G.mode==="pan"){const a=toSvg(prev.x,prev.y);set({...pv,x:pv.x-(pt[0]-a[0]),y:pv.y-(pt[1]-a[1])})}
-else if(G.mode==="obj"){const dx=pt[0]-G.pt0[0],dy=pt[1]-G.pt0[1],o=G.o;if(o.side){[o.side,o.at]=pNearSide(pt,o.w)}else if(o.pts)o.pts=G.pts.map(p=>[psnap(p[0]+dx),psnap(p[1]+dy)]);
+else if(G.mode==="obj"){const dx=pt[0]-G.pt0[0],dy=pt[1]-G.pt0[1],o=G.o;if(o.side){const r=pNearSide(pt,o.w);o.side=r[0];o.at=r[1];if(r[2]){o.on=r[2];o.seg=r[3]}else{delete o.on;delete o.seg}}else if(o.pts)o.pts=G.pts.map(p=>[psnap(p[0]+dx),psnap(p[1]+dy)]);
 else{let x=psnap(G.ox+dx),y=psnap(G.oy+dy);[[0,"x",0],[W-o.w,"x",1],[0,"y",0],[H-o.h,"y",1]].forEach(([v,k])=>{if(Math.abs((k==="x"?x:y)-v)<.25)k==="x"?x=v:y=v});o.x=x;o.y=y}pDrawSoon()}
 else if(G.mode==="h"){const o=G.o;if(pK(o)[2]==="c"){const d=Math.max(.2,psnap(Math.max(pt[0]-o.x,pt[1]-o.y)));o.w=o.h=d}else{o.w=Math.max(.2,psnap(pt[0]-o.x));o.h=Math.max(.2,psnap(pt[1]-o.y))}pDrawSoon()}
 else if(G.mode==="dw"){const o=pO(PS.doorO),[a,i]=G.dw.split(":"),A=G.arr||(G.arr=a==="d"?pDoorsW(o):a==="p"?pPostsW(o):a==="c"?pChimsW(o):pWinsW(o)),q=A[+i],L=pLocal(o,pt);if(q&&a==="c"){q.x=Math.max(-o.w/2+.3,Math.min(o.w/2-.3,psnap(L.lx)));q.y=Math.max(-o.h/2+.3,Math.min(o.h/2-.3,psnap(L.ly)));pDrawSoon()}else if(q&&L.dist<3){const t2=q.f?pRoofT(o,q.f,L.k,L.t):a==="p"&&pSideT(o,L.k)==="full"?null:L.t;if(t2!=null){q.k=L.k;q.t=t2;pDrawSoon()}}}  /* вход/окно едет по стене, можно на соседнюю */
@@ -1157,8 +1163,8 @@ function pPlantAt(pt,o){PS.tool="move";try{TG&&TG.HapticFeedback&&TG.HapticFeedb
 function pFree(w,h,cx,cy){const hit=(x,y)=>pM().objs.some(o=>!o.pts&&x<o.x+o.w&&x+w>o.x&&y<o.y+o.h&&y+h>o.y),st=Math.max(w,h)/2+.4;
 for(let r=0;r<14;r++)for(let i=0;i<Math.max(1,r*6);i++){const a=i/Math.max(1,r*6)*2*Math.PI,x=psnap(cx-w/2+Math.cos(a)*r*st),y=psnap(cy-h/2+Math.sin(a)*r*st);if(!hit(x,y))return[x,y]}
 return[psnap(cx-w/2),psnap(cy-h/2)]}
-function pAdd(k,box){const s0=$("sh");if(s0)s0.classList.add("min");if((PK[k]||[])[2]==="e"){const K=PK[k],m=PS.mid?PS.mid():[0,0],[side,at]=pNearSide(m,K[3]);pHist();
-const o={id:pid(),k,n:K[0],side,at,w:K[3],hh:0,fix:1};pM().objs.push(o);PS.sel=o.id;PS.seed=null;PS.pal=false;PS.rect=null;PS.tool="move";PS.unlock=true;pSave();pDraw();pPanel();return o}
+function pAdd(k,box){const s0=$("sh");if(s0)s0.classList.add("min");if((PK[k]||[])[2]==="e"){const K=PK[k],m=PS.mid?PS.mid():[0,0],[side,at,on,seg]=pNearSide(m,K[3]);pHist();
+const o={id:pid(),k,n:K[0],side,at,...(on?{on,seg}:{}),w:K[3],hh:0,fix:1};pM().objs.push(o);PS.sel=o.id;PS.seed=null;PS.pal=false;PS.rect=null;PS.tool="move";PS.unlock=true;pSave();pDraw();pPanel();return o}
 const K=PK[k]||PK.own,c=K[2]==="c",[cx,cy]=PS.mid?PS.mid():[5,5],w=box?(c?Math.max(box.w,box.h):box.w):K[3],h=box?(c?Math.max(box.w,box.h):box.h):K[4];
 pHist();let[px,py]=box?[box.x,box.y]:pFree(w,h,cx,cy);const o={id:pid(),k,n:K[0],x:px,y:py,w,h,hh:K[5],fix:K[6]};pM().objs.push(o);pLink(o);
 PS.sel=o.id;PS.seed=null;PS.pal=false;PS.rect=null;PS.tool="move";PS.unlock=!o.fix;const sh=$("sh");if(sh)sh.classList.add("min");pSave();pDraw();pPanel();return o}
@@ -1232,6 +1238,13 @@ if(ft!=="no")for(let t=0;t<=L;t+=ft==="kirp"?3:2.5){const pw=ft==="kirp"?.38:.1;
 /* объекты */
 for(const o of pM().objs){if(o.side)continue;const K=pK(o),[f,s]=PC[K[8]]||PC.own,col=new T.Color(f),hh=Math.max(.05,o.hh||.2),kind=K[8];
 if(o.pts&&o.k==="posts"){const ph=hh||2.2,pm2=TM("der","#8A6440",.2,ph);for(const p of pPostPts(o)){const k=mesh(new T.BoxGeometry(.15,ph,.15),pm2,p[0],ph/2,p[1]);k.userData.o=o;pick.push(k);S.add(k)}continue}
+if(o.pts&&o.k==="fence"){const PT=pLP(o),d3=o.d3||{},ft=d3.ft||"der",FT={der:"der",shtak:"pick",prof:"prof",set:"set",bars:"bars",kirp:"kirp"}[ft],see=ft==="set"||ft==="shtak"||ft==="bars",fh=hh||1.6,fc=d3.fc||PFC[ft],
+GS=pM().objs.filter(q=>q.side&&q.on===o.id);for(let i=1;i<PT.length;i++){const a=PT[i-1],b=PT[i],L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(L<.01)continue;const u=[(b[0]-a[0])/L,(b[1]-a[1])/L],ang=-Math.atan2(u[1],u[0]),
+gs=GS.filter(q=>Math.max(0,Math.min(+q.seg||0,PT.length-2))===i-1).map(q=>{const s0=Math.max(0,Math.min(q.at,L-q.w));return[s0,Math.min(L,s0+q.w),q]}).sort((x,y)=>x[0]-y[0]),
+box=(s0,e0,h,th,mt,cs,ob)=>{if(e0-s0<.05)return;const k=mesh(new T.BoxGeometry(e0-s0,h,th),mt,a[0]+u[0]*(s0+e0)/2,h/2,a[1]+u[1]*(s0+e0)/2,cs);k.rotation.y=ang;k.userData.o=ob;pick.push(k);S.add(k)},
+run=(s0,e0)=>box(s0,e0,fh,ft==="kirp"?.25:.06,TM(FT,fc,e0-s0,fh,see?{transparent:true,alphaTest:.3,side:T.DoubleSide}:{}),!see,o);let t0=0;
+for(const[s0,e0,q]of gs){run(t0,s0);const gd=q.d3||{},gh=+gd.gh||1.6,gc=gd.gc||(q.k==="gate"?"#6E3B2A":"#4A4F55"),gt=gd.gt||"solid";
+box(s0,e0,gh,.08,TM(gt==="solid"?"prof":gt==="picket"?"pick":"set",gc,e0-s0,gh,gt==="solid"?{}:{transparent:true,alphaTest:.3,side:T.DoubleSide}),1,q);t0=e0}run(t0,L)}continue}
 if(o.pts){const PT=pLP(o);for(let i=1;i<PT.length;i++){const[p,q]=[PT[i-1],PT[i]],L=Math.hypot(q[0]-p[0],q[1]-p[1]),ang=-Math.atan2(q[1]-p[1],q[0]-p[0]),mx=(p[0]+q[0])/2,mz=(p[1]+q[1])/2;
 const pm=(o.d3||{}).pm||"tile",PMT={tile:["tile","#C9BFAE"],gravel:["gravel","#CFC8BA"],soil:["sht","#9C7A55"],deck:["der","#B88A5A"],concrete:["sht","#B9B9B4"]}[pm],lw=o.lw||.8;
 const wmat=(o.d3||{}).mat||"blok",WCC={kirp:"#A8553A",der:"#B88A5A",sayd:"#D9D4C5",blok:"#B8B2A6",sht:"#E9E1D0"},
@@ -1409,7 +1422,7 @@ seeds.forEach((x,k)=>{const p=pSeedPos(x);if(!p)return;const L=x.life,g=new T.Gr
 g.add(mesh(new T.CylinderGeometry(.02,.03,.45,6),M(0x3B6D2B),0,.22,0));const top=mesh(L&&L.same?new T.SphereGeometry(.14,10,8):new T.ConeGeometry(.12,.25,8),M(L&&L.same?0xE0709A:L?0x8FB86A:0x2E9A73),0,.5,0);g.add(top);
 if(pDue(x))g.add(mesh(new T.SphereGeometry(.07,8,6),M(0x3B8BD4),.18,.62,0));g.traverse(m=>{if(m.isMesh)m.userData.seed=k});pick.push(...g.children);S.add(g)});
 /* где встать: у ворот внутри участка, иначе у угла 1; смотрим на середину */
-const g0=gates[0],st=g0?(()=>{const[a,b]=pEdgeSeg(g0),o=pSideV(g0.side).out;return[(a[0]+b[0])/2-o[0]*1.5,(a[1]+b[1])/2-o[1]*1.5]})():[P[0][0]+(cx-P[0][0])*.15,P[0][1]+(cz-P[0][1])*.15];
+const g0=gates[0],st=g0?(()=>{const[a,b]=pEdgeSeg(g0),o=pGL(g0).out;return[(a[0]+b[0])/2-o[0]*1.5,(a[1]+b[1])/2-o[1]*1.5]})():[P[0][0]+(cx-P[0][0])*.15,P[0][1]+(cz-P[0][1])*.15];
 const me={x:st[0],z:st[1],yaw:Math.atan2(-(cx-st[0]),-(cz-st[1])),pitch:-.05,mv:[0,0],keys:{}};
 const free=(x,z)=>block.every(b=>{if(b.r)return Math.hypot(x-b.x,z-b.z)>b.r;const dx=x-b.x,dz=z-b.z,c=Math.cos(b.a),s=Math.sin(b.a),lx=dx*c+dz*s,lz=-dx*s+dz*c;return Math.abs(lx)>b.w||Math.abs(lz)>b.h})&&
 x>D.X0-40&&x<D.W+40&&z>D.Y0-40&&z<D.H+40;
@@ -1710,17 +1723,19 @@ $("sall").onclick=()=>{pHist();for(let j=1;j<=pN();j++){const x=plot.sides[j]=pl
 const o=PS.sel&&pO(PS.sel);
 if(o&&o.side){const K=pK(o),here=seeds.filter(x=>x.loc&&x.loc.o===o.id).length,num=(id,lab,v)=>`<div class="pf"><label class="zone" for="${id}">${lab}</label><input id="${id}" inputmode="decimal" maxlength="7" value="${pm1(v)}"><span class="err" data-e="${id}"></span></div>`;
 h=`<div class="prow"><button class="n pi" id="oem" aria-label="Сменить эмодзи" aria-expanded="${!!PS.emo}" style="font-size:1.5rem">${pEm(o)}</button><input id="onm" maxlength="40" value="${esc(o.n)}" aria-label="Название"><button class="n pi" id="olk" aria-pressed="${!!o.lk}" aria-label="${o.lk?"Открепить":"Закрепить"}">${o.lk?"🔒":"🔓"}</button><button class="n pi" id="ox" aria-label="Закрыть">✕</button></div>${o.lk?`<p class="note" style="margin:0">🔒 Закреплено: место, размер и поворот не меняются — ни на карте, ни здесь. Коснись замка, чтобы открепить.</p>`:""}
-<div class="zone">Сторона участка</div><div class="row">${[...Array(pN())].map((_,i)=>chip("es-"+(i+1),i+1,o.side===i+1)).join("")}</div>
-<div class="pgrid">${num("oat","От угла "+o.side+", м",o.at)}${num("ow","Ширина, м",o.w)}</div>
-<p class="note" style="margin:0">${o.lk?"🔒 Закреплено — место не меняется.":"Тяни по карте — встанет на ближайшую сторону."}</p>
+<div class="zone">Сторона участка</div><div class="row">${[...Array(pN())].map((_,i)=>chip("es-"+(i+1),i+1,!o.on&&o.side===i+1)).join("")}</div>
+${pFences().length?`<div class="zone">…или забор внутри участка</div><div class="row">${pFences().map(f=>chip("ef-"+f.id,"🧱 "+esc(f.n),o.on===f.id)).join("")}</div>`:""}
+<div class="pgrid">${num("oat",o.on?"От начала пролёта, м":"От угла "+o.side+", м",o.at)}${num("ow","Ширина, м",o.w)}</div>
+<p class="note" style="margin:0">${o.lk?"🔒 Закреплено — место не меняется.":"Тяни по карте — встанет на ближайшую сторону участка или забор."}</p>
 <div class="row"><button class="n" id="odup">Копия</button><button class="n" id="odel">Удалить</button></div>
 <button class="main-btn" id="osd">🌱 Посадить намерение у: ${esc(o.n)}</button>${pD3Panel(o)}${here?`<p class="note" style="margin:0">Здесь уже ${here} ${pl(here,["семя","семени","семян"])}.</p>`:""}`;
 pn.innerHTML=h;pLockUI(o);if($("olk"))$("olk").onclick=()=>pLock(o);$("ox").onclick=()=>{PS.sel=null;pDraw();pPanel()};pEmBind(pn,o);
 $("onm").onchange=()=>{const v=$("onm").value.trim();if(!v)return;pHist();o.n=v.slice(0,40);pSave();pDraw()};
-[...Array(pN())].map((_,i)=>i+1).forEach(s=>$("es-"+s).onclick=()=>{pHist();o.side=s;o.at=psnap(Math.min(o.at,Math.max(0,pEdgeLen(s)-o.w)));pSave();pDraw();pPanel()});
-[["oat","at"],["ow","w"]].forEach(([id,k])=>{const e=$(id);e.onchange=()=>{const v=pnum(e.value),L=pEdgeLen(o.side),ok=v!=null&&v>=(k==="w"?.3:0)&&v<=L;
+[...Array(pN())].map((_,i)=>i+1).forEach(s=>$("es-"+s).onclick=()=>{pHist();o.side=s;delete o.on;delete o.seg;o.at=psnap(Math.min(o.at,Math.max(0,pEdgeLen(s)-o.w)));pSave();pDraw();pPanel()});
+pFences().forEach(f=>$("ef-"+f.id).onclick=()=>{pHist();o.side=-1;o.on=f.id;o.seg=0;o.at=0;o.at=psnap(Math.max(0,(pGL(o).L-o.w)/2));pSave();pDraw();pPanel()});
+[["oat","at"],["ow","w"]].forEach(([id,k])=>{const e=$(id);e.onchange=()=>{const v=pnum(e.value),L=pGL(o).L,ok=v!=null&&v>=(k==="w"?.3:0)&&v<=L;
 pn.querySelector(`[data-e="${id}"]`).textContent=ok?"":`Число от ${k==="w"?"0,3":"0"} до ${pm1(L)}`;if(!ok)return;pHist();o[k]=psnap(v);o.at=psnap(Math.min(o.at,Math.max(0,L-o.w)));pSave();pDraw()}});
-$("odup").onclick=()=>{pHist();const n={...o,id:pid(),at:psnap(Math.min(o.at+o.w+.5,Math.max(0,pEdgeLen(o.side)-o.w)))};pM().objs.push(n);PS.sel=n.id;pSave();pDraw();pPanel()};
+$("odup").onclick=()=>{pHist();const n={...o,id:pid(),at:psnap(Math.min(o.at+o.w+.5,Math.max(0,pGL(o).L-o.w)))};pM().objs.push(n);PS.sel=n.id;pSave();pDraw();pPanel()};
 $("odel").onclick=()=>{const b=$("odel");if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Точно удалить?";return}pHist();pM().objs=pM().objs.filter(x=>x!==o);
 seeds.forEach(x=>{if(x.loc&&x.loc.o===o.id){const p=pSeedPos(x);x.loc={x:p[0],y:p[1]}}});if(!pM().objs.some(x=>x.side)&&plot.site)plot.site.gate="";PS.sel=null;saveSeeds();pSave();pDraw();pPanel()};
 $("osd").onclick=()=>{const[a,b]=pEdgeSeg(o);pPlantAt([(a[0]+b[0])/2,(a[1]+b[1])/2],o)};pD3Bind(pn,o);return}
