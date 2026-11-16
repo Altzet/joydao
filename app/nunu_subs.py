@@ -134,6 +134,8 @@ async def submit(body: SubIn, x_init_data: str | None = Header(default=None)):
     sc = [x.strip() if isinstance(x, str) else [y.strip() for y in x] if isinstance(x, list) else x for x in body.scene]
     if not _scene_ok(sc):
         raise HTTPException(422, "Нужны тема, ситуация и шесть поступков")
+    with closing(nunu._db()) as c:
+        nunu._muted(c, u.id)
     ok, left = eligible(u.id)
     if not ok:
         raise HTTPException(403, f"Сначала пройди все ситуации: осталось {left}")

@@ -399,7 +399,7 @@ const beds=[],bi={};seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>inView(x)&&(
 if(bi[key]===undefined){bi[key]=beds.length;beds.push([x,k,[k]])}else{const g=beds[bi[key]];g[2].push(k);g[1]=k;if(x.mine)g[0]={...g[0],mine:true}}});
 beds.sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k,ks])=>{const st2=x.life?(x.life.same?"open":"fog"):"",n=ks.length;
 h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${x.place?"📍 "+esc(x.place)+" · ":""}${esc(x.c)} · ${n>1?ks.map(i=>sd(seeds[i].d)).filter((d,i,a)=>a.indexOf(d)===i).slice(0,3).join(", ")+(n>3?"…":""):sd(x.d)}</span><span>${n>1?`<span class="tag p" title="одинаковые семена">грядка ×${n}</span> `:""}${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
-<div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${esc(x.r)}</b></div>
+<div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${esc(x.r)}</b>${x.by&&x.pid&&x.by!==myId()?" "+repBtn("plan",x.pid):""}</div>
 ${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты и ${esc(x.with)} — +3 доски</div>`:""}${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
 `<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">Так и сделал</button><button class="n" data-k="${k}" data-s="0">Сделал иначе</button></div>`}</div>`});
 h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`;
@@ -504,7 +504,7 @@ if(i===0&&!st.s.length&&!st.g.length&&(st.mode||"")!=="guess"&&!st.friend&&!st.r
 <div class="row"><button class="main-btn" id="sbn">Предложить ситуацию</button><button class="n" id="sbr">Сыграть всё равно</button></div>
 <p class="note" style="margin:0">«Сыграть всё равно» — карточки уже знакомые.</p>`);$("sbn").onclick=()=>subForm(()=>play(0));$("sbr").onclick=()=>{st.rep=1;save();play(0)};return}
 st.started=1;const M=st.mode||(st.solo?"solo":"duo"),one=M!=="duo",s=sit(i),self=draft===null;
-card(`<div class="lad" role="img" aria-label="Карточка ${i+1} из ${N}">${[...Array(N)].map((_,k)=>`<i style="background:${LV[sit(k).lv]}${k<i?"":k===i?";height:8px":";opacity:.3"}"></i>`).join("")}</div><div class="meta"><span>${i+1} из ${N} · ${s.c}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
+card(`<div class="lad" role="img" aria-label="Карточка ${i+1} из ${N}">${[...Array(N)].map((_,k)=>`<i style="background:${LV[sit(k).lv]}${k<i?"":k===i?";height:8px":";opacity:.3"}"></i>`).join("")}</div><div class="meta"><span>${i+1} из ${N} · ${s.c}${s.id&&s.id[0]==="s"&&AU[s.id.slice(1)]?" "+repBtn("sub",s.id.slice(1)):""}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
 ${M==="guess"?ask(0,st.friend.name):self?ask(1):ask(0,st.friend&&st.friend.name||st.toName)}<div class="q">${s.q}</div><div id="o"></div>`);
 const idx=s.o.map((_,k)=>k);for(let k=idx.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
 const r=document.createElement("div");r.className=s.lv===0?"duo":"row col";
@@ -1042,7 +1042,7 @@ function pComp(){const th=pTheta();return`<svg viewBox="-22 -22 44 44" width="44
 сажается у обоих — у хозяина семя встаёт у этого объекта. Свой план на время визита отложен в PS.guest.own */
 function guestGo(f){busy("Иду в гости…");API("/visit/"+f.id).then(v=>{if(!PS.guest)PS.guest={own:plot};Object.assign(PS.guest,{fid:f.id,name:f.name||v.name||"Друг",comm:v.comments});
 plot=v.plot;PS.sel=null;PS.tool="move";PS.doorO=null;PS.place=null;plotMap({guest:1})},e=>e===404||e===403?(card(`<h2>В гости не получилось</h2><p style="margin:0">${e===403?esc(f.name)+" пока не пускает гостей на участок. В гости — только по обоюдному желанию.":"Участок открыт только друзьям, с которыми есть мост."}</p><button class="main-btn" id="gb0">Назад</button>`),$("gb0").onclick=world):oops(()=>guestGo(f)))}
-const pCommUI=(o,mine)=>{const L=commFor(o.id);return`<div class="zone">💬 Комментарии${L.length?" · "+L.length:""}</div>${L.map(c=>`<div class="note" style="margin:0"><b>${esc(c.name)}:</b> ${esc(c.text)}${c.author===myId()||mine?` <button class="n pi" data-cdel="${c.id}" aria-label="Удалить комментарий" style="font-size:12px;padding:2px 8px">✕</button>`:""}</div>`).join("")||`<p class="note" style="margin:0">${mine?"Друзья ещё ничего не писали.":"Пока пусто — будь первым."}</p>`}`};
+const pCommUI=(o,mine)=>{const L=commFor(o.id);return`<div class="zone">💬 Комментарии${L.length?" · "+L.length:""}</div>${L.map(c=>`<div class="note" style="margin:0"><b>${esc(c.name)}:</b> ${esc(c.text)}${c.author===myId()||mine?` <button class="n pi" data-cdel="${c.id}" aria-label="Удалить комментарий" style="font-size:12px;padding:2px 8px">✕</button>`:""}${mine&&c.author!==myId()?" "+repBtn("comment",c.id):""}</div>`).join("")||`<p class="note" style="margin:0">${mine?"Друзья ещё ничего не писали.":"Пока пусто — будь первым."}</p>`}`};
 function pCommBind(pn,after){pn.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=()=>API("/comment/"+b.dataset.cdel,"DELETE").then(()=>{const f=c=>String(c.id)!==b.dataset.cdel;if(PS.guest)PS.guest.comm=PS.guest.comm.filter(f);else myComm=(myComm||[]).filter(f);pDraw();after()},()=>{}))}
 function pGuestPanel(pn){const G=PS.guest,o=PS.sel&&pO(PS.sel);
 if(!o){pn.innerHTML=`<p style="margin:0">Это участок: <b>${esc(G.name)}</b>. Нажми на любой объект, чтобы оставить комментарий или предложить дело вместе.</p><div class="row"><button class="n" id="g3d">Пройтись в 3D</button><button class="n" id="gh2">Домой</button></div>`;
@@ -1055,6 +1055,17 @@ $("gcs").onclick=()=>{const t=$("gct").value.trim();if(!t)return;$("gcs").disabl
 $("gdd").onclick=()=>{guestDeed={fid:G.fid,o:o.id,n:o.n};curFid=G.fid;const nm=G.name;guestExit();stepWeek(nm,"",null)}}
 let guestDeed=null;
 function guestExit(){if(!PS.guest)return;plot=PS.guest.own;PS.guest=null;PS.sel=null;document.body.classList.remove("guest")}
+/* ⚑ жалоба (свод правил): там, где правила могут быть нарушены; решает доля жалоб разных участников, не одна */
+const REPW=["Оскорбление","Спам или реклама","Чужие личные данные","Опасное","Другое"],
+repBtn=(kind,ref)=>API?`<button class="n pi" data-rep="${kind}|${esc(String(ref))}" aria-label="Пожаловаться" title="Пожаловаться" style="font-size:12px;padding:2px 8px;opacity:.7">⚑</button>`:"";
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-rep]");if(!b||!API)return;e.stopPropagation();e.preventDefault();
+const[kind,ref]=b.dataset.rep.split("|"),box=document.createElement("div");box.className="row";box.style.cssText="width:100%;align-items:center;gap:6px";
+box.innerHTML=`<span class="note">Что не так?</span>${REPW.map((w,i)=>`<button class="n" data-w="${i}" style="font-size:13px">${w}</button>`).join("")}<button class="n" data-w="x" style="font-size:13px">Отмена</button>`;
+b.hidden=true;b.after(box);box.onclick=ev=>{ev.stopPropagation();const x=ev.target.closest("[data-w]");if(!x)return;if(x.dataset.w==="x"){box.remove();b.hidden=false;return}
+box.innerHTML=`<span class="note">Отправляю…</span>`;API("/report","POST",{kind,ref,why:REPW[+x.dataset.w]}).then(()=>{
+box.innerHTML=`<span class="note">Спасибо, жалоба принята.${kind==="comment"?" Комментарий убран.":""}</span>`;
+if(kind==="comment"){myComm=(myComm||[]).filter(c=>String(c.id)!==ref);setTimeout(()=>{pDraw();pPanel()},1500)}},
+er=>{box.innerHTML=`<span class="note">${er===404?"Это уже убрано или жалоба тут не принимается.":"Не получилось отправить — попробуй позже."}</span>`})}},true);
 const myId=()=>{try{return TG.initDataUnsafe.user.id||0}catch(e){return 0}};let myComm=null;const commFor=id=>((PS.guest?PS.guest.comm:myComm)||[]).filter(c=>c.obj===id);
 function plotMap(opt){opt=opt||{};setNav("plot");document.body.classList.add("on-map");document.body.classList.toggle("guest",!!PS.guest);if(!PS.guest){pSync();if(API&&!opt.noComm)API("/plot/comments").then(c=>{myComm=c;if($("pm")&&!PS.guest){pDraw();pPanel()}},()=>{})}if(opt.fresh!=null){PS.fresh=opt.fresh;PS.seed=opt.fresh;PS.sel=null}
 app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="p3b" aria-label="Пройтись в 3D" style="font-size:14px;font-weight:600">3D</button><button id="pu" aria-label="Отменить">↶</button>${fsBtn()}</div>
@@ -1960,15 +1971,15 @@ $("ps").onclick=()=>{st.sg="";save();go()};
 if(s.c)$("sc").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.sg=s.c[+b.dataset.c];save();go()}}
 function storyBlock(){const s=st.story;if(!s||!s.a)return"";const own=!st.join,f=st.friend,fn=esc(f.name),gs=own?f.guess:st.sg,mk=own?f.mark:st.smark;
 let h=`<div class="card"><h2>Своя ситуация</h2><div class="q">${esc(s.q)}</div>`;
-if(own){h+=`<div>${fn} думает: ${gs?esc(gs):"проехали"}</div><div class="note">Ты: ${esc(s.a)}</div>`;
+if(own){h+=`<div>${fn} думает: ${gs?esc(gs)+" "+repBtn("guess",st.gid+":"+f.id):"проехали"}</div><div class="note">Ты: ${esc(s.a)}</div>`;
 if(gs)h+=mk==null?`<div class="zone">Угадал ли ${fn}?</div><div class="row" id="mkr">${mkBtns()}</div>`:`<span class="tag ${mk?"open":"fog"}" style="align-self:flex-start">${fn}: ${MK[mk]}</span>`}
-else{h+=`<div>Ты думал: ${gs?esc(gs):"проехали"}</div><div>${fn}: ${esc(s.a)}</div>`;
+else{h+=`<div>Ты думал: ${gs?esc(gs):"проехали"}</div><div>${fn}: ${esc(s.a)} ${repBtn("story",st.join)}</div>`;
 if(gs)h+=mk==null?`<p class="note" style="margin:0">${fn} отметит, угадал ли ты. Угадал — доска мосту.</p>`:`<span class="tag ${mk?"open":"fog"}" style="align-self:flex-start">Ты ${MK[mk]}</span>`}
 return h+`</div>`}
 function wireMark(){const r=$("mkr");if(!r)return;r.onclick=e=>{const b=e.target.closest("button");if(!b)return;const m=+b.dataset.m,f=st.friend;
 API("/game/"+st.gid+"/mark","POST",{player:f.id,mark:m}).then(()=>{f.mark=m;save();go()},()=>oops(go))}}
 function storyHero(G){const s=st.story;if(!s||!s.a)return"";const SG=G.filter(f=>f.guess);
-return`<div class="card"><h2>Своя ситуация</h2><div class="q">${esc(s.q)}</div><div class="note">Ты: ${esc(s.a)}</div>${SG.length?SG.map(f=>`<div class="res"><div>${esc(f.name)}: ${esc(f.guess)}</div>${f.mark==null?`<div class="row">${mkBtns(`data-p="${f.id}"`)}</div>`:`<span class="tag ${f.mark?"open":"fog"}" style="align-self:flex-start">${MK[f.mark]}</span>`}</div>`).join(""):`<p class="note" style="margin:0">Догадок пока нет.</p>`}</div>`}
+return`<div class="card"><h2>Своя ситуация</h2><div class="q">${esc(s.q)}</div><div class="note">Ты: ${esc(s.a)}</div>${SG.length?SG.map(f=>`<div class="res"><div>${esc(f.name)}: ${esc(f.guess)} ${repBtn("guess",st.gid+":"+f.id)}</div>${f.mark==null?`<div class="row">${mkBtns(`data-p="${f.id}"`)}</div>`:`<span class="tag ${f.mark?"open":"fog"}" style="align-self:flex-start">${MK[f.mark]}</span>`}</div>`).join(""):`<p class="note" style="margin:0">Догадок пока нет.</p>`}</div>`}
 function busy(t){card(`<p style="margin:0">${t}</p>`)}
 function oops(f){card(`<p style="margin:0">Не получилось связаться с сервером. Проверь интернет.</p><button class="main-btn" id="rt">Ещё раз</button>`);$("rt").onclick=f}
 /* ссылка: в чат Telegram, скопировать или QR-код — когда все рядом (режим компании) */

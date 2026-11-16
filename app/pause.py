@@ -18,7 +18,7 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMa
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import config, db, nunu, nunu_admin, nunu_subs
+from . import config, db, nunu, nunu_admin, nunu_reports, nunu_subs
 from .nunu import remind_loop  # имя nunu ниже занято маршрутом /nunu
 
 TEXT = (
@@ -84,6 +84,8 @@ app = FastAPI()
 app.include_router(nunu.router)  # до catch-all внизу
 app.include_router(nunu_admin.router)  # комната администратора /nunu/admin
 app.include_router(nunu_subs.router)  # ситуации участников
+app.include_router(nunu_reports.router)  # жалобы участников
+app.include_router(nunu_reports.admin)
 CHAT_URL = config.COMMUNITY_CHAT_URL
 # Страница Mini App: светлая карточка в стиле промо, не зависит от темы Telegram.
 # Ссылки t.me открываем через Telegram.WebApp — иначе WebView грузит их внутри себя.

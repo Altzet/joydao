@@ -58,6 +58,10 @@ CREATE TABLE IF NOT EXISTS meets (id TEXT PRIMARY KEY, by INTEGER NOT NULL, a IN
     ok_a INTEGER NOT NULL DEFAULT 0, ok_b INTEGER NOT NULL DEFAULT 0, UNIQUE (by, a, b));
 CREATE TABLE IF NOT EXISTS reminders (tg_id INTEGER NOT NULL, kind TEXT NOT NULL, at TEXT NOT NULL,
     PRIMARY KEY (tg_id, kind));
+CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, by INTEGER NOT NULL, uid INTEGER NOT NULL,
+    kind TEXT NOT NULL, ref TEXT NOT NULL, why TEXT NOT NULL DEFAULT '', text TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'open', created_at TEXT DEFAULT (datetime('now')), UNIQUE (by, kind, ref));
+CREATE TABLE IF NOT EXISTS sanctions (uid INTEGER PRIMARY KEY, level INTEGER NOT NULL, at TEXT);
 """
 MIGRATE = ("ALTER TABLE games ADD COLUMN to_id INTEGER",  # партия конкретному другу с карты
            "ALTER TABLE plays ADD COLUMN boards REAL",    # доски моста за эту партию
@@ -98,7 +102,21 @@ def _user(init_data: str | None):
         u = None
     if not u:
         raise HTTPException(401, "Откройте игру в Telegram")
+    with closing(_db()) as c:
+        if _level(c, u.id) >= 3:
+            raise HTTPException(403, "Доступ к «Ну-ну» закрыт по жалобам участников. Если это ошибка — напиши автору игры.")
     return u
+
+
+def _level(c: sqlite3.Connection, uid: int) -> int:
+    """Ступень по жалобам (nunu_reports): 2 — нельзя писать другим, 3 — доступ закрыт."""
+    r = c.execute("SELECT level FROM sanctions WHERE uid=?", (uid,)).fetchone()
+    return r["level"] if r else 0
+
+
+def _muted(c: sqlite3.Connection, uid: int) -> None:
+    if _level(c, uid) >= 2:
+        raise HTTPException(403, "Пока нельзя: ограничение по жалобам участников")
 
 
 def _one(x) -> bool:
@@ -209,6 +227,8 @@ async def new_game(body: GameIn, x_init_data: str | None = Header(default=None))
     name = body.name.strip()[:30] or u.first_name
     story = None
     if body.story and body.story.q.strip() and body.story.a.strip():
+        with closing(_db()) as c:
+            _muted(c, u.id)
         a = body.story.a.strip()[:250]
         o = list(dict.fromkeys(x.strip()[:250] for x in body.story.o if x.strip() and x.strip() != a))[:3]
         story = json.dumps({"q": body.story.q.strip()[:400], "a": a, "real": body.story.real, "o": o,
@@ -270,7 +290,7 @@ async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=
             raise HTTPException(404, "Игра не найдена")
         if r["owner"] == u.id:
             raise HTTPException(409, "Это твоя игра")
-        guess = (body.guess or "").strip()[:250] if r["story"] else ""
+        guess = (body.guess or "").strip()[:250] if r["story"] and _level(c, u.id) < 2 else ""
         st = json.loads(r["story"]) if r["story"] else {}
         auto = 2 if guess and guess == st.get("a") else 0 if guess in (st.get("o") or []) else None
         name = body.name.strip()[:30] or u.first_name
@@ -395,10 +415,11 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
     with closing(_db()) as c:
         if not _related(c, u.id, fid):
             raise HTTPException(404, "Друг не найден")
+        _muted(c, u.id)
         here = _plot_obj(c, fid, body.obj) if body.obj and not (_owner_state(c, fid).get("nunu-prefs") or {}).get("visitClosed") else None
         seed = {"c": "Удиви себя", "q": f"Общее дело · вдвоём: я и {u.first_name[:30]}", "r": text, "z": -1,
                 "d": date.today().isoformat(), "due": due, "at": (body.at or "")[:5] or None, "tz": body.tz, "life": None, "mine": False, "step": 1,
-                "with": u.first_name[:30], "fid": u.id, "pid": body.pid.strip()[:16]}
+                "with": u.first_name[:30], "fid": u.id, "by": u.id, "pid": body.pid.strip()[:16]}
         if here and "x" in here:  # семя встанет у этого объекта на участке друга
             seed["loc"] = {"x": here["x"] + (here.get("w") or 0) / 2, "y": here["y"] + (here.get("h") or 0) / 2,
                            "o": here["id"], "dx": 0, "dy": 0}
@@ -574,6 +595,13 @@ async def report(gid: str, x_init_data: str | None = Header(default=None)):
         if not r:
             raise HTTPException(404, "Бутылка не найдена")
         c.execute("UPDATE games SET reported=1 WHERE id=?", (gid,))
+        if r["owner"] != u.id:  # считается и в доле жалоб на автора (nunu_reports)
+            c.execute("INSERT OR IGNORE INTO reports(by, uid, kind, ref, why, text) VALUES(?, ?, 'bottle', ?, '', '')", (u.id, r["owner"], gid))
+    from . import nunu_reports
+    with closing(_db()) as c:
+        old, new, pct = nunu_reports._judge(c, r["owner"])
+    if new > old:
+        _bg(nunu_reports._apply(r["owner"], old, new, pct))
     if config.ADMIN_CHAT_ID:
         story = json.loads(r["story"])["q"] if r["story"] else "—"
         _bg(_notify(int(config.ADMIN_CHAT_ID), f"Жалоба на бутылку {gid} от {u.id}. Автор: {r['name']} ({r['owner']}).\n"
@@ -934,6 +962,7 @@ async def comment(fid: int, body: CommentIn, x_init_data: str | None = Header(de
             raise HTTPException(404, "Друг не найден")
         if (_owner_state(c, fid).get("nunu-prefs") or {}).get("visitClosed"):
             raise HTTPException(403, "Участок закрыт для гостей")
+        _muted(c, u.id)
         o = _plot_obj(c, fid, body.obj)
         if not o:
             raise HTTPException(404, "Такого объекта уже нет")
