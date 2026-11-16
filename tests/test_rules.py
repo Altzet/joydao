@@ -45,3 +45,11 @@ def test_seo(tmp_path, monkeypatch):
     assert 'rel="canonical"' in h and '"@type": "SoftwareApplication"' in h and '"FAQPage"' in h
     assert c.get("/chto-ugodno").status_code == 404 and c.get("/").status_code == 200
     assert 'name="robots" content="noindex"' in c.get("/nunu").text
+
+
+def test_og(tmp_path, monkeypatch):
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    c = TestClient(pause.app)
+    r = c.get("/og.png")
+    assert r.status_code == 200 and r.content[:4] == b"\x89PNG"
+    assert '/og.png"' in c.get("/").text

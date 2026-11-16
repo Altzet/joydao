@@ -146,6 +146,13 @@ async def robots():
                              f"Sitemap: {landing.SITE}/sitemap.xml\n")
 
 
+@app.get("/og.png")
+async def og_image():
+    """Картинка превью ссылки по умолчанию (1200×630); свою можно загрузить в админке → Лендинг."""
+    return FileResponse(Path(__file__).resolve().parent.parent / "static" / "og.png", media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.get("/sitemap.xml")
 async def sitemap():
     u = "".join(f"<url><loc>{landing.SITE}{p}</loc><priority>{w}</priority></url>" for p, w in (("/", "1.0"), ("/rules", "0.5")))

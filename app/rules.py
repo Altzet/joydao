@@ -94,7 +94,7 @@ def page() -> HTMLResponse:
     return HTMLResponse(f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Правила «Ну-ну»</title><meta name="description" content="Свод правил игры «Ну-ну»: общение, ситуации участников, гости на участке, приватность, жалобы.">
 <link rel="canonical" href="{landing.SITE}/rules"><meta property="og:title" content="Свод правил «Ну-ну»"><meta property="og:url" content="{landing.SITE}/rules">
-<meta property="og:description" content="Как мы общаемся, что видят друзья, как работают жалобы."><meta property="og:type" content="article"><meta property="og:locale" content="ru_RU">
+<meta property="og:description" content="Как мы общаемся, что видят друзья, как работают жалобы."><meta property="og:type" content="article"><meta property="og:image" content="{landing.SITE}/og.png"><meta name="twitter:card" content="summary_large_image"><meta property="og:locale" content="ru_RU">
 {landing.ICON}<style>{landing.CSS}{CSS}</style></head><body>
 <header><div class="w"><a class="logo" href="/">← Ну-ну</a><nav></nav><a class="btn sm" href="{play}">Открыть</a></div></header>
 <main class="r"><p class="upd">Обновлено {UPDATED} · версия {RULES_V}</p><h1>Свод правил «Ну-ну»</h1>

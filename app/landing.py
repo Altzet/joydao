@@ -241,7 +241,7 @@ def render(lp: dict) -> str:
     nav = "".join(f'<a href="#{k}">{E(lp[k]["title"] or t)}</a>' for k, t in navs) + '<a href="/rules">Правила</a>'
     foot = "".join(f'<a href="{E(L[k])}">{t}</a>' for k, t in (("channel", "Канал"), ("chat", "Чат")) if L.get(k)) + '<a href="/rules">Правила</a>'
     seo = lp["seo"]
-    title, desc, img = seo["title"] or lp["brand"], seo["desc"], absu(seo.get("img") or "")
+    title, desc, img = seo["title"] or lp["brand"], seo["desc"], absu(seo.get("img") or "/og.png")
     ld = [{"@context": "https://schema.org", "@type": "WebSite", "name": lp["brand"], "url": SITE + "/", "inLanguage": "ru"},
           {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": lp["brand"], "description": desc,
            "applicationCategory": "LifestyleApplication", "operatingSystem": "Telegram", "url": play, "inLanguage": "ru",
