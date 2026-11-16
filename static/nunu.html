@@ -972,6 +972,8 @@ g+=ns?`<line x1="${cx+t-ww/2}" y1="${dr==="s"?y+h-ins:y+ins}" x2="${cx+t+ww/2}" 
 g+=pDwHit(o,"w",qi,dr,t,Math.max(ww,.9))});
 if(PS.doorO===o.id&&!pAllFull(o))pPosts(o).forEach((q,qi)=>{const dr=q.k,t=+q.t||0,ns=dr==="s"||dr==="n",X=ns?cx+t:dr==="e"?x+w:x,Y=ns?(dr==="s"?y+h:y):cy+t,sc=PS.postI===qi?"var(--acc)":"#7A5530";
 g+=`<rect x="${X-.18}" y="${Y-.18}" width=".36" height=".36" fill="${sc}" stroke="#fff" stroke-width="1"${ve}/>`+pDwHit(o,"p",qi,dr,t,.9)})
+if((K[8]==="house"||K[8]==="roof")&&!(o.d3||{}).fp)pChims(o).forEach((q,qi)=>{const X=cx+(+q.x||0),Y=cy+(+q.y||0),ed=PS.doorO===o.id;
+g+=`<rect x="${X-.25}" y="${Y-.25}" width=".5" height=".5" fill="${ed&&PS.chI===qi?"var(--acc)":"#93472F"}" stroke="#fff" stroke-width="1"${ve}/>`+(ed?`<g class="fix" data-dw="c:${qi}" style="transform:translate(${X}px,${Y}px) scale(var(--s))"><circle r="16" fill="transparent"/></g>`:"")});
 if((K[8]==="house"||K[8]==="roof")&&o.d3&&o.d3.gd&&!o.d3.fp){const dr=o.d3.gd,dw=Math.min(2.8,(dr==="s"||dr==="n"?w:h)*.85);g+=dr==="s"||dr==="n"?`<line x1="${cx-dw/2}" y1="${dr==="s"?y+h:y}" x2="${cx+dw/2}" y2="${dr==="s"?y+h:y}" stroke="#5F5E5A" stroke-width="6"${ve}/>`:`<line x1="${dr==="e"?x+w:x}" y1="${cy-dw/2}" x2="${dr==="e"?x+w:x}" y2="${cy+dw/2}" stroke="#5F5E5A" stroke-width="6"${ve}/>`}
 if(K[8]==="oven")g+=`<rect x="${x+w*.3}" y="${y+h*.3}" width="${w*.4}" height="${h*.4}" rx="${w*.2}" fill="#3B1A0E" fill-opacity=".55"/>`;
 if(o.rot)g=`<g transform="rotate(${o.rot} ${cx} ${cy})">${g}</g>`}
@@ -1093,14 +1095,14 @@ if(G.mode==="pan"){const a=toSvg(prev.x,prev.y);set({...pv,x:pv.x-(pt[0]-a[0]),y
 else if(G.mode==="obj"){const dx=pt[0]-G.pt0[0],dy=pt[1]-G.pt0[1],o=G.o;if(o.side){[o.side,o.at]=pNearSide(pt,o.w)}else if(o.pts)o.pts=G.pts.map(p=>[psnap(p[0]+dx),psnap(p[1]+dy)]);
 else{let x=psnap(G.ox+dx),y=psnap(G.oy+dy);[[0,"x",0],[W-o.w,"x",1],[0,"y",0],[H-o.h,"y",1]].forEach(([v,k])=>{if(Math.abs((k==="x"?x:y)-v)<.25)k==="x"?x=v:y=v});o.x=x;o.y=y}pDrawSoon()}
 else if(G.mode==="h"){const o=G.o;if(pK(o)[2]==="c"){const d=Math.max(.2,psnap(Math.max(pt[0]-o.x,pt[1]-o.y)));o.w=o.h=d}else{o.w=Math.max(.2,psnap(pt[0]-o.x));o.h=Math.max(.2,psnap(pt[1]-o.y))}pDrawSoon()}
-else if(G.mode==="dw"){const o=pO(PS.doorO),[a,i]=G.dw.split(":"),A=G.arr||(G.arr=a==="d"?pDoorsW(o):a==="p"?pPostsW(o):pWinsW(o)),q=A[+i],L=pLocal(o,pt);if(q&&L.dist<3){const t2=q.f?pRoofT(o,q.f,L.k,L.t):a==="p"&&pSideT(o,L.k)==="full"?null:L.t;if(t2!=null){q.k=L.k;q.t=t2;pDrawSoon()}}}  /* вход/окно едет по стене, можно на соседнюю */
+else if(G.mode==="dw"){const o=pO(PS.doorO),[a,i]=G.dw.split(":"),A=G.arr||(G.arr=a==="d"?pDoorsW(o):a==="p"?pPostsW(o):a==="c"?pChimsW(o):pWinsW(o)),q=A[+i],L=pLocal(o,pt);if(q&&a==="c"){q.x=Math.max(-o.w/2+.3,Math.min(o.w/2-.3,psnap(L.lx)));q.y=Math.max(-o.h/2+.3,Math.min(o.h/2-.3,psnap(L.ly)));pDrawSoon()}else if(q&&L.dist<3){const t2=q.f?pRoofT(o,q.f,L.k,L.t):a==="p"&&pSideT(o,L.k)==="full"?null:L.t;if(t2!=null){q.k=L.k;q.t=t2;pDrawSoon()}}}  /* вход/окно едет по стене, можно на соседнюю */
 else if(G.mode==="shp"){pShMove(pt);pDrawSoon()}
 else if(G.mode==="corner"){const P=(PS.Ptmp||pDim().P).map(p=>[...p]);P[G.k-1]=G.k===2?[Math.max(.5,psnap(pt[0])),0]:pt.map(psnap);PS.Ptmp=P;pDrawSoon()}
 else if(G.mode==="sat"){plot.sat.dx=Math.round((G.d0[0]+pt[0]-G.pt0[0])*100)/100;plot.sat.dy=Math.round((G.d0[1]+pt[1]-G.pt0[1])*100)/100;pSatT()}
 else if(G.mode==="rect"){const a=G.pt0.map(psnap),b=pt.map(psnap);PS.rect={x:Math.min(a[0],b[0]),y:Math.min(a[1],b[1]),w:psnap(Math.abs(b[0]-a[0])),h:psnap(Math.abs(b[1]-a[1]))};pDrawSoon()}
 P.set(e.pointerId,cur)};
 const up=e=>{if(!P.has(e.pointerId))return;P.delete(e.pointerId);clearTimeout(lp);if(!G)return;const g=G;
-if(g.mode==="pinch"||g.mode==="satrot"){if(!P.size){G=null;if(g.mode==="satrot"){pSave();pPanel()}}return}G=null;if(g.mode==="dw"&&g.moved){pHist(g.h);const[a,i]=g.dw.split(":");PS.doorI=a==="d"?+i:null;PS.winI=a==="w"?+i:null;PS.postI=a==="p"?+i:null;pSave();pDraw();pPanel();return}
+if(g.mode==="pinch"||g.mode==="satrot"){if(!P.size){G=null;if(g.mode==="satrot"){pSave();pPanel()}}return}G=null;if(g.mode==="dw"&&g.moved){pHist(g.h);const[a,i]=g.dw.split(":");PS.doorI=a==="d"?+i:null;PS.winI=a==="w"?+i:null;PS.postI=a==="p"?+i:null;PS.chI=a==="c"?+i:null;pSave();pDraw();pPanel();return}
 if(g.mode==="shp"&&g.moved){pHist(g.h);const o=pO(PS.shp);if(o&&pFP(o))pFPNorm(o);pSave();pDraw();pPanel();return}
 if(g.mode==="corner"){if(g.moved&&PS.Ptmp){pHist(g.h);const P=PS.Ptmp;PS.Ptmp=null;PS.cmsg=pSetPoly(P);pGateTxt();pSave()}else PS.Ptmp=null;pDraw();pPanel();return}
 if(g.mode==="sat"&&g.moved){pHist(g.h);pSave();pPanel();return}
@@ -1131,8 +1133,9 @@ const[a,i0]=hit.dataset.sh.split(":"),i=+i0;if(a==="v"){PS.shv=PS.shv===i?null:i
 pHist();const A=pShA(o),P=A.V[i],Q=A.V[(i+1)%A.V.length],c=Math.hypot(Q[0]-P[0],Q[1]-P[1])||1,sg=(+A.B[i]||0)*c,
 m=[(P[0]+Q[0])/2-(Q[1]-P[1])/c*sg,(P[1]+Q[1])/2+(Q[0]-P[0])/c*sg].map(v=>Math.round(v*100)/100),hb=Math.round((+A.B[i]||0)/2*1000)/1000;
 A.V.splice(i+1,0,m);A.B.splice(i,1,hb,hb);if(A.put)A.put(A.V);PS.shv=i+1;if(pFP(o))pFPNorm(o);pSave();pDraw();pPanel()}
-function pDwTap(pt,t){PS.dwMsg=null;const o=pO(PS.doorO),hit=t&&t.closest&&t.closest("[data-dw]");if(hit){const[a,i]=hit.dataset.dw.split(":");PS.doorI=a==="d"?+i:null;PS.winI=a==="w"?+i:null;PS.postI=a==="p"?+i:null;pDraw();return pPanel()}
-const L=pLocal(o,pt);if(L.dist>1.5){PS.doorI=PS.winI=PS.postI=null;pDraw();return pPanel()}pHist();
+function pDwTap(pt,t){PS.dwMsg=null;const o=pO(PS.doorO),hit=t&&t.closest&&t.closest("[data-dw]");if(hit){const[a,i]=hit.dataset.dw.split(":");PS.doorI=a==="d"?+i:null;PS.winI=a==="w"?+i:null;PS.postI=a==="p"?+i:null;PS.chI=a==="c"?+i:null;pDraw();return pPanel()}
+const L=pLocal(o,pt);if(PS.dwT==="c"){if(Math.abs(L.lx)>o.w/2||Math.abs(L.ly)>o.h/2){PS.doorI=PS.winI=PS.postI=PS.chI=null;pDraw();return pPanel()}pHist();const W=pChimsW(o);W.push({x:Math.max(-o.w/2+.3,Math.min(o.w/2-.3,psnap(L.lx))),y:Math.max(-o.h/2+.3,Math.min(o.h/2-.3,psnap(L.ly)))});PS.chI=W.length-1;PS.doorI=PS.winI=PS.postI=null;pSave();pDraw();return pPanel()}
+if(L.dist>1.5){PS.doorI=PS.winI=PS.postI=PS.chI=null;pDraw();return pPanel()}pHist();
 if(PS.dwT==="p"){if(pSideT(o,L.k)==="full"){PS.dwMsg="На сплошной стене столбы не нужны";pDraw();return pPanel()}const W=pPostsW(o);W.push({k:L.k,t:L.t});PS.postI=W.length-1;PS.doorI=PS.winI=null}
 else if((PS.dwT||"d")==="d"){const W=pDoorsW(o);W.push({k:L.k,t:L.t});PS.doorI=W.length-1;PS.winI=PS.postI=null}else{const f=PS.wf||"1",t2=pRoofT(o,f,L.k,L.t);if(t2==null){PS.dwMsg="Сюда окно этого этажа не встанет";pDraw();return pPanel()}const W=pWinsW(o);W.push({k:L.k,t:t2,f});PS.winI=W.length-1;PS.doorI=null}
 pSave();pDraw();pPanel()}
@@ -1353,7 +1356,9 @@ for(const q of pWins(o).filter(q=>ST(q.k)==="full")){if(q.f!=="g"||!RK[q.k])cont
 {const t=Math.max(-span/2+ww/2,Math.min(span/2-ww/2,RL?-(q.t||0):q.t||0));rg3.add(mesh(new T.BoxGeometry(ww+.12,.95,.04),fm,t,wh+y0,z,0),mesh(new T.BoxGeometry(ww,.8,.05),gm,t,wh+y0,z,0))}}}
 /* труба, водостоки, балкон, козырёк или веранда */
 const sideAt=k=>{const[fx,fz]=FACE[k];return{fx,fz,len:fx?o.h:o.w,off:fx?o.w/2:o.h/2}},slab=(k,dep,wd,y,th,m)=>{const S2=sideAt(k);g.add(mesh(S2.fx?new T.BoxGeometry(dep,th,wd):new T.BoxGeometry(wd,th,dep),m,S2.fx*(S2.off+dep/2),y,S2.fz*(S2.off+dep/2)))};
-if(d.chim){const ch=rh+.7;g.add(mesh(new T.BoxGeometry(.5,ch,.5),TM("kirp","#93472F",.5,ch),RL?RA*.22:0,wh+ch/2,RL?0:RA*.22))}
+for(const q of pChims(o)){const x=+q.x||0,z=+q.y||0,u=v=>Math.max(0,Math.min(1,v)),pr=RL?Math.abs(z):Math.abs(x),
+rH=rt==="flat"?.25:rt==="shed"?roofUnder(x,z)+.12:["hip","dome"].includes(rt)?rh*u(1-Math.max(Math.abs(x)/(o.w/2),Math.abs(z)/(o.h/2))):rt==="arch"?rh*Math.sqrt(u(1-(pr/(RB/2))**2)):rh*u(1-pr/(RB/2)),
+ch=rH+.8;g.add(mesh(new T.BoxGeometry(.5,ch,.5),TM("kirp","#93472F",.5,ch),x,wh+ch/2,z))}
 if(d.gut&&rt==="shed"){const gm2=M(0x8A8F94),sp=d.slope||(L?"s":"e"),[nx,nz]=PV[sp],len=nx?o.h:o.w,off=(nx?o.w:o.h)/2+.22,y=wh-.06;  /* односкатная: жёлоб только под низким краем */
 g.add(mesh(nx?new T.BoxGeometry(.12,.12,len+.3):new T.BoxGeometry(len+.3,.12,.12),gm2,nx*off,y,nz*off,0));
 const wt=pM().objs.filter(q=>pK(q)[8]==="water"&&!q.pts).sort((p1,p2)=>Math.hypot(p1.x-o.x,p1.y-o.y)-Math.hypot(p2.x-o.x,p2.y-o.y))[0],ra=-(o.rot||0)*Math.PI/180;
@@ -1473,7 +1478,7 @@ ${d.fp?`${o.lk?"":`<button class="n" id="d3fp" style="align-self:flex-start">✏
 ${pRoofK(o)==="shed"?`<div class="zone">Скат опускается к стороне</div><div class="row">${sides("slope",d.slope||(o.w>=o.h?"s":"e"))}</div>`:
 ["gable","mansard"].includes(pRoofK(o))?`<div class="zone">Конёк</div><div class="row">${ch("ridge","","Вдоль длинной стороны",d.ridge!=="short")}${ch("ridge","short","Вдоль короткой (щипцом к длинной)",d.ridge==="short")}</div>`:""}
 <div class="zone">Цвет крыши</div><div class="row">${PRC.map(c=>sw("rc",c)).join("")}</div>
-<div class="row">${ch("chim",d.chim?"":"1","🧱 Труба на крыше",!!d.chim)}${ch("gut",d.gut?"":"1","💧 Водостоки",!!d.gut)}</div>${d.gut?`<p class="note" style="margin:0">Труба водостока спускается к ближайшей бочке или колодцу на карте.</p>`:""}
+<div class="row">${d.fp?"":`<button class="n" id="d3ch">🧱 Трубы на крыше (${pChims(o).length})</button>`}${ch("gut",d.gut?"":"1","💧 Водостоки",!!d.gut)}</div>${d.gut?`<p class="note" style="margin:0">Труба водостока спускается к ближайшей бочке или колодцу на карте.</p>`:""}
 ${pRoofK(o)!=="flat"?`<div class="zone">Наклон крыши</div><div class="row">${[["","Авто"],[15,"15°"],[25,"25°"],[35,"35°"],[45,"45°"],[60,"60°"]].map(([v,t])=>ch("pitch",v,t,String(d.pitch||"")===String(v))).join("")}</div>`:""}
 <div class="zone">Свес крыши</div><div class="row">${[[0,"Нет"],[.15,"15 см"],[.25,"25 см"],[.5,"50 см"],[.8,"80 см"]].map(([v,t])=>ch("ovh",v,t,(d.ovh!=null&&d.ovh!==""?+d.ovh:.25)===v)).join("")}</div>
 <div class="zone">Стены — все сразу</div><div class="row">${Object.entries(PWL).map(([k,t])=>ch("walls",k,t,!d.ws&&pWalls(o)===k)).join("")}</div>
@@ -1507,12 +1512,13 @@ box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,m
 b.closest(".row,.prow").after(box);const set=e=>{pHist();if(e)o.em=e;else delete o.em;PS.emo=false;pSave();pDraw();pPanel()};
 box.querySelectorAll("[data-em]").forEach(x=>x.onclick=()=>set(x.dataset.em));$("emo-ok").onclick=()=>{const v=$("emo-own").value.trim();if(v)set([...v].slice(0,4).join(""))};if($("emo-def"))$("emo-def").onclick=()=>set("")}
 function pD3Bind(pn,o){if($("d3t"))$("d3t").onclick=()=>{PS.d3=!PS.d3;pPanel()};
-if($("d3dr"))$("d3dr").onclick=()=>{PS.doorO=o.id;PS.doorI=PS.winI=PS.postI=null;$("sh").classList.add("min");pDraw();pPanel()};
+if($("d3dr"))$("d3dr").onclick=()=>{PS.doorO=o.id;PS.doorI=PS.winI=PS.postI=PS.chI=null;$("sh").classList.add("min");pDraw();pPanel()};
 pn.querySelectorAll("[data-d3]").forEach(b=>b.onclick=()=>{pHist();const d=o.d3=o.d3||{},k=b.dataset.d3,v=b.dataset.v;
 if(k==="door"){const D=pDoorsW(o);if(v==="none")D.length=0;else if(D.length)Object.assign(D[0],{k:v,t:0});else D.push({k:v,t:0});pSave();pDraw();pPanel();return}
 if(k==="fp"){pFPSet(o,v);if(v==="rect")delete d.fpk;else d.fpk=v;pSave();pDraw();pPanel();return}if(k==="walls"){delete d.ws;delete d.posts}if(v==="")delete d[k];else d[k]=k==="fl"||k==="gh"||k==="pitch"||k==="ovh"?+v:v;pSave();pDraw();pPanel()});
 if($("d3fp"))$("d3fp").onclick=()=>{PS.shp=o.id;PS.shv=null;$("sh").classList.add("min");pDraw();pPanel()};
-if($("d3po"))$("d3po").onclick=()=>{PS.doorO=o.id;PS.doorI=PS.winI=PS.postI=null;PS.dwT="p";$("sh").classList.add("min");pDraw();pPanel()};
+if($("d3ch"))$("d3ch").onclick=()=>{PS.doorO=o.id;PS.doorI=PS.winI=PS.postI=PS.chI=null;PS.dwT="c";$("sh").classList.add("min");pDraw();pPanel()};
+if($("d3po"))$("d3po").onclick=()=>{PS.doorO=o.id;PS.doorI=PS.winI=PS.postI=PS.chI=null;PS.dwT="p";$("sh").classList.add("min");pDraw();pPanel()};
 pn.querySelectorAll("[data-ws]").forEach(x=>x.onchange=()=>{pHist();const d=o.d3=o.d3||{},w=d.ws=d.ws||{};["s","n","w","e"].forEach(k=>w[k]=w[k]||pWalls(o));w[x.dataset.ws]=x.value;pSave();pDraw();pPanel()});
 if(pn.querySelector("[data-pp]"))pPorchBind(pn,o,0);
 pn.querySelectorAll("[data-wg]").forEach(x=>x.onchange=()=>{const[f,k]=x.dataset.wg.split("."),v=x.value.trim(),n=parseInt(v);pHist();const d=o.d3=o.d3||{},g=d.wg=d.wg||{},r=g[f]=g[f]||{};
@@ -1560,9 +1566,11 @@ const tot=segs.reduce((q,[u,v])=>q+v-u,0);for(let i=0;i<n&&tot>0;i++){let x=(i+.
 const pRoofF=q=>q.f==="m"||q.f==="g",pWins=o=>{const d=o.d3||{};return d.fp?[]:!d.wins?pWinAuto(o):d.wr?d.wins:d.wins.concat(pWinAuto(o).filter(pRoofF))},
 pWinsW=o=>{const d=o.d3=o.d3||{};if(!d.wins||!d.wr){d.wins=pWins(o).map(q=>({...q}));d.wr=1}return d.wins};
 /* точка карты → оси постройки: ближайшая стена, место вдоль неё, расстояние до неё */
+function pChims(o){const d=o.d3||{};if(d.chims)return d.chims;if(!d.chim)return[];const L=o.w>=o.h,RL=d.ridge==="short"?!L:L,RA=RL?o.w:o.h;return[{x:RL?RA*.22:0,y:RL?0:RA*.22}]}
+function pChimsW(o){const d=o.d3=o.d3||{};d.chims=pChims(o).map(q=>({...q}));delete d.chim;return d.chims}
 function pLocal(o,pt){const r=(o.rot||0)*Math.PI/180,dx=pt[0]-(o.x+o.w/2),dy=pt[1]-(o.y+o.h/2),lx=dx*Math.cos(r)+dy*Math.sin(r),ly=-dx*Math.sin(r)+dy*Math.cos(r),
 D=[["s",Math.abs(ly-o.h/2)],["n",Math.abs(ly+o.h/2)],["e",Math.abs(lx-o.w/2)],["w",Math.abs(lx+o.w/2)]].sort((a,b)=>a[1]-b[1])[0],k=D[0],len=k==="s"||k==="n"?o.w:o.h;
-return{k,dist:D[1],t:psnap(Math.max(-len/2+.5,Math.min(len/2-.5,k==="s"||k==="n"?lx:ly)))}}
+return{k,dist:D[1],lx,ly,t:psnap(Math.max(-len/2+.5,Math.min(len/2-.5,k==="s"||k==="n"?lx:ly)))}}
 /* фронтон — только на торцах, где кончается конёк */
 const pGEnd=(o,k)=>{const d=o.d3||{};if(d.roof==="shed"){const sp=d.slope||(o.w>=o.h?"s":"e");return k!==sp}  /* боковины и высокая стена; низкая сторона — без места */
 const rl=(d.ridge==="short")!==(o.w>=o.h);return rl?k==="e"||k==="w":k==="s"||k==="n"};
@@ -1593,7 +1601,7 @@ ${vi!=null?`<div class="row"><span class="note" style="align-self:center">Точ
 <p class="note" style="margin:0">Тяни белые точки — это углы. Тяни пунктирный кружок на середине стороны — выгнешь её дугой. Нажми на него — появится новая точка.${A.cl?" Окон и дверей у фигурной постройки нет.":""}</p>`;
 $("sh").scrollTop=0;const ed=f=>{pHist();f();if(pFP(o))pFPNorm(o);pSave();pDraw();pPanel()};$("shx").onclick=()=>{PS.shp=PS.shv=null;pDraw();pPanel()};
 $("shst").onclick=()=>ed(()=>A.B.fill(0));if($("shdel"))$("shdel").onclick=()=>ed(()=>{if(A.V.length<=mn)return;A.V.splice(vi,1);A.B.splice(Math.min(vi,A.B.length-1),1);if(!A.cl&&vi===0)A.B.length=A.V.length-1;if(A.put)A.put(A.V);PS.shv=null});return}
-if(PS.doorO){const o=pO(PS.doorO);if(!o){PS.doorO=null;return pPanel()}const D=pDoors(o),WN=pWins(o),di=PS.doorI!=null&&D[PS.doorI]?PS.doorI:null,wi=PS.winI!=null&&WN[PS.winI]?PS.winI:null,PO=pPosts(o),poi=PS.postI!=null&&PO[PS.postI]?PS.postI:null,
+if(PS.doorO){const o=pO(PS.doorO);if(!o){PS.doorO=null;return pPanel()}const D=pDoors(o),WN=pWins(o),di=PS.doorI!=null&&D[PS.doorI]?PS.doorI:null,wi=PS.winI!=null&&WN[PS.winI]?PS.winI:null,PO=pPosts(o),poi=PS.postI!=null&&PO[PS.postI]?PS.postI:null,CH=pChims(o),chi=PS.chI!=null&&CH[PS.chI]?PS.chI:null,
 FL=pFloors(o.d3||{}),wf=PS.wf||"1",c=(id,t,on)=>chip(id,t,on);
 if(di!=null)pn.innerHTML=`<div class="prow"><span style="flex:1">🚪 Вход ${di+1}${di===0?" · главный":""} · ${esc(pSideNm(o.d3||{},D[di].k))}</span><button class="n" id="ddel">Убрать</button><button class="n pi" id="dox" aria-label="Готово">✓</button></div>
 <div class="zone">У входа</div>${pPorchUI(o,di)}${di?`<button class="n" id="dmain" style="align-self:flex-start">Сделать главным</button>`:""}<p class="note" style="margin:0">Тяни вход по стене — он переедет.</p>`;
@@ -1602,21 +1610,23 @@ else if(wi!=null){const q=WN[wi];pn.innerHTML=`<div class="prow"><span style="fl
 <div class="zone">Ширина</div><div class="row">${[.6,.9,1.2,1.5,2].map(v=>c("ww-"+String(v).replace(".","_"),pm1(v)+" м",(+q.w||1)===v||(!q.w&&v===.9&&false))).join("")}</div>
 <div class="zone">Высота</div><div class="row">${[[.6,"0,6 м"],[1.2,"1,2 м"],[1.5,"1,5 м"],[2.1,"2,1 м — в пол"]].map(([v,t])=>c("wh-"+String(v).replace(".","_"),t,(+q.h||1.2)===v)).join("")}</div>
 <p class="note" style="margin:0">Тяни окно по стене — оно переедет, можно и на соседнюю стену.</p>`}
+else if(chi!=null)pn.innerHTML=`<div class="prow"><span style="flex:1">🧱 Труба ${chi+1}</span><button class="n" id="chdel">Убрать</button><button class="n pi" id="dox" aria-label="Готово">✓</button></div><p class="note" style="margin:0">Тяни трубу по крыше — она переедет. В 3D выходит из ската на своей высоте.</p>`;
 else if(poi!=null)pn.innerHTML=`<div class="prow"><span style="flex:1">🪵 Столб · ${esc(pSideNm(o.d3||{},PO[poi].k))}</span><button class="n" id="podel">Убрать</button><button class="n pi" id="dox" aria-label="Готово">✓</button></div><p class="note" style="margin:0">Тяни столб вдоль стороны — он переедет. Угловые стоят всегда.</p>`;
-else pn.innerHTML=`<div class="prow"><span style="flex:1">${PS.dwT==="p"?"🪵 Нажми на сторону — столб":(PS.dwT||"d")==="d"?"🚪 Нажми на стену — вход":"🪟 Нажми на стену — окно"}</span><button class="n pi" id="dox" aria-label="Готово">✓</button></div>
-<div class="row">${c("dwt-d","🚪 Ставлю вход",(PS.dwT||"d")==="d")}${c("dwt-w","🪟 Ставлю окно",PS.dwT==="w")}${pAllFull(o)?"":c("dwt-p","🪵 Ставлю столб",PS.dwT==="p")}</div>
+else pn.innerHTML=`<div class="prow"><span style="flex:1">${PS.dwT==="c"?"🧱 Нажми на крышу — труба":PS.dwT==="p"?"🪵 Нажми на сторону — столб":(PS.dwT||"d")==="d"?"🚪 Нажми на стену — вход":"🪟 Нажми на стену — окно"}</span><button class="n pi" id="dox" aria-label="Готово">✓</button></div>
+<div class="row">${c("dwt-d","🚪 Ставлю вход",(PS.dwT||"d")==="d")}${c("dwt-w","🪟 Ставлю окно",PS.dwT==="w")}${pAllFull(o)?"":c("dwt-p","🪵 Ставлю столб",PS.dwT==="p")}${c("dwt-c","🧱 Ставлю трубу",PS.dwT==="c")}</div>
 ${PS.dwT==="w"?`<div class="zone">Этаж — окна этого этажа видны синим</div><div class="row">${FL.map(f=>c("wf-"+f[0],f[1],wf===f[0])).join("")}</div>`:""}
 <p class="note" style="margin:0">«${esc(o.n)}»: входов ${D.length}, окон ${WN.length}. Нажми на вход или окно — его настройки; тяни — двигается по стене.${PS.dwMsg?` <b>${PS.dwMsg}.</b>`:""}${(o.d3||{}).wins?` Окна расставлены вручную.`:""}</p>
 ${(o.d3||{}).wins?`<button class="n" id="wauto" style="align-self:flex-start">Вернуть авто-окна</button>`:""}${(o.d3||{}).posts?`<button class="n" id="poauto" style="align-self:flex-start">Вернуть авто-столбы</button>`:""}`;
-$("sh").scrollTop=0;$("dox").onclick=()=>{if(di!=null||wi!=null||poi!=null){PS.doorI=PS.winI=PS.postI=null;pDraw();return pPanel()}PS.doorO=null;pDraw();pPanel()};
+$("sh").scrollTop=0;$("dox").onclick=()=>{if(di!=null||wi!=null||poi!=null||chi!=null){PS.doorI=PS.winI=PS.postI=PS.chI=null;pDraw();return pPanel()}PS.doorO=null;pDraw();pPanel()};
 const ed=f=>{pHist();f();pSave();pDraw();pPanel()};
 if(di!=null){pPorchBind(pn,o,di);$("ddel").onclick=()=>ed(()=>{pDoorsW(o).splice(di,1);PS.doorI=null});
 if($("dmain"))$("dmain").onclick=()=>ed(()=>{const W=pDoorsW(o);W.unshift(W.splice(di,1)[0]);PS.doorI=0})}
+else if(chi!=null)$("chdel").onclick=()=>ed(()=>{pChimsW(o).splice(chi,1);PS.chI=null});
 else if(poi!=null)$("podel").onclick=()=>ed(()=>{pPostsW(o).splice(poi,1);PS.postI=null});
 else if(wi!=null){const W=()=>pWinsW(o)[wi];$("wdel").onclick=()=>ed(()=>{pWinsW(o).splice(wi,1);PS.winI=null});
 FL.forEach(f=>$("wfl-"+f[0]).onclick=()=>{const t2=pRoofT(o,f[0],W().k,W().t||0);if(t2==null){PS.dwMsg="На этой стене окна этого этажа нет";return pPanel()}ed(()=>{W().f=f[0];W().t=t2;PS.wf=f[0]})});[.6,.9,1.2,1.5,2].forEach(v=>$("ww-"+String(v).replace(".","_")).onclick=()=>ed(()=>W().w=v));
 [.6,1.2,1.5,2.1].forEach(v=>$("wh-"+String(v).replace(".","_")).onclick=()=>ed(()=>W().h=v))}
-else{$("dwt-d").onclick=()=>{PS.dwT="d";pDraw();pPanel()};if($("dwt-p"))$("dwt-p").onclick=()=>{PS.dwT="p";pDraw();pPanel()};if($("poauto"))$("poauto").onclick=()=>ed(()=>{delete o.d3.posts});$("dwt-w").onclick=()=>{PS.dwT="w";pDraw();pPanel()};FL.forEach(f=>{const b=$("wf-"+f[0]);if(b)b.onclick=()=>{PS.wf=f[0];pDraw();pPanel()}});
+else{$("dwt-d").onclick=()=>{PS.dwT="d";pDraw();pPanel()};if($("dwt-p"))$("dwt-p").onclick=()=>{PS.dwT="p";pDraw();pPanel()};$("dwt-c").onclick=()=>{PS.dwT="c";pDraw();pPanel()};if($("poauto"))$("poauto").onclick=()=>ed(()=>{delete o.d3.posts});$("dwt-w").onclick=()=>{PS.dwT="w";pDraw();pPanel()};FL.forEach(f=>{const b=$("wf-"+f[0]);if(b)b.onclick=()=>{PS.wf=f[0];pDraw();pPanel()}});
 if($("wauto"))$("wauto").onclick=()=>ed(()=>{delete o.d3.wins;delete o.d3.wr})}return}
 if(PS.place!=null){const x=PS.place==="new"?null:seeds[PS.place];h=`<div class="prow"><span style="flex:1">🌱 ${x?"Нажми, куда пересадить":"Нажми на место — посадишь там"}</span><button class="n" id="pcx">Отмена</button></div>${x?`<p class="note" style="margin:0">«${esc(x.r.slice(0,80))}»</p>`:""}<p class="note" style="margin:0">Можно прямо на грядку, печь или дерево.</p>`;
 pn.innerHTML=h;$("pcx").onclick=()=>{PS.place=null;pPanel()};return}
