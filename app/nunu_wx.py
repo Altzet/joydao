@@ -2,6 +2,9 @@
 Раз в день вечером сервер смотрит прогноз на завтра (Open-Meteo, без ключа) и, если условия сошлись,
 бот пишет: «🌱 По просьбе. Завтра +18 и сухо 😎» + строчка из банка + [Сделаю] [Не сейчас].
 
+Второй режим — «Предупредить» (18.11): ночью до N°, жара от N°, будет дождь/снег, сильный ветер.
+Например «затопить котёл, если ночью до +5». Тоже один раз на «окно» (подряд идущие такие дни).
+
 Наука: погода — «если» в плане «если — то» (Gollwitzer & Sheeran 2006); подсказка в момент возможности
 (JITAI, Nahum-Shani et al. 2018). Принципы игры: без счётчиков пропусков, «Не сейчас» без вины,
 одно сообщение на одно погодное «окно», шутим про погоду, а не про человека.
@@ -21,6 +24,8 @@ from . import nunu
 log = logging.getLogger("nunu.wx")
 HOUR_UTC = 17  # 19:00 в Киеве зимой: решать про завтра вечером накануне
 DRY_MM, DRY_PROB, CALM_KMH = 0.5, 30, 20  # ponytail: пороги «сухо» и «без ветра»; подстроить по отзывам
+WET_MM, WET_PROB, WINDY_KMH = 1, 60, 40  # «будет дождь/снег» и «сильный ветер» для предупреждений
+WARN = ("tn", "hot", "wet", "windy")  # условия режима «Предупредить»
 LAST = 10  # строчка не повторяется в последних N сообщениях игрока
 
 JOKES = [
@@ -53,6 +58,17 @@ BY_WORD = [  # строчки «под дело»: если в названии 
     (("прогул", "лес", "гор", "поход", "гриб"), ["Тропинки сухие, виды бесплатные 🥾"]),
     (("велос", "бег", "пробеж"), ["Ветер попутный. Ну, почти 🚲"]),
 ]
+WARM = [  # строчки для предупреждений: уют, а не тревога
+    "Тёплый дом — лучший план на вечер 🏠", "Плед уже ждёт 🧣", "Чайник тоже готов 🫖", "Береги тепло — и себя ❄🏠",
+    "Зима не спрашивает. А ты уже готов 😎", "Предупреждён — значит, в тепле 🔥", "Погода своё, а у тебя план 📋",
+]
+WARN_WORD = [
+    (("котел", "котёл", "топ", "печ", "камин"), ["Котёл: *разминает трубы* 🔥", "Дрова уже шепчутся 🪵🔥",
+                                                  "Пора, печка соскучилась 🔥"]),
+    (("полив", "поли"), ["Небо польёт за тебя 🌧", "Лейка может отдохнуть 🌧"]),
+    (("укры", "плён", "плен", "рассад", "теплиц"), ["Растения скажут спасибо 🌱🧣", "Укутаем зелёных 🌱"]),
+    (("машин", "авто", "двор", "бельё", "белье"), ["Лучше убрать заранее, чем бегать потом ☔"]),
+]
 YES = ["Делу время 🙌", "Договорились. Солнце в курсе ☀", "Записано в саду 🌱",
        "Принято! Тучам передам, чтоб не мешали ☁🚫"]
 NO = ["Ждём у моря погоды 🏝", "Всему своё время 🌤", "Семечко не торопится. И ты не торопись 🌱",
@@ -80,15 +96,49 @@ def pick(pool: list[str], last: list[str], rnd=random) -> str:
     return rnd.choice(fresh)
 
 
-def lines_for(what: str, day: date, f: dict) -> list[str]:
+def warn(wx: dict) -> bool:
+    return any(wx.get(k) not in (None, "", False) for k in WARN)
+
+
+def lines_for(what: str, day: date, f: dict, alert: bool = False) -> list[str]:
     w = what.lower()
+    if alert:
+        return WARM + [x for keys, xs in WARN_WORD if any(k in w for k in keys) for x in xs]
     return JOKES + [x for keys, xs in BY_WORD if any(k in w for k in keys) for x in xs] + seasonal(day, f)
 
 
 def fits(wx: dict, f: dict) -> bool:
     """Сошлись ли все выбранные условия с прогнозом f на завтра."""
+    if warn(wx):  # «Предупредить»: все выбранные угрозы сошлись
+        return ((wx.get("tn") in (None, "") or f.get("tnight", 99) <= float(wx["tn"]))
+                and (wx.get("hot") in (None, "") or f["tmax"] >= float(wx["hot"]))
+                and (not wx.get("wet") or f.get("wet", False)) and (not wx.get("windy") or f.get("windy", False)))
     return ((not wx.get("dry") or f["dry"]) and (not wx.get("sun") or f["sun"]) and (not wx.get("calm") or f["calm"])
             and (wx.get("t") in (None, "") or f["tmax"] >= float(wx["t"])))
+
+
+def sg(t: float) -> str:
+    t = round(t)
+    return f"{'+' if t > 0 else ''}{t}"
+
+
+def alert_head(wx: dict, f: dict) -> str:
+    """«Сегодня ночью до +3, завтра снег ❄🌨»."""
+    p, e = [], ""
+    if wx.get("tn") not in (None, ""):
+        p.append(f"сегодня ночью до {sg(f['tnight'])}")
+        e += "❄" if f["tnight"] <= 0 else "🌡"
+    if wx.get("hot") not in (None, ""):
+        p.append(f"завтра жара {sg(f['tmax'])}")
+        e += "🔥"
+    if wx.get("wet"):
+        p.append("завтра снег" if f.get("snow") else "завтра дождь")
+        e += "🌨" if f.get("snow") else "🌧"
+    if wx.get("windy"):
+        p.append(f"завтра ветер до {round(f.get('wind', 0))} км/ч")
+        e += "💨"
+    t = ", ".join(p)
+    return t[:1].upper() + t[1:] + " " + e
 
 
 def headline(wx: dict, f: dict) -> str:
@@ -105,24 +155,30 @@ def headline(wx: dict, f: dict) -> str:
 
 def message(seed: dict, f: dict, day: date, last: list[str], rnd=random) -> tuple[str, str]:
     wx = seed["wx"]
-    line = pick(lines_for(wx.get("what") or seed.get("r", ""), day, f), last, rnd)
+    a = warn(wx)
+    line = pick(lines_for(wx.get("what") or seed.get("r", ""), day, f, a), last, rnd)
     where = f" · 📍 {wx['where']}" if wx.get("where") else ""
-    return f"🌱 По просьбе. {headline(wx, f)}\n«{wx.get('what') or seed.get('r', '')}»{where}\n{line}", line
+    return f"{'🔔' if a else '🌱'} По просьбе. {alert_head(wx, f) if a else headline(wx, f)}\n«{wx.get('what') or seed.get('r', '')}»{where}\n{line}", line
 
 
 def forecast(ll: str) -> dict | None:
-    """Прогноз на завтра по точке «lat, lon» (или ссылке Google Карт): tmax, dry, sun, calm, rain_before."""
+    """Прогноз по точке «lat, lon» (или ссылке Google Карт): на завтра tmax, dry, sun, calm, wet, snow, windy, wind;
+    tnight — минимум этой ночи (20:00 сегодня — 08:00 завтра по местному времени); rain_before — дождь сегодня."""
     xy = nunu._coords(ll)
     if not xy:
         return None
     url = (f"https://api.open-meteo.com/v1/forecast?latitude={xy[0]:.2f}&longitude={xy[1]:.2f}&timezone=auto"
            "&forecast_days=2&daily=temperature_2m_max,precipitation_sum,precipitation_probability_max,"
-           "wind_speed_10m_max,weather_code")
-    d = json.loads(nunu._get(url)[1])["daily"]
+           "wind_speed_10m_max,weather_code&hourly=temperature_2m")
+    j = json.loads(nunu._get(url)[1])
+    d, hours = j["daily"], [x for x in (j.get("hourly") or {}).get("temperature_2m", [])[20:33] if x is not None]
     v = lambda k, i=1: d[k][i] if d.get(k) and d[k][i] is not None else 0  # noqa: E731
     return {"tmax": v("temperature_2m_max"), "dry": v("precipitation_sum") < DRY_MM
             and v("precipitation_probability_max") <= DRY_PROB, "sun": v("weather_code") <= 2,
-            "calm": v("wind_speed_10m_max") <= CALM_KMH, "rain_before": v("precipitation_sum", 0) >= DRY_MM}
+            "calm": v("wind_speed_10m_max") <= CALM_KMH, "rain_before": v("precipitation_sum", 0) >= DRY_MM,
+            "wet": v("precipitation_sum") >= WET_MM or v("precipitation_probability_max") >= WET_PROB,
+            "snow": v("weather_code") in (71, 73, 75, 77, 85, 86), "windy": v("wind_speed_10m_max") >= WINDY_KMH,
+            "wind": v("wind_speed_10m_max"), "tnight": min(hours) if hours else v("temperature_2m_max")}
 
 
 def due(today: date, get=forecast) -> list[tuple[int, str, str]]:

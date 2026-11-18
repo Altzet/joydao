@@ -58,3 +58,20 @@ def test_goal_weather(tmp_path, monkeypatch):
             {"id": "g2", "t": "Старая", "done": "2026-11-01", "wx": SEED["wx"]}]}),))
     out = nunu_wx.due(date(2026, 11, 18), get=lambda ll: GOOD)
     assert [(u, p) for u, _, p in out] == [(3, "g1")] and "«Построить печь»" in out[0][1]
+
+
+def test_alert_boiler(tmp_path, monkeypatch):
+    """«Затопить котёл, если ночью до +5»: режим «Предупредить», один раз на холодную полосу."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    boiler = {"r": "план", "pid": "k1", "wx": {"tn": 5, "ll": "48.44, 22.72", "what": "Затопить котёл"}}
+    cold, warm = GOOD | {"tnight": 3.2, "dry": False}, GOOD | {"tnight": 8}
+    assert nunu_wx.fits(boiler["wx"], cold) and not nunu_wx.fits(boiler["wx"], warm)
+    text, line = nunu_wx.message(boiler, cold, date(2026, 11, 19), [], random.Random(1))
+    assert text.startswith("🔔 По просьбе. Сегодня ночью до +3 🌡\n«Затопить котёл»") and line in nunu_wx.WARM + sum(
+        (xs for _, xs in nunu_wx.WARN_WORD), [])
+    snow = {"wet": True, "windy": True, "ll": "x", "what": "Укрыть рассаду"}
+    assert nunu_wx.alert_head(snow, GOOD | {"wet": True, "snow": True, "windy": True, "wind": 52.4}) == \
+        "Завтра снег, завтра ветер до 52 км/ч 🌨💨"
+    put(5, [boiler])
+    days = [(date(2026, 11, 18), cold), (date(2026, 11, 19), cold), (date(2026, 11, 20), warm), (date(2026, 11, 21), cold)]
+    assert [len(nunu_wx.due(d, get=lambda ll, f=f: f)) for d, f in days] == [1, 0, 0, 1]
