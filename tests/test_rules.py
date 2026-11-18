@@ -37,6 +37,8 @@ def test_rules(tmp_path, monkeypatch):
 def test_seo(tmp_path, monkeypatch):
     """robots, sitemap, canonical, микроразметка, честная 404 вместо копии главной."""
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    from app import nunu_admin
+    nunu_admin._cache.pop("lp", None)  # лендинг мог закэшироваться в других тестах
     c = TestClient(pause.app)
     r = c.get("/robots.txt").text
     assert "Disallow: /nunu" in r and "sitemap.xml" in r
