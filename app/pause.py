@@ -18,7 +18,7 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMa
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 
-from . import config, db, landing, nunu, nunu_admin, nunu_reports, nunu_subs, nunu_wx, rules
+from . import config, db, landing, nunu, nunu_admin, nunu_reports, nunu_subs, nunu_wx, pages, rules
 from .nunu import remind_loop  # имя nunu ниже занято маршрутом /nunu
 
 TEXT = (
@@ -154,7 +154,7 @@ async def rules_page():
 @app.get("/robots.txt")
 async def robots():
     """SEO: в поиск — лендинг и правила; игра, админка и API — нет."""
-    return PlainTextResponse("User-agent: *\nAllow: /$\nAllow: /rules\nDisallow: /nunu\n"
+    return PlainTextResponse("User-agent: *\nAllow: /\nDisallow: /nunu\n"
                              f"Sitemap: {landing.SITE}/sitemap.xml\n")
 
 
@@ -165,9 +165,24 @@ async def og_image():
                         headers={"Cache-Control": "public, max-age=86400"})
 
 
+@app.get("/img/{name}")
+async def page_img(name: str):
+    return pages.img(name)
+
+
+@app.get("/uchastok")
+async def page_uchastok():
+    return pages.render("uchastok")
+
+
+@app.get("/esli-to")
+async def page_esli_to():
+    return pages.render("esli-to")
+
+
 @app.get("/sitemap.xml")
 async def sitemap():
-    u = "".join(f"<url><loc>{landing.SITE}{p}</loc><priority>{w}</priority></url>" for p, w in (("/", "1.0"), ("/rules", "0.5")))
+    u = "".join(f"<url><loc>{landing.SITE}{p}</loc><priority>{w}</priority></url>" for p, w in (("/", "1.0"), ("/uchastok", "0.8"), ("/esli-to", "0.8"), ("/rules", "0.4")))
     return Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
                     + u + "</urlset>", media_type="application/xml")
 

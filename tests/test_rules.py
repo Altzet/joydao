@@ -53,3 +53,14 @@ def test_og(tmp_path, monkeypatch):
     r = c.get("/og.png")
     assert r.status_code == 200 and r.content[:4] == b"\x89PNG"
     assert '/og.png"' in c.get("/").text
+
+
+def test_seo_pages(tmp_path, monkeypatch):
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    c = TestClient(pause.app)
+    for slug, word in (("uchastok", "Планировщик участка"), ("esli-to", "если — то")):
+        r = c.get(f"/{slug}")
+        assert r.status_code == 200 and word in r.text and f'/{slug}"' in r.text and '"FAQPage"' in r.text
+        assert f"/{slug}</loc>" in c.get("/sitemap.xml").text
+    assert c.get("/img/uchastok-3d.webp").status_code == 200 and c.get("/img/../app/config.py").status_code == 404
+    assert 'href="/uchastok"' in c.get("/").text
