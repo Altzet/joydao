@@ -377,8 +377,8 @@ const n=gSteps(g),left=g.by?Math.ceil((new Date(g.by)-new Date(today()))/864e5):
 return`<div class="card goal"><span class="who">Моя цель · ${gStage(n.done)}</span><div class="gwrap">${goalTree(n.done)}<div style="min-width:0">
 <div class="q" style="margin:0">${esc(g.t)}</div>${g.why?`<p class="note" style="margin:4px 0 0">Зачем: ${esc(g.why)}</p>`:""}
 <p class="note" style="margin:6px 0 0">Шагов сделано: <b>${n.done}</b>${n.all>n.done?` · в пути: ${n.all-n.done}`:""}${left!=null?` · ${left>0?"до срока "+left+" "+pl(left,["день","дня","дней"]):left===0?"срок сегодня":"срок прошёл — можно продлить"}`:""}</p>
-<button class="n" id="ged" style="margin-top:8px">Изменить цель</button></div></div>${past?`<p class="note" style="margin:0">Достигнуто целей: ${past} 🍎</p>`:""}</div>`}
-function goalEdit(back){const g=goalNow(),v=g?{...g}:{t:"",why:"",by:""},o=wxNew(g&&g.wx);let sky=!!(g&&g.wx);
+${g.wx?`<p class="note" style="margin:6px 0 0">${wxSum(g.wx)} · бот напишет, когда погода подойдёт</p>`:""}<div class="row" style="margin-top:8px"><button class="n" id="ged">Изменить цель</button>${g.wx?"":`<button class="n" id="gwx">☀ Добавить погоду</button>`}</div></div></div>${past?`<p class="note" style="margin:0">Достигнуто целей: ${past} 🍎</p>`:""}</div>`}
+function goalEdit(back,sky0){const g=goalNow(),v=g?{...g}:{t:"",why:"",by:""},o=wxNew(g&&g.wx);let sky=!!(g&&g.wx)||!!sky0;
 const draw=()=>{app.innerHTML=`<h1>${g?"Моя цель":"Новая цель"}</h1><div class="card"><div class="zone">К чему иду (одной фразой)</div><input id="gt" maxlength="80" placeholder="Построить печь на участке" value="${esc(v.t)}">
 <div class="zone">Зачем мне это</div><textarea id="gw" maxlength="200" rows="3" placeholder="Хочу собирать друзей и печь хлеб сам">${esc(v.why||"")}</textarea>
 <div class="zone">К какому сроку (по желанию)</div><input type="date" id="gb" min="${today()}" value="${esc(v.by||"")}" style="align-self:flex-start">
@@ -511,7 +511,7 @@ ${tg?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}
 <div class="err" id="er"></div>
 <div class="row"><button class="main-btn" id="pt">Посадить в сад</button><button class="n" id="bk">Назад</button></div></div>
 <p class="note">${own.sky?"Когда прогноз подойдёт, бот напишет накануне вечером. ":""}${own.due?(own.at?"В этот день в "+own.at+" бот напомнит о деле.":"В этот день утром бот напомнит о деле. Хочешь в своё время — поставь час."):own.at?"Бот напомнит в "+own.at+" — сегодня, а если время уже прошло, завтра.":"Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе»."} Не вышло — ничего страшного, семя подождёт.</p>`;
-const redraw=()=>stepWeek(fr,own.what,loc);if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(redraw);
+const redraw=()=>stepWeek(fr,own.what,loc);if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(redraw);if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
 if($("gstep"))$("gstep").onchange=()=>{toGoal=$("gstep").checked};
 $("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw()}};$("co").onclick=e=>{const b=e.target.closest("button");if(b){o=+b.dataset.k;draw()}};
 $("od").onchange=$("od").oninput=()=>{own.due=$("od").value&&$("od").value>=today()?$("od").value:"";$("pl").textContent=plan();$("er").textContent=""};$("ot").onchange=()=>{own.at=$("ot").value||"";draw()};
