@@ -490,7 +490,7 @@ const head=w===0?`«${own.what||"…"}»${d?" — "+d:""}${own.where.trim()?", "
 const mate=()=>mateSel?mateSel.name:own.who.trim();
 const bonus=()=>mateSel&&mateSel.id?`${mateSel.name} получит сообщение и это дело в свой сад. Когда отметите «Так и сделал», ваш мост получит +3 доски.`
 :mate()?"Когда отметишь в саду «Так и сделал», ваш мост (ты и "+mate()+") получит +3 доски.":"Выбери друга, и дело укрепит ваш мост.";
-const chips=(a,id,cur)=>`<div class="row" id="${id}">${a.map((x,k)=>`<button class="${k===cur?"t":"n"}${id==="cw"&&!k?" own":""}" data-k="${k}">${esc(x)}</button>`).join("")}</div>`;
+const chips=(a,id,cur)=>`<select id="${id}" style="width:100%">${a.map((x,k)=>`<option value="${k}"${k===cur?" selected":""}>${esc(x)}</option>`).join("")}</select>`;  /* выпадающий список: дела и помехи не растягивают форму */
 const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" maxlength="${max}" placeholder="${ph}" value="${esc(v)}">`;
 let toGoal=null;const draw=()=>{const G=goalNow();app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}
 <div class="card">${G?`<label style="display:flex;gap:10px;align-items:center;background:#E6F2EC;border:1px solid #BFDCCD;border-radius:12px;padding:10px 12px;font-weight:500;cursor:pointer"><input type="checkbox" id="gstep" style="flex:none;width:20px;height:20px;margin:0"${toGoal!==false?" checked":""}><span>Это шаг к цели «${esc(G.t)}»?</span></label>`:""}<div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
@@ -504,7 +504,7 @@ ${o===SO.length?fld("ob","Моя помеха","Устану после рабо
 ${ownAct()?fld("oa","Если помешает, что я сделаю","Напишу ему первым, а не буду ждать",own.act,100):""}
 <div class="zone">3. Мой план</div><div class="q" id="pl">${esc(plan())}</div>
 <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"${tg?" checked":""}> ${fr?"Сделаем вдвоём: я и "+esc(fr):"Сделаем вместе с другом"}</label>
-${tg&&!fr?(FR.length?`<div class="row" id="cf">${FR.map(f=>`<button class="${mateSel&&mateSel.id===f.id?"t":"n"}" data-f="${f.id}">${esc(f.name)}</button>`).join("")}</div>`:"")
+${tg&&!fr?(FR.length?`<select id="cf" style="width:100%"><option value="">— выбери друга —</option>${FR.map(f=>`<option value="${f.id}"${mateSel&&mateSel.id===f.id?" selected":""}>${esc(f.name)}</option>`).join("")}</select>`:"")
 +(!mateSel?`<input id="oc" maxlength="30" placeholder="${FR.length?"Или впиши имя":"Имя друга — тогда дело укрепит ваш мост"}" value="${esc(own.who)}">`:""):""}
 ${tg?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}
 <div class="err" id="er"></div>
@@ -512,10 +512,10 @@ ${tg?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}
 <p class="note">${own.sky?"Когда прогноз подойдёт, бот напишет накануне вечером. ":""}${own.due?(own.at?"В этот день в "+own.at+" бот напомнит о деле.":"В этот день утром бот напомнит о деле. Хочешь в своё время — поставь час."):own.at?"Бот напомнит в "+own.at+" — сегодня, а если время уже прошло, завтра.":"Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе»."} Не вышло — ничего страшного, семя подождёт.</p>`;
 const redraw=()=>stepWeek(fr,own.what,loc);if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(redraw);if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
 if($("gstep"))$("gstep").onchange=()=>{toGoal=$("gstep").checked};
-$("cw").onclick=e=>{const b=e.target.closest("button");if(b){w=+b.dataset.k;draw()}};$("co").onclick=e=>{const b=e.target.closest("button");if(b){o=+b.dataset.k;if(w===0&&SO[o]==="Испортится погода"&&!own.sky){own.sky=true;if(!own.act)own.act="перенесу на первый подходящий день"}draw()}};  /* помеха-погода → погодное семя: бот сам подскажет хороший день */
+$("cw").onchange=e=>{w=+e.target.value;draw()};$("co").onchange=e=>{{o=+e.target.value;if(w===0&&SO[o]==="Испортится погода"&&!own.sky){own.sky=true;if(!own.act)own.act="перенесу на первый подходящий день"}draw()}};  /* помеха-погода → погодное семя: бот сам подскажет хороший день */
 $("od").onchange=$("od").oninput=()=>{own.due=$("od").value&&$("od").value>=today()?$("od").value:"";$("pl").textContent=plan();$("er").textContent=""};$("ot").onchange=()=>{own.at=$("ot").value||"";draw()};
 [["ow","what"],["on","where"],["ob","obs"],["oa","act"],["oc","who"]].forEach(([id,k])=>{const el=$(id);if(el)el.oninput=()=>{own[k]=el.value;$("pl").textContent=plan();$("er").textContent="";if($("bn"))$("bn").textContent=bonus()}});
-if($("cf"))$("cf").onclick=e=>{const b=e.target.closest("button");if(!b)return;const f=FR.find(f=>String(f.id)===b.dataset.f);mateSel=mateSel&&mateSel.id===f.id?null:{id:f.id,name:f.name};draw()};
+if($("cf"))$("cf").onchange=e=>{const f=FR.find(f=>String(f.id)===e.target.value);mateSel=f?{id:f.id,name:f.name}:null;draw()};
 $("tg").onchange=()=>{tg=$("tg").checked;if(!tg&&!fr)mateSel=null;draw()};
 if($("sky"))$("sky").onchange=()=>{own.sky=$("sky").checked;draw()};wxBind(own,draw,()=>{$("er").textContent=""});
 $("bk").onclick=()=>loc?plotMap():st.started?go():home();
