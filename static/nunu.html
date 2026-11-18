@@ -492,8 +492,8 @@ const bonus=()=>mateSel&&mateSel.id?`${mateSel.name} получит сообще
 :mate()?"Когда отметишь в саду «Так и сделал», ваш мост (ты и "+mate()+") получит +3 доски.":"Выбери друга, и дело укрепит ваш мост.";
 const chips=(a,id,cur)=>`<div class="row" id="${id}">${a.map((x,k)=>`<button class="${k===cur?"t":"n"}${id==="cw"&&!k?" own":""}" data-k="${k}">${esc(x)}</button>`).join("")}</div>`;
 const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" maxlength="${max}" placeholder="${ph}" value="${esc(v)}">`;
-let toGoal=!!goalNow();const draw=()=>{const G=goalNow();app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}
-<div class="card"><div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
+let toGoal=null;const draw=()=>{const G=goalNow();app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}
+<div class="card">${G?`<label style="display:flex;gap:10px;align-items:center;background:#E6F2EC;border:1px solid #BFDCCD;border-radius:12px;padding:10px 12px;font-weight:500;cursor:pointer"><input type="checkbox" id="gstep" style="flex:none;width:20px;height:20px;margin:0"${toGoal!==false?" checked":""}><span>Это шаг к цели «${esc(G.t)}»?</span></label>`:""}<div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
 ${w===0?fld("ow",tg?"Что сделаем":"Что сделаю","Испечь пиццу в печи",own.what,80):""}
 <div class="zone">Когда (по желанию)</div><div class="row" style="gap:8px"><input type="date" id="od" min="${today()}" value="${own.due}" style="flex:none"><input type="time" id="ot" value="${own.at}" aria-label="Во сколько напомнить" style="flex:none"></div>
 ${w===0?fld("on","Где (по желанию)","У меня во дворе",own.where,60):""}
@@ -503,7 +503,6 @@ ${w===0?`<label class="note" style="display:flex;gap:8px;align-items:center"><in
 ${o===SO.length?fld("ob","Моя помеха","Устану после работы",own.obs,80):""}
 ${ownAct()?fld("oa","Если помешает, что я сделаю","Напишу ему первым, а не буду ждать",own.act,100):""}
 <div class="zone">3. Мой план</div><div class="q" id="pl">${esc(plan())}</div>
-${G?`<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="gstep" style="flex:none"${toGoal?" checked":""}> Шаг к цели «${esc(G.t)}»</label>`:""}
 <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"${tg?" checked":""}> ${fr?"Сделаем вдвоём: я и "+esc(fr):"Сделаем вместе с другом"}</label>
 ${tg&&!fr?(FR.length?`<div class="row" id="cf">${FR.map(f=>`<button class="${mateSel&&mateSel.id===f.id?"t":"n"}" data-f="${f.id}">${esc(f.name)}</button>`).join("")}</div>`:"")
 +(!mateSel?`<input id="oc" maxlength="30" placeholder="${FR.length?"Или впиши имя":"Имя друга — тогда дело укрепит ваш мост"}" value="${esc(own.who)}">`:""):""}
@@ -522,7 +521,7 @@ if($("sky"))$("sky").onchange=()=>{own.sky=$("sky").checked;draw()};wxBind(own,d
 $("bk").onclick=()=>loc?plotMap():st.started?go():home();
 $("pt").onclick=()=>{const miss=w===0&&!own.what.trim()?"Напиши, что сделаешь":o===SO.length&&!own.obs.trim()?"Напиши, что может помешать":ownAct()&&!own.act.trim()?"Напиши, что сделаешь, если помешает":w===0&&own.sky?wxMiss(own):"";if(miss){$("er").textContent=miss;return}
 tg=$("tg").checked;const ld=x=>new Date(x-x.getTimezoneOffset()*6e4).toISOString().slice(0,10),now=new Date();if(own.at&&!own.due)own.due=ld(own.at>now.toTimeString().slice(0,5)?now:new Date(+now+864e5));const m=tg?mate():"",fid=tg&&mateSel&&mateSel.id||null,pid=Math.random().toString(36).slice(2,10),r=plan();
-seeds.push({c:"Удиви себя",q:(w>0?W[w]:"Своё дело")+" · помеха: "+obs()+(tg?" · вдвоём: я и "+(m||"друг"):""),r,z:-1,d:today(),due:own.due||null,at:own.due&&own.at||null,tz:new Date().getTimezoneOffset(),life:null,mine:false,step:1,with:m,fid,pid,...(toGoal&&goalNow()?{goal:goalNow().id}:{}),...(w===0&&own.sky?{wx:wxOut(own,own.what.trim(),own.where.trim())}:{}),...(loc?{loc:{x:loc.x,y:loc.y,o:loc.o||null,dx:loc.dx||0,dy:loc.dy||0},place:loc.name||"Участок"}:{})});saveSeeds();
+seeds.push({c:"Удиви себя",q:(w>0?W[w]:"Своё дело")+" · помеха: "+obs()+(tg?" · вдвоём: я и "+(m||"друг"):""),r,z:-1,d:today(),due:own.due||null,at:own.due&&own.at||null,tz:new Date().getTimezoneOffset(),life:null,mine:false,step:1,with:m,fid,pid,...(toGoal!==false&&goalNow()?{goal:goalNow().id}:{}),...(w===0&&own.sky?{wx:wxOut(own,own.what.trim(),own.where.trim())}:{}),...(loc?{loc:{x:loc.x,y:loc.y,o:loc.o||null,dx:loc.dx||0,dy:loc.dy||0},place:loc.name||"Участок"}:{})});saveSeeds();
 const gd=guestDeed&&guestDeed.fid===fid?guestDeed.o:null;guestDeed=null;if(fid&&API)API("/friend/"+fid+"/plan","POST",{obj:gd,pid,text:r.split(". Если ")[0],due:own.due||null,at:own.due&&own.at||null,tz:new Date().getTimezoneOffset()}).catch(()=>{});loc?plotMap({fresh:seeds.length-1}):garden()}};draw()}
 /* вне Telegram: игра живёт в Telegram — там аккаунт, карта, друзья и сад на любом устройстве */
 function home(){if(API)return world();
