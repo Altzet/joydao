@@ -545,7 +545,7 @@ if(i===0&&!st.s.length&&!st.g.length&&(st.mode||"")!=="guess"&&!st.friend&&!st.r
 <p class="note" style="margin:0">«Сыграть всё равно» — карточки уже знакомые.</p>`);$("sbn").onclick=()=>subForm(()=>play(0));$("sbr").onclick=()=>{st.rep=1;save();play(0)};return}
 st.started=1;const M=st.mode||(st.solo?"solo":"duo"),one=M!=="duo",s=sit(i),self=draft===null;
 card(`<div class="lad" role="img" aria-label="Карточка ${i+1} из ${N}">${[...Array(N)].map((_,k)=>`<i style="background:${LV[sit(k).lv]}${k<i?"":k===i?";height:8px":";opacity:.3"}"></i>`).join("")}</div><div class="meta"><span>${i+1} из ${N} · ${s.c}${s.id&&s.id[0]==="s"&&AU[s.id.slice(1)]?" "+repBtn("sub",s.id.slice(1)):""}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
-${M==="guess"?ask(0,st.friend.name):self?ask(1,0,!s.lv):ask(0,st.friend&&st.friend.name||st.toName)}<div class="q">${s.q}</div><div id="o"></div>`);
+${M==="guess"?ask(0,st.friend.name):self?ask(1,0,s.lv===0):ask(0,st.friend&&st.friend.name||st.toName)}<div class="q">${s.q}</div><div id="o"></div>`);
 const idx=s.o.map((_,k)=>k);for(let k=idx.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
 const r=document.createElement("div");r.className=s.lv===0?"duo":"row col";
 const ans=x=>{markSeen(s.id);if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};
