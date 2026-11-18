@@ -338,6 +338,10 @@ const sit=k=>pick(st.seed)[k],newSeed=()=>{const S0=new Set(seen);let best=0,bw=
 w=pick(sd).reduce((a,c)=>a+(S0.has(c.id)?(c.id[0]==="s"?3:1):0),0);delete picked[sd];if(w<bw){bw=w;best=sd}if(!w)break}return best};  /* номер партии в диапазоне последней колоды */
 const save=()=>ls.set("nunu2",st);
 function card(h){app.innerHTML=`<div class="card">${h}</div>`}
+/* ссылки в тексте дела — короткой кнопкой «🔗 открыть», открываются через Telegram */
+const linky=t=>esc(t).replace(/https?:\/\/[^\s<>"«»]+[^\s<>"«».,;:!?)]/g,u=>`<a href="${u}" data-ext style="white-space:nowrap;color:#1D7A5C;text-decoration:none;font-weight:600">🔗 открыть</a>`);
+document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("a[data-ext]");if(!a)return;e.preventDefault();e.stopPropagation();
+const u=a.getAttribute("href").replace(/&amp;/g,"&");try{TG.openLink(u)}catch(er){window.open(u,"_blank")}},true);
 /* свод правил (app/rules.py → window.NUNU_RULES): прежде чем играть — прочитать и принять; поменялась версия — принять заново */
 const RL=window.NUNU_RULES||{v:1,main:[]},rulesOk=()=>!RL.main.length||!!(prefs.rules&&prefs.rules.v===RL.v),
 openRules=()=>{const u=location.origin+"/rules";try{TG.openLink(u)}catch(e){window.open(u,"_blank")}};
@@ -415,7 +419,7 @@ const beds=[],bi={};seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>inView(x)&&(
 if(bi[key]===undefined){bi[key]=beds.length;beds.push([x,k,[k]])}else{const g=beds[bi[key]];g[2].push(k);g[1]=k;if(x.mine)g[0]={...g[0],mine:true}}});
 beds.sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k,ks])=>{const st2=x.life?(x.life.same?"open":"fog"):"",n=ks.length;
 h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${x.place?"📍 "+esc(x.place)+" · ":""}${esc(x.c)} · ${n>1?ks.map(i=>sd(seeds[i].d)).filter((d,i,a)=>a.indexOf(d)===i).slice(0,3).join(", ")+(n>3?"…":""):sd(x.d)}</span><span>${n>1?`<span class="tag p" title="одинаковые семена">грядка ×${n}</span> `:""}${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
-<div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${esc(x.r)}</b>${x.by&&x.pid&&x.by!==myId()?" "+repBtn("plan",x.pid):""}</div>
+<div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${linky(x.r)}</b>${x.by&&x.pid&&x.by!==myId()?" "+repBtn("plan",x.pid):""}</div>
 ${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты и ${esc(x.with)} — +3 доски</div>`:""}${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
 `${x.wx?`<button class="tag" data-wx="${k}" style="align-self:flex-start;border:0">${wxSum(x.wx)} · изменить погоду</button>`:`<button class="n" data-wx="${k}" style="align-self:flex-start">☀ Добавить погоду</button>`}<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">Так и сделал</button><button class="n" data-k="${k}" data-s="0">Сделал иначе</button></div>`}</div>`});
 h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`;
@@ -496,7 +500,7 @@ let toGoal=null;const draw=()=>{const G=goalNow();app.innerHTML=`<h1>Чем уд
 <div class="card">${G?`<label style="display:flex;gap:10px;align-items:center;background:#E6F2EC;border:1px solid #BFDCCD;border-radius:12px;padding:10px 12px;font-weight:500;cursor:pointer"><input type="checkbox" id="gstep" style="flex:none;width:20px;height:20px;margin:0"${toGoal!==false?" checked":""}><span>Это шаг к цели «${esc(G.t)}»?</span></label>`:""}<div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
 ${w===0?fld("ow",tg?"Что сделаем":"Что сделаю","Испечь пиццу в печи",own.what,80):""}
 <div class="zone">Когда (по желанию)</div><div class="row" style="gap:8px"><input type="date" id="od" min="${today()}" value="${own.due}" style="flex:none"><input type="time" id="ot" value="${own.at}" aria-label="Во сколько напомнить" style="flex:none"></div>
-${w===0?fld("on","Где (по желанию)","У меня во дворе",own.where,60):""}
+${w===0?fld("on","Где (по желанию) — можно ссылку","У меня во дворе или https://…",own.where,500):""}
 ${w===0?`<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sky" style="flex:none"${own.sky?" checked":""}> Под открытым небом ☀ — бот напишет, когда погода подойдёт</label>`
 +(own.sky?wxUI(own):""):""}
 <div class="zone">2. Что может помешать</div>${chips(O,"co",o)}
@@ -1479,7 +1483,7 @@ const sky=new T.Color(0x34496E).lerp(new T.Color(0xBFE3F2),day);S.background=sky
 $("tv").textContent=`${String(Math.floor(hr)).padStart(2,"0")}:${String(Math.round(hr%1*60)).padStart(2,"0")}`};
 const t3=$("t3"),hr0=Math.min(22,Math.max(4,p3Hr()));t3.value=hr0;setSun(hr0);t3.oninput=()=>setSun(+t3.value);
 const info=x=>{const o3=$("o3");if(!x){o3.innerHTML="";return}
-if(x.seed!=null){const s=seeds[x.seed];o3.innerHTML=`<p style="margin:0">🌱 ${esc(s.r)}</p><button class="n" id="g3">Открыть на карте</button>`;$("g3").onclick=()=>{PS.seed=x.seed;PS.sel=null;plotMap()};return}
+if(x.seed!=null){const s=seeds[x.seed];o3.innerHTML=`<p style="margin:0">🌱 ${linky(s.r)}</p><button class="n" id="g3">Открыть на карте</button>`;$("g3").onclick=()=>{PS.seed=x.seed;PS.sel=null;plotMap()};return}
 const o=x.o;o3.innerHTML=`<div class="prow"><span style="flex:1">${pEm(o)} <b style="font-weight:500">${esc(o.n)}</b></span><span class="note">${pm1(Math.hypot(me.x-(o.pts?o.pts[0][0]:o.side?pEdgeSeg(o)[0][0]:o.x+o.w/2),me.z-(o.pts?o.pts[0][1]:o.side?pEdgeSeg(o)[0][1]:o.y+o.h/2)))} м</span></div>
 <button class="main-btn" id="g3">🌱 Посадить намерение у: ${esc(o.n)}</button>`;$("g3").onclick=()=>pPlantAt(o.pts?o.pts[0]:o.side?pEdgeSeg(o)[0]:[o.x+o.w/2,o.y+o.h/2],o)};
 /* управление: левая половина — шаг (джойстик), правая — взгляд; короткое нажатие — выбрать предмет; WASD и стрелки на компьютере */
@@ -1746,7 +1750,7 @@ if(PS.tool==="plant"){h=`<div class="prow"><span style="flex:1">🌱 Нажми 
 <p class="note" style="margin:0">Можно прямо на грядку, печь или дерево — семя будет расти рядом с ними.</p>`;pn.innerHTML=h;$("plx").onclick=()=>pMode("move");return}
 if(PS.seed!=null&&seeds[PS.seed]){const k=PS.seed,x=seeds[k],L=x.life;
 h=`<div class="prow"><span class="who" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${L?L.same?"🌸 Распустилось":"🌿 Проросло иначе":pDue(x)?"💧 Пора":"🌱 Семя в земле"}${x.place?" · 📍 "+esc(x.place):""}</span><button class="n pi" id="sx" aria-label="Закрыть">✕</button></div>
-<p style="margin:0"><b style="font-weight:500">${esc(x.r)}</b></p>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
+<p style="margin:0"><b style="font-weight:500">${linky(x.r)}</b></p>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
 ${x.with?`<p class="note" style="margin:0">Вместе: ${esc(x.with)}</p>`:""}
 ${L?`<div class="tag ${L.same?"open":"fog"}" style="align-self:flex-start">${L.d}: ${esc(L.note||(L.same?"так и сделал":"сделал иначе"))}</div>`:
 `<input id="snt" placeholder="Что было в жизни (можно пусто)" maxlength="200"><div class="row"><button class="p" id="sy">Так и сделал</button><button class="n" id="sn">Сделал иначе</button></div>`}
