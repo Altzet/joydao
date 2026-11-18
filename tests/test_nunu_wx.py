@@ -48,3 +48,13 @@ def test_one_message_per_window(tmp_path, monkeypatch):
     assert sent[date(2026, 11, 20)] == []  # не подходит
     assert [p for _, _, p in sent[date(2026, 11, 21)]] == ["p1"]  # новое окно — новое сообщение
     assert nunu_wx.answer("wx:n:p1") in nunu_wx.NO and nunu_wx.answer("wx:y:p1") in nunu_wx.YES
+
+
+def test_goal_weather(tmp_path, monkeypatch):
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    with nunu._db() as c:
+        c.execute("INSERT INTO state(tg_id, data) VALUES(3, ?)", (json.dumps({"nunu-goals": [
+            {"id": "g1", "t": "Построить печь", "wx": SEED["wx"] | {"what": "Построить печь"}},
+            {"id": "g2", "t": "Старая", "done": "2026-11-01", "wx": SEED["wx"]}]}),))
+    out = nunu_wx.due(date(2026, 11, 18), get=lambda ll: GOOD)
+    assert [(u, p) for u, _, p in out] == [(3, "g1")] and "«Построить печь»" in out[0][1]

@@ -134,6 +134,8 @@ def due(today: date, get=forecast) -> list[tuple[int, str, str]]:
             try:
                 d = json.loads(r["data"])
                 seeds = [s for s in (d.get("nunu-seeds") or []) if isinstance(s, dict) and s.get("wx") and not s.get("life")]
+                seeds += [{"pid": g.get("id"), "r": g.get("t", ""), "wx": g["wx"]} for g in (d.get("nunu-goals") or [])
+                          if isinstance(g, dict) and g.get("wx") and not g.get("done") and not g.get("gone")]  # «Моя цель» тоже
             except Exception:
                 continue
             if (d.get("nunu-prefs") or {}).get("remind") is False:
