@@ -18,7 +18,7 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMa
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 
-from . import config, db, landing, nunu, nunu_admin, nunu_reports, nunu_subs, rules
+from . import config, db, landing, nunu, nunu_admin, nunu_reports, nunu_subs, nunu_wx, rules
 from .nunu import remind_loop  # имя nunu ниже занято маршрутом /nunu
 
 TEXT = (
@@ -71,6 +71,18 @@ async def poll_update(poll):
 @router.message(F.chat.type == "private")
 async def any_message(msg: Message):
     await msg.answer(TEXT, parse_mode="HTML", reply_markup=KB)
+
+
+@router.callback_query(F.data.startswith("wx:"))
+async def wx_button(cb: CallbackQuery):
+    """Погодное семя: «Сделаю» / «Не сейчас». Кнопки убираем, отвечаем строчкой без вины."""
+    await cb.answer()
+    if cb.message:
+        try:
+            await cb.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        await cb.message.answer(nunu_wx.answer(cb.data))
 
 
 @router.callback_query()
@@ -225,7 +237,8 @@ async def main() -> None:
     dp.include_router(router)
     server = uvicorn.Server(uvicorn.Config(app, host=config.HOST, port=config.PORT, log_level="info"))
     tasks = [asyncio.create_task(dp.start_polling(bot)), asyncio.create_task(server.serve()),
-             asyncio.create_task(remind_loop()), asyncio.create_task(nunu_subs.loop())]
+             asyncio.create_task(remind_loop()), asyncio.create_task(nunu_subs.loop()),
+             asyncio.create_task(nunu_wx.loop(bot))]
     _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     for t in pending:
         t.cancel()
