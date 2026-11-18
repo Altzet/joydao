@@ -248,7 +248,7 @@ def page() -> HTMLResponse:
         t = (c.get("T") or {}).get("title")
         if t:
             s = s.replace("<title>Ну-ну</title>", f"<title>{t.replace('<', '').replace('&', '')}</title>", 1)
-    return HTMLResponse(s)
+    return HTMLResponse(s, headers={"Cache-Control": "no-cache"})  # Telegram не держит старую игру: проверяет обновление при каждом открытии
 
 
 def landing_page() -> HTMLResponse:
