@@ -93,6 +93,20 @@ async def any_callback(cb: CallbackQuery):
 
 
 app = FastAPI()
+
+
+class HeadAsGet:
+    """HEAD → тот же ответ, что GET (без тела: uvicorn сам отбросит его по исходному scope). Иначе 405 для роботов и проверок."""
+    def __init__(self, a):
+        self.a = a
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope["method"] == "HEAD":
+            scope = dict(scope, method="GET")  # копия: исходный scope uvicorn остаётся HEAD
+        await self.a(scope, receive, send)
+
+
+app.add_middleware(HeadAsGet)
 app.include_router(nunu.router)  # до catch-all внизу
 app.include_router(nunu_admin.router)  # комната администратора /nunu/admin
 app.include_router(nunu_subs.router)  # ситуации участников

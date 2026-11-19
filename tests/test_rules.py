@@ -66,3 +66,10 @@ def test_seo_pages(tmp_path, monkeypatch):
         assert f"/{slug}</loc>" in c.get("/sitemap.xml").text
     assert c.get("/img/uchastok-3d.webp").status_code == 200 and c.get("/img/../app/config.py").status_code == 404
     assert 'href="/uchastok"' in c.get("/").text
+
+
+def test_head():
+    c = TestClient(pause.app)
+    for u in ("/sitemap.xml", "/robots.txt", "/", "/uchastok", "/rules"):
+        assert c.head(u).status_code == 200, u
+    assert c.head("/net-takoy").status_code == 404
