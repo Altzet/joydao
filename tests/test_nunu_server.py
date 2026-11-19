@@ -337,3 +337,26 @@ def test_tile(tmp_path, monkeypatch):
     assert c.get("/nunu/api/tile/19/300000/180000").status_code == 200 and len(calls) == n  # с диска
     assert c.get("/nunu/api/tile/19/1/1").status_code == 502
     assert c.get("/nunu/api/tile/18/150000/90000").status_code == 404  # заглушка = океан
+
+
+def test_mood_aura_private_by_default(tmp_path, monkeypatch):
+    """Цвет вокруг острова: друг видит отметки «Как ты сейчас?» только если сам владелец разрешил."""
+    from datetime import datetime, timedelta, timezone
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+
+    async def quiet(*a):
+        pass
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
+    i = c.post("/nunu/api/invite", headers=anton).json()
+    c.post(f"/nunu/api/invite/{i['id']}/accept", headers=evgen)
+    now = datetime.now(timezone.utc)
+    mood = [{"id": "m1", "t": (now - timedelta(hours=5)).isoformat(), "q": 1},
+            {"id": "m0", "t": (now - timedelta(days=5)).isoformat(), "q": 3}]  # старше 3 дней — не в счёт
+    seed = {"z": 0, "d": str(now.date()), "life": {"same": True, "d": str(now.date())}}
+    state = lambda share: {"data": {"nunu-mood": mood, "nunu-seeds": [seed], "nunu-prefs": {"moodShare": 1} if share else {}}}
+    c.put("/nunu/api/state", json=state(False), headers=evgen)
+    assert "mood" not in c.get("/nunu/api/world", headers=anton).json()["friends"][0]
+    c.put("/nunu/api/state", json=state(True), headers=evgen)
+    f = c.get("/nunu/api/world", headers=anton).json()["friends"][0]
+    assert [q for q, _ in f["mood"]] == [1] and 4.5 < f["mood"][0][1] < 5.5 and f["act"] == [1, 1]

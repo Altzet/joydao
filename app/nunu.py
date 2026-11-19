@@ -612,13 +612,35 @@ async def report(gid: str, x_init_data: str | None = Header(default=None)):
 def _island(c: sqlite3.Connection, uid: int) -> dict:
     """Сад, лес, скалы: сколько семян в каждой зоне и сколько из них распустилось в жизни («так и сделал»)."""
     r = c.execute("SELECT data FROM state WHERE tg_id=?", (uid,)).fetchone()
+    d = json.loads(r["data"]) if r else {}
     z, b = [0, 0, 0], [0, 0, 0]
-    for s in (json.loads(r["data"]).get("nunu-seeds") or [] if r else []):
+    for s in d.get("nunu-seeds") or []:
         if isinstance(s, dict) and s.get("z") in (0, 1, 2):
             z[s["z"]] += 1
             if isinstance(s.get("life"), dict) and s["life"].get("same"):
                 b[s["z"]] += 1
-    return {"island": z, "bloom": b}
+    out = {"island": z, "bloom": b}
+    if isinstance(d.get("nunu-prefs"), dict) and d["nunu-prefs"].get("moodShare"):
+        out |= _mood(d)  # цвет вокруг острова — только если сам разрешил друзьям
+    return out
+
+
+def _mood(d: dict) -> dict:
+    """Отметки «Как ты сейчас?» за 3 дня (состояние, возраст в часах) и дела: распустилось за 14 дней, посажено за 7.
+    Цвет считает страница (та же формула, что у своего острова)."""
+    now, mood = datetime.now(timezone.utc), []
+    for m in d.get("nunu-mood") or []:
+        try:
+            age = (now - datetime.fromisoformat(str(m["t"]).replace("Z", "+00:00"))).total_seconds() / 3600
+        except (KeyError, TypeError, ValueError):
+            continue
+        if 0 <= age < 72 and m.get("q") in (0, 1, 2, 3):
+            mood.append([m["q"], round(age, 1)])
+    d14, d7 = (str(date.today() - timedelta(days=n)) for n in (14, 7))
+    seeds = [s for s in d.get("nunu-seeds") or [] if isinstance(s, dict)]
+    act = [sum(1 for s in seeds if isinstance(s.get("life"), dict) and s["life"].get("same") and str(s["life"].get("d", "")) >= d14),
+           sum(1 for s in seeds if str(s.get("d", "")) >= d7)]
+    return {"mood": mood, "act": act}
 
 
 # ---------- «Мой участок»: уклон по открытым данным рельефа ----------

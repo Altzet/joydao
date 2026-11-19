@@ -92,6 +92,8 @@ body.guest #pmode,body.guest #pu,body.guest #pvw,body.guest .pslope{display:none
 .isl div{border-radius:12px;padding:12px}.isl div[data-v]{cursor:pointer}.isl div[aria-pressed="true"]{box-shadow:0 0 0 2px currentColor}
 .isl b{font:500 1.75rem var(--disp);display:block;font-variant-numeric:tabular-nums}
 .note{font-size:0.8125rem;color:var(--muted)}
+.aura{transition:fill 2.6s ease,opacity 2.6s ease}
+@media (prefers-reduced-motion:no-preference){.breathe{animation:br 7s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes br{50%{transform:scale(1.035)}}}
 @media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}
 /* карта живёт: волны плывут, бутылка качается, «твой ход» пульсирует; кто просил меньше движения — всё стоит */
 .wv{animation:wv 14s linear infinite}@keyframes wv{to{transform:translateX(92px)}}
@@ -260,6 +262,8 @@ app.innerHTML=`<h1>Настройки</h1>
 <div class="card"><h2>Размер текста</h2><div class="row" style="align-items:center"><button class="n" id="fs-" aria-label="Мельче" ${i<=0?"disabled":""}>А−</button>
 <b style="font-weight:500;min-width:64px;text-align:center">${Math.round(prefs.fs*100)}%</b><button class="n" id="fs+" aria-label="Крупнее" ${i>=FS.length-1?"disabled":""}>А+</button></div>
 <p style="margin:0">Так будет выглядеть текст в игре: карточки, ответы и сад.</p><p class="note" style="margin:0">Подписи на карте приближаются жестами: щипком или кнопкой «+».</p></div>
+<div class="card"><h2>Цвет вокруг острова</h2><p style="margin:0">Вода вокруг твоего острова окрашивается тем, что ты отметил в «Как ты сейчас?», и становится ярче от сделанных дел.</p>
+<div class="zone">Показывать друзьям</div><div class="row">${b("ms-off","Нет, только мне",!prefs.moodShare)}${b("ms-on","Да",!!prefs.moodShare)}</div></div>
 <div class="card"><h2>Напоминания</h2><div class="row">${b("rm-on","Присылать",prefs.remind!==false)}${b("rm-off","Не надо",prefs.remind===false)}</div>
 <p class="note" style="margin:0">Бот напишет в день, который ты выбрал для дела, и не чаще раза в неделю — если семена ждут полива или сад давно без новых.</p></div>
 <div class="card"><h2>Гости на участке</h2><p style="margin:0">Друзья, с которыми есть мост, могут заглянуть на твой участок: видят только карту и 3D, оставляют комментарии и зовут на дела.</p>
@@ -272,6 +276,7 @@ const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
 ["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});
 [["go","visitClosed"],["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{if(!$(id+"-on"))return;$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
 app.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{prefs.acc=x.dataset.a;save2()});
+$("ms-on").onclick=()=>{prefs.moodShare=1;save2()};$("ms-off").onclick=()=>{delete prefs.moodShare;save2()};
 $("rm-on").onclick=()=>{prefs.remind=true;save2()};$("rm-off").onclick=()=>{prefs.remind=false;save2()};
 $("fs-").onclick=()=>{prefs.fs=FS[Math.max(0,i-1)];save2()};$("fs+").onclick=()=>{prefs.fs=FS[Math.min(FS.length-1,i+1)];save2()}}
 const r_dark=()=>document.documentElement.dataset.theme==="dark";
@@ -283,7 +288,7 @@ const r_dark=()=>document.documentElement.dataset.theme==="dark";
 Несохранённое живёт в localStorage с пометкой nunu-dirty и сливается при следующем открытии: действие не теряется. */
 const raw=(k,v)=>{try{v===undefined?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let sync=ls.get("nunu-sync")||{rev:null,base:null},dirty=!!ls.get("nunu-dirty"),pushing=false,again=false;
-const mine=()=>({nunu2:st,"nunu-seeds":seeds,"nunu-bridges":bridges,"nunu-prefs":prefs,"nunu-plot":plot,"nunu-goals":goals,"nunu-seen":seen}),J=x=>JSON.stringify(x===undefined?null:x);
+const mine=()=>({nunu2:st,"nunu-seeds":seeds,"nunu-bridges":bridges,"nunu-prefs":prefs,"nunu-plot":plot,"nunu-goals":goals,"nunu-seen":seen,"nunu-mood":moods}),J=x=>JSON.stringify(x===undefined?null:x);
 const idOf=x=>typeof x==="string"?"t:"+x:x&&typeof x==="object"&&!Array.isArray(x)?(x.id||x.pid||x.oid||(x.q!=null&&x.d?["s",x.d,x.c,x.q,x.r].join("|"):null)):null;
 function keyed(a){const m=new Map(),n={};for(const x of a){let k=idOf(x);if(k==null)return null;n[k]=(n[k]||0)+1;if(n[k]>1)k+="#"+n[k];m.set(k,x)}return m}
 function merge3(b,l,s){if(J(l)===J(b))return s;if(J(s)===J(b)||J(s)===J(l))return l;
@@ -295,7 +300,7 @@ for(const k of new Set([...Object.keys(s),...Object.keys(l),...Object.keys(bb)])
 return l}  /* одно и то же поле изменили оба — моё (последнее действие на этом устройстве) */
 function mergeAll(b,l,s){if(!s)return l;const m=merge3(b||{},l,s),B=(l&&l["nunu-bridges"])||{},S=s["nunu-bridges"]||{};
 m["nunu-bridges"]={...S,...B};for(const k in S)m["nunu-bridges"][k]=Math.max(+B[k]||0,+S[k]||0);return m}  /* доски моста только растут */
-function adopt(d){if(!d)return;st=d.nunu2||{name:"",s:[],g:[],friend:null};seeds=d["nunu-seeds"]||[];bridges=d["nunu-bridges"]||{};if(typeof PS==="object"&&PS.guest)PS.guest.own=d["nunu-plot"]||{};else plot=d["nunu-plot"]||{};goals=d["nunu-goals"]||[];raw("nunu-goals",goals);seen=d["nunu-seen"]||[];raw("nunu-seen",seen);
+function adopt(d){if(!d)return;st=d.nunu2||{name:"",s:[],g:[],friend:null};seeds=d["nunu-seeds"]||[];bridges=d["nunu-bridges"]||{};if(typeof PS==="object"&&PS.guest)PS.guest.own=d["nunu-plot"]||{};else plot=d["nunu-plot"]||{};goals=d["nunu-goals"]||[];raw("nunu-goals",goals);seen=d["nunu-seen"]||[];raw("nunu-seen",seen);moods=d["nunu-mood"]||[];raw("nunu-mood",moods);
 prefs={theme:"auto",acc:"teal",fs:1,...(d["nunu-prefs"]||{})};raw("nunu2",st);raw("nunu-seeds",seeds);raw("nunu-bridges",bridges);raw("nunu-plot",plot);raw("nunu-prefs",prefs);applyPrefs()}
 const setSync=(rev,base)=>{sync={rev,base};raw("nunu-sync",sync)},setDirty=v=>{dirty=v;raw("nunu-dirty",v?1:undefined)};
 function rerender(){const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;
@@ -365,6 +370,21 @@ let plot=ls.get("nunu-plot")||{};const savePlot=()=>{if(typeof PS==="object"&&PS
 Одна активная цель за раз: так понятнее, к чему ведёт неделя. Достигнутые и отпущенные остаются в истории */
 /* пройденные карточки (id: s12 сцена, w3 разминка, a5 «Кто я», c1 личное): новые партии подбираются без повторов,
 а прошедший все ситуации может предложить свою (сервер сверяет по этому же списку) */
+/* состояние вокруг острова (19.11): оттенок — из отметки «Как ты сейчас?», яркость — из дел.
+Шкала «энергия × приятность» (Russell 1980; Mood Meter — Brackett 2019). Цвета без оценок, по общим для 30 стран
+связям цвета и чувства (Jonauskaite et al. 2020). Оттенок — последняя отметка, новый перетекает из прошлого; за ~3 дня тает; дела делают ярче.
+Друзья видят цвет, только если включено в настройках (по умолчанию — нет). */
+const MOOD=[["Бодро и светло","#F2B544"],["Спокойно","#5DCAA5"],["Напряжённо","#F0997B"],["Тихо и тяжело","#9C93E6"]];
+let moods=ls.get("nunu-mood")||[];
+function aura(mood,act){const m=(mood||[]).filter(([q,a])=>MOOD[q]&&a>=0&&a<72).sort((x,y)=>x[1]-y[1])[0];if(!m)return null;  /* оттенок — последняя отметка (смешанные оттенки мутнеют) */
+const e=Math.min(1,.35+.15*(act[0]||0)+.07*(act[1]||0));return{c:MOOD[m[0]][1],o:+(Math.exp(-m[1]/36)*(.3+.45*e)).toFixed(2)}}
+const myMood=()=>moods.map(m=>[m.q,(Date.now()-Date.parse(m.t))/36e5]),
+myAct=()=>{const d=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);return[seeds.filter(x=>x.life&&x.life.same&&(x.life.d||"")>=d(14)).length,seeds.filter(x=>(x.d||"")>=d(7)).length]};
+function markMood(q){moods=[...moods.filter(m=>Date.now()-Date.parse(m.t)<14*864e5),{id:"m"+Date.now(),t:new Date().toISOString(),q}].slice(-60);ls.set("nunu-mood",moods)}
+function moodNote(){const m=moods[moods.length-1],h=m?(Date.now()-Date.parse(m.t))/36e5:99,who=prefs.moodShare?"Цвет видят друзья.":"Цвет видишь только ты.";
+if(h>=72)return`Отметь, и вода вокруг острова окрасится. ${who} Изменить — в настройках.`;
+return`Отмечено: ${MOOD[m.q][0].toLowerCase()}, ${h<1?"только что":h<24?Math.round(h)+" ч назад":"вчера или раньше"}. Цвет тает за три дня, а сделанные дела делают его ярче. ${who}`}
+let auraPrev=null;
 let seen=ls.get("nunu-seen")||[];const markSeen=id=>{if(id&&!seen.includes(id)){seen.push(id);ls.set("nunu-seen",seen)}};
 let goals=ls.get("nunu-goals")||[];const saveGoals=()=>ls.set("nunu-goals",goals),goalNow=()=>goals.find(g=>!g.done&&!g.gone)||null,
 gSteps=g=>{const a=seeds.filter(x=>x.goal===g.id);return{all:a.length,done:a.filter(x=>x.life).length}},
@@ -694,6 +714,7 @@ const artTuft=(x,y,s)=>`<path d="M${f1(x-3*s)} ${f1(y+2*s)}q${f1(1*s)} ${f1(-4*s
 /* растения из ответов: сад — цветы (к людям), лес — деревья (пауза), скалы — камни (на своём) */
 function artIsland(cx,cy,R,id,z,name,badge,on,bl=[0,0,0],mine){const r=rnd(id*7919+13),ph=[r()*6,r()*6,r()*6],B=(k,dy=0)=>blob(cx,cy+dy,R,ph,k),s=Math.max(1,Math.min(R/40,1.2))*1.25,col=mine?["#F6DFA0","#A9D872","#93C955"]:["#E8DDBF","#A9C692","#9ABA83"];
 if(on==="halo")return`<path d="${B(1.75)}" fill="#86C3D4"/><path d="${B(1.34)}" fill="#BCE4EC"/>`;
+if(on==="aura")return`<g class="breathe"><path class="aura"${mine?` id="aura-me"`:""} d="${B(1.62)}" style="fill:${bl.c};opacity:${bl.o}"/></g>`;
 let g=`<path d="${B(1.04,4)}" fill="#4F8FA3" opacity=".35"/><path d="${B(1.08)}" fill="none" stroke="#fff" stroke-width="1.6" opacity=".75"/>
 <path d="${B(1)}" fill="${col[0]}"/><path d="${B(.84,-1)}" fill="${col[1]}"/><path d="${blob(cx,cy-R*.1,R,ph,.5)}" fill="${col[2]}"/>`;
 /* первые bl[k] растений каждого вида — распустившиеся в жизни («так и сделал») */
@@ -733,6 +754,8 @@ let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" preserveAspe
 <defs><pattern id="wv" width="92" height="58" patternUnits="userSpaceOnUse"><path d="M8 18q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".2"/><path d="M58 44q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".14"/></pattern></defs>
 <rect x="${f1(x0-1500)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3000)}" height="${f1(y1-y0+3000)}" fill="#6DB2C9"/><rect class="wv" x="${f1(x0-1592)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3092)}" height="${f1(y1-y0+3000)}" fill="url(#wv)"/>`;
 [me,...pos].forEach((p,i)=>g+=artIsland(p[0],p[1],p[2],i?F[i-1].id:w.me.id,[0,0,0],"",null,"halo"));
+{const am=aura(myMood(),myAct());if(am)g+=artIsland(me[0],me[1],me[2],w.me.id,0,"",null,"aura",am,1);
+F.forEach((f,i)=>{const a=f.mood&&aura(f.mood,f.act||[0,0]);if(a)g+=artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,0,"",null,"aura",a)})}
 F.forEach((f,i)=>g+=artBridge(me,pos[i],f.boards));
 g+=`<g data-i="0" style="cursor:pointer">${artIsland(me[0],me[1],me[2],w.me.id,w.me.island,"ты",null,sel===0,w.me.bloom,1)}</g>`;
 F.forEach((f,i)=>g+=`<g data-i="${i+1}" style="cursor:pointer">${artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,f.island,f.name,f.turn,sel===i+1,f.bloom)}</g>`);
@@ -1968,6 +1991,9 @@ function drawW(sel,fly){setNav("map");document.body.classList.add("on-map");cons
 app.innerHTML=`<div id="mapw">${artWorld(W,sel)}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="К моему острову">◎</button>${fs?`<button id="fs" aria-label="Во весь экран">⛶</button>`:""}</div>
 <div class="card" id="sh"><button id="grab" aria-label="Свернуть или развернуть"></button><div id="pn" style="display:flex;flex-direction:column;gap:12px"></div></div></div>`;
 if(sel===0&&fly==null)$("sh").classList.add("min");  /* открыли карту: видно всё море, карточка свёрнута */
+{const el=$("aura-me"),nw=el&&{c:el.style.fill,o:el.style.opacity},from=auraPrev||(nw&&{c:nw.c,o:"0"});  /* цвет перетекает от прошлого к новому */
+if(el&&from&&(from.c!==nw.c||from.o!==nw.o)){el.style.transition="none";el.style.fill=from.c;el.style.opacity=from.o;el.getBoundingClientRect();el.style.transition="";requestAnimationFrame(()=>{el.style.fill=nw.c;el.style.opacity=nw.o})}
+auraPrev=nw||null}
 fitMap();const sv=app.querySelector("#mapw>svg");try{mapCtl(sv,sel,fly)}catch(e){}  /* нет жестов — острова всё равно нажимаются */
 if(!sv.onclick)sv.onclick=e=>{const g=e.target.closest("[data-i]");if(g){const i=g.dataset.i;drawW(i==="inv"||i==="bottle"?i:+i)}};
 $("grab").onclick=()=>$("sh").classList.toggle("min");if(fs)$("fs").onclick=()=>{try{TG.isFullscreen?TG.exitFullscreen():TG.requestFullscreen()}catch(e){}};
@@ -1977,9 +2003,12 @@ if(sel==="bottle"){pn.innerHTML=`<h2>Бутылка в море</h2><p style="ma
 $("bc").onclick=catchBottle;$("bt").onclick=()=>fresh("hero",{bottle:1});return}
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();return}
-if(!f){pn.innerHTML=`<h2>Твой остров</h2><p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
+if(!f){pn.innerHTML=`<h2>Твой остров</h2><div class="zone">Как ты сейчас?</div><div class="row" id="md">${MOOD.map(([l,c],q)=>`<button class="n" data-q="${q}"><span aria-hidden="true" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join("")}</div>
+<p class="note" style="margin:0">${moodNote()}</p>
+<p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
 <p class="note" style="margin:0">Море — общее и нейтральное. Цветы растут, когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>
 <div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}${btn("so","Играть одному")}</div>`;
+$("md").onclick=e=>{const b=e.target.closest("button[data-q]");if(!b)return;markMood(+b.dataset.q);drawW(0,"0")};
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();$("so").onclick=()=>fresh("solo");return}
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
