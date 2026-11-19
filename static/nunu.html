@@ -398,7 +398,9 @@ const by=$("gb").value&&$("gb").value>=today()?$("gb").value:(g&&g.by&&$("gb").v
 if(g){Object.assign(g,{t,why:$("gw").value.trim(),by});if(wx)g.wx=wx;else delete g.wx}else goals.push({id:"g"+Math.random().toString(36).slice(2,9),t,why:$("gw").value.trim(),by,d:today(),...(wx?{wx}:{})});done()};
 if(g){$("gd").onclick=()=>{g.done=today();done()};$("gg").onclick=()=>{if(confirm("Отпустить цель «"+g.t+"»?")){g.gone=today();done()}}}};draw()}
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS||t.lv===0)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
-let onlyMine=false;
+/* фильтр сада: показываем только фильтры, у которых есть семена в текущем виде */
+let gf="all";const GF=[["all","Все"],["mine","Было со мной"],["deed","🌱 Свои дела"],["goal","🎯 К цели"],["sky","☀ Хорошая погода"],["warn","🔔 Предупредить"],["due","📅 Со сроком"]],
+gfOk={all:()=>true,mine:x=>!!x.mine,deed:x=>!!x.step,goal:x=>!!x.goal,sky:x=>!!x.wx&&!wxWarn(x.wx),warn:x=>!!x.wx&&wxWarn(x.wx),due:x=>!!x.due};
 /* сад: по умолчанию — что ждёт в земле; распустившееся и проросшее иначе — по нажатию на квадрат */
 let gview="wait";const inView=x=>gview==="wait"?!x.life:gview==="bloom"?x.life&&x.life.same:x.life&&!x.life.same;
 /* отметка семени — одна для сада и для карты участка: общее дело «так и сделал» даёт мосту +3 доски один раз */
@@ -411,11 +413,11 @@ let h=`<h1>Мой сад</h1><div class="card"><p style="margin:0">Каждый 
 <div ${tile("other")} style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
 <div ${tile("wait")} style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>${pl(seeds.length-up-other,["семя","семени","семян"])}</div></div>
 <p class="note" style="margin:0">По исследованиям, задуманное чаще сбывается, если заранее решить: «когда случится X, я сделаю Y» (Голльвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
-h+=`<h2 id="gv" style="scroll-margin-top:12px">${{wait:"Ждут в земле",bloom:"Распустилось",other:"Проросло иначе"}[gview]}</h2><div class="row"><button class="${onlyMine?"n":"p"}" id="fa">Все: ${inN}</button><button class="${onlyMine?"p":"n"}" id="fm">Было со мной: ${mineN}</button></div>`;
+h+=`<h2 id="gv" style="scroll-margin-top:12px">${{wait:"Ждут в земле",bloom:"Распустилось",other:"Проросло иначе"}[gview]}</h2><div class="row" id="gf">${GF.map(([k,l])=>[k,l,seeds.filter(x=>inView(x)&&gfOk[k](x)).length]).filter(([k,,n])=>n||k==="all"||k===gf).map(([k,l,n])=>`<button class="${gf===k?"p":"n"}" data-f="${k}">${l}: ${n}</button>`).join("")}</div>`;
 if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пуст. Сыграй партию, и твои ответы станут семенами.</p></div>`;
 else if(!inN)h+=`<p class="note" style="margin:0">${{wait:"Все семена уже проросли. Сыграй ещё партию — появятся новые.",bloom:"Пока ничего не распустилось. Когда в жизни поступишь так, как ответил в игре, отметь «Так и сделал».",other:"Пока ничего. Здесь будет то, что в жизни вышло по-другому."}[gview]}</p>`;
 /* одинаковые семена (тот же вопрос и тот же ответ) растут одной грядкой: повтор — знак, что намерение устойчивое */
-const beds=[],bi={};seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>inView(x)&&(!onlyMine||x.mine)).forEach(([x,k])=>{const key=x.c+"|"+x.q+"|"+x.r+"|"+(x.with||"")+"|"+(x.due||"");
+const beds=[],bi={};seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>inView(x)&&gfOk[gf](x)).forEach(([x,k])=>{const key=x.c+"|"+x.q+"|"+x.r+"|"+(x.with||"")+"|"+(x.due||"");
 if(bi[key]===undefined){bi[key]=beds.length;beds.push([x,k,[k]])}else{const g=beds[bi[key]];g[2].push(k);g[1]=k;if(x.mine)g[0]={...g[0],mine:true}}});
 beds.sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k,ks])=>{const st2=x.life?(x.life.same?"open":"fog"):"",n=ks.length;
 h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${x.place?"📍 "+esc(x.place)+" · ":""}${esc(x.c)} · ${n>1?ks.map(i=>sd(seeds[i].d)).filter((d,i,a)=>a.indexOf(d)===i).slice(0,3).join(", ")+(n>3?"…":""):sd(x.d)}</span><span>${n>1?`<span class="tag p" title="одинаковые семена">грядка ×${n}</span> `:""}${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
@@ -426,7 +428,7 @@ h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`
 app.innerHTML=h;
 app.querySelectorAll("button[data-wx]").forEach(b=>b.onclick=()=>wxEdit(+b.dataset.wx));app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;markSeed(k,b.dataset.s==="1",$("nt"+k).value);sprouted(b.closest(".card"),b.dataset.s==="1")});
 app.querySelectorAll("[data-v]").forEach(d=>d.onclick=d.onkeydown=e=>{if(e.type==="keydown"&&e.key!=="Enter"&&e.key!==" ")return;gview=gview===d.dataset.v?"wait":d.dataset.v;garden();const v=$("gv");v&&v.scrollIntoView&&v.scrollIntoView({block:"start",behavior:"smooth"})});
-$("fa").onclick=()=>{onlyMine=false;garden()};$("fm").onclick=()=>{onlyMine=true;garden()};
+$("gf").onclick=e=>{const b=e.target.closest("button[data-f]");if(b){gf=b.dataset.f;garden()}};
 $("bk").onclick=()=>st.started?go():home()}
 /* дело на неделю: план «если помеха — то действие» (Gollwitzer & Sheeran 2006) после мысли о помехе (Oettingen, MCII).
 Шаг выбирает сам игрок: план работает только для ценной ему цели. После «то» всегда действие, не «вспомню» */
