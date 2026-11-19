@@ -497,21 +497,22 @@ wxNew=w=>({mode:wxWarn(w)?"warn":"good",wx:{dry:w?!!w.dry:true,sun:!!(w&&w.sun),
 tn:w&&w.tn!=null?String(w.tn):"",hot:w&&w.hot!=null?String(w.hot):"",wet:!!(w&&w.wet),windy:!!(w&&w.windy)},ll:w&&w.ll||wxLL()});
 /* два режима: «Хорошая погода» — позвать на дело; «Предупредить» — затопить котёл, укрыть рассаду, убрать бельё */
 const WXW=[["wet","🌧 Будет дождь или снег"],["windy","💨 Сильный ветер"]],
+wxDown=(id,lab,v)=>`<div class="row" style="gap:8px;align-items:center"><span class="note">${lab}</span><select id="${id}" style="width:90px;flex:none"><option value="">—</option>${Array.from({length:41},(_,i)=>10-i).map(t=>`<option value="${t}"${String(v)===String(t)?" selected":""}>${t>0?"+"+t:t}</option>`).join("")}</select><span class="note">°C и ниже</span></div>`,  /* шкала вниз: от +10 к −30 */
 wxNum=(id,lab,v)=>`<div class="row" style="gap:8px;align-items:center"><span class="note">${lab}</span><input type="number" id="${id}" inputmode="numeric" min="-40" max="50" placeholder="—" value="${esc(v)}" style="width:80px;flex:none"><span class="note">°C</span></div>`,
 wxUI=o=>`<div class="row" id="wmode"><button class="${o.mode==="good"?"t":"n"}" data-m="good">☀ Хорошая погода</button><button class="${o.mode==="warn"?"t":"n"}" data-m="warn">🔔 Предупредить</button></div>
-${o.mode==="warn"?`<p class="note" style="margin:0">Например: «затопить котёл», если ночью до +5°. Бот напишет вечером накануне.</p>
-${wxNum("wtn","❄ Ночью до",o.wx.tn)}${wxNum("whot","🔥 Жара от",o.wx.hot)}<div class="row" id="cwr">${WXW.map(([k,l])=>`<button class="${o.wx[k]?"t":"n"}" data-x="${k}">${l}</button>`).join("")}</div>`
+${o.mode==="warn"?`<p class="note" style="margin:0">Например: «затопить котёл», если ночью +5° и ниже. Бот напишет вечером накануне.</p>
+${wxDown("wtn","❄ Ночью от",o.wx.tn)}${wxNum("whot","🔥 Жара от",o.wx.hot)}<div class="row" id="cwr">${WXW.map(([k,l])=>`<button class="${o.wx[k]?"t":"n"}" data-x="${k}">${l}</button>`).join("")}</div>`
 :`<div class="row" id="cwx">${WX.map(([k,l])=>`<button class="${o.wx[k]?"t":"n"}" data-x="${k}">${l}</button>`).join("")}</div>
 ${wxNum("wt","🌡 Тепло от",o.wx.t)}`}
 <div class="zone">Где будет дело — по этой точке смотрим прогноз</div><div class="row" style="gap:8px"><button class="n" id="wh" style="flex:none">📍 Здесь</button><input id="wl" maxlength="300" placeholder="48.44, 22.72 или ссылка Google Карт" value="${esc(o.ll)}"></div><span class="err" id="we"></span>`;
 function wxBind(o,redraw,clr){["cwx","cwr"].forEach(id=>{if($(id))$(id).onclick=e=>{const b=e.target.closest("button");if(b){o.wx[b.dataset.x]=!o.wx[b.dataset.x];redraw()}}});
 if($("wmode"))$("wmode").onclick=e=>{const b=e.target.closest("button");if(b){o.mode=b.dataset.m;redraw()}};
-[["wt","t"],["wtn","tn"],["whot","hot"]].forEach(([id,k])=>{if($(id))$(id).oninput=()=>{o.wx[k]=$(id).value;clr&&clr()}});if($("wl"))$("wl").oninput=()=>{o.ll=$("wl").value;clr&&clr()};
+[["wt","t"],["wtn","tn"],["whot","hot"]].forEach(([id,k])=>{if($(id))$(id).oninput=$(id).onchange=()=>{o.wx[k]=$(id).value;clr&&clr()}});if($("wl"))$("wl").oninput=()=>{o.ll=$("wl").value;clr&&clr()};
 if($("wh"))$("wh").onclick=()=>{$("wh").disabled=true;gps((g,msg)=>{if(!g){$("wh").disabled=false;$("we").textContent=msg;return}o.ll=g.latitude.toFixed(2)+", "+g.longitude.toFixed(2);redraw()})}}  /* ~1 км: точнее для прогноза не нужно */
 const wxMiss=o=>!o.ll.trim()?"Отметь, где будет дело: «Здесь» или координаты":o.mode==="warn"?(o.wx.tn===""&&o.wx.hot===""&&!o.wx.wet&&!o.wx.windy?"Выбери, о чём предупредить":""):!o.wx.dry&&!o.wx.sun&&!o.wx.calm&&o.wx.t===""?"Выбери хотя бы одно условие погоды":"";
 const wxOut=(o,what,where)=>{const n=v=>v===""||v==null?null:+v,W=o.mode==="warn";return{dry:!W&&!!o.wx.dry,sun:!W&&!!o.wx.sun,calm:!W&&!!o.wx.calm,t:W?null:n(o.wx.t),
 tn:W?n(o.wx.tn):null,hot:W?n(o.wx.hot):null,wet:W&&!!o.wx.wet,windy:W&&!!o.wx.windy,ll:o.ll.trim(),what:String(what||"").slice(0,80),where:String(where||"").slice(0,60)}};
-const wxSum=w=>[w.dry&&"🌂",w.sun&&"☀",w.calm&&"🍃",w.t!=null&&"🌡 от "+w.t+"°",w.tn!=null&&"🔔 ❄ ночью до "+w.tn+"°",w.hot!=null&&"🔔 🔥 от "+w.hot+"°",w.wet&&"🔔 🌧",w.windy&&"🔔 💨"].filter(Boolean).join(" ");
+const wxSum=w=>[w.dry&&"🌂",w.sun&&"☀",w.calm&&"🍃",w.t!=null&&"🌡 от "+w.t+"°",w.tn!=null&&"🔔 ❄ ночью от "+w.tn+"° и ниже",w.hot!=null&&"🔔 🔥 от "+w.hot+"°",w.wet&&"🔔 🌧",w.windy&&"🔔 💨"].filter(Boolean).join(" ");
 /* погода для уже посаженного семени из сада */
 function wxEdit(k){const x=seeds[k];if(!x)return garden();const o=wxNew(x.wx),what=x.wx&&x.wx.what||(x.step?String(x.r).split(". Если ")[0].replace(/^«|».*$/g,""):x.r),where=x.wx&&x.wx.where||x.place||"";
 const draw=()=>{app.innerHTML=`<h1>Погода для дела</h1><div class="card"><p style="margin:0"><b style="font-weight:500">${esc(what)}</b></p><p class="note" style="margin:0">Бот напишет накануне вечером, когда прогноз подойдёт. Один раз на полосу такой погоды.</p>
