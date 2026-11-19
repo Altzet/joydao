@@ -79,11 +79,11 @@ W.DEEP.forEach(i=>{if(!L.DEEP.includes(i))r.push(["S",i,"стала личной
 if(J([W.SW,W.SO,W.SP])!==J([L.SW,L.SO,L.SP]))r.push(["SW",0,"дела недели"]);if(J(clean(W.T))!==J(clean(L.T||{})))r.push(["T",0,"названия"]);if(W.LP&&J(W.LP)!==J(L.LP))r.push(["LP",0,"лендинг"]);return r}
 const clean=T=>Object.fromEntries(Object.entries(T||{}).filter(([k,v])=>v&&v!==TEXTS[k]).sort());
 /* ---------- каркас ---------- */
-const SECS=[["home","Обзор"],["S","Ситуации"],["C0","Разминка"],["C1","Кто я, по-твоему?"],["C3","Личное"],["SW","Дела недели"],["T","Названия"],["LP","Лендинг"],["SUB","Ситуации участников"],["REP","Жалобы"],["RUL","Правила"],["pub","Публикация"]];
+const SECS=[["home","Обзор"],["S","Ситуации"],["C0","Разминка"],["C1","Кто я, по-твоему?"],["C3","Личное"],["SW","Дела недели"],["T","Названия"],["LP","Лендинг"],["SUB","Ситуации участников"],["REP","Жалобы"],["MX","Опыт: Как ты сейчас?"],["RUL","Правила"],["pub","Публикация"]];
 function render(){const sy=scrollY;app.innerHTML=`<div class="top"><b>Ну-ну · админка</b><span id="st" class="st"></span><button class="s" id="lo">Выйти</button></div>
 <div class="wrap"><nav>${SECS.map(([k,t])=>`<button id="nb-${k}" data-s="${k}"${sec===k?' aria-current="page"':""}>${t}<span class="n">${KINDS[k]?W[k].length:""}</span></button>`).join("")}</nav><main id="m"></main></div>`;
 app.querySelector("nav").onclick=e=>{const b=e.target.closest("[data-s]");if(b){sec=b.dataset.s;msg="";render();scrollTo(0,0)}};$("#lo").onclick=()=>logout();
-const F={home,SW:deeds,T:texts,LP:lpSec,SUB:subSec,REP:repSec,RUL:rulSec,pub};F[sec]?F[sec]():kind(sec);stBar();scrollTo(0,sy)}
+const F={home,SW:deeds,T:texts,LP:lpSec,SUB:subSec,REP:repSec,MX:mxSec,RUL:rulSec,pub};F[sec]?F[sec]():kind(sec);stBar();scrollTo(0,sy)}
 /* ---------- обзор ---------- */
 async function home(){const m=$("#m");m.innerHTML=`<h1>Обзор</h1><p class="sub">Как живёт приложение. Колода — набор карточек для новых партий: сейчас №${Math.max(1,...Object.keys(DECKS).map(Number))}.</p><div id="sts" class="empty">Загружаю…</div>`;
 try{stats=await api("stats")}catch(e){$("#sts").textContent=e.message;return}const s=stats;if(sec!=="home"||!$("#sts"))return;
@@ -224,6 +224,13 @@ $("#ssv").onclick=async()=>{try{const r=await api("subs/cfg",{method:"PUT",body:
 m.querySelectorAll("[data-sa]").forEach(b=>b.onclick=async()=>{const[id,a]=b.dataset.sa.split(":");let why="";if(a!=="publish"){why=prompt(a==="remove"?"Почему снимаешь? Автор получит это сообщение.":"Причина для автора:","")??null;if(why===null)return}
 b.disabled=true;try{await api(`subs/${id}/${a}`,{method:"POST",body:J({why})})}catch(e){alert(e.message)}subSec()})}
 /* ---------- жалобы участников: пороги ступеней и кто под ограничением ---------- */
+/* опыт ABAB «Как ты сейчас?» (app/nunu_mood.py): цифры по неделям и вывод по правилу, записанному до опыта */
+async function mxSec(){const m=$("#m");m.innerHTML=`<h1>Опыт: «Как ты сейчас?»</h1><p class="sub">Четыре недели: A — бот молчит, B — в 19:00 по Киеву спрашивает. Считаем дни с отметкой (в игре или из чата), «Не надо» и распустившиеся семена.</p><div id="mxb" class="empty">Загружаю…</div>`;
+let d;try{d=await api("moodexp")}catch(e){$("#mxb").textContent=e.message;return}if(sec!=="MX"||!$("#mxb"))return;
+const th=d.weeks.map(w=>`<th>${w.n} · ${w.phase}<br><span class="sub">${w.from.slice(5)}–${w.to.slice(5)}</span></th>`).join(""),cell=x=>`${x.marked}${x.asked?` <span class="sub">/ спрошено ${x.asked}</span>`:""}${x.no?` · <b>не надо</b>`:""}${x.bloom?` · 🌸${x.bloom}`:""}`;
+$("#mxb").outerHTML=`<div class="box"><h3>Вывод: ${esc(d.verdict)}</h3><p class="sub">Сейчас: ${d.now?"неделя "+d.now:"вне опыта"} · ${d.today}</p><p class="sub">Правило: ${esc(d.rule)}</p></div>
+<div class="box"><h3>Дни с отметкой</h3><table><tr><th>Кто</th>${th}<th>Вывод</th></tr><tr><td><b>В среднем</b></td>${d.avg.map(x=>`<td><b>${x}</b></td>`).join("")}<td></td></tr>
+${d.people.map(p=>`<tr><td>${esc(p.name)}</td>${p.weeks.map(x=>`<td>${cell(x)}</td>`).join("")}<td class="sub">${esc(p.verdict)}</td></tr>`).join("")}</table>${d.people.length?"":`<p class="empty">Пока никто не отмечался.</p>`}</div>`}
 async function repSec(){const m=$("#m");m.innerHTML=`<h1>Жалобы</h1><p class="sub">Кнопка ⚑ стоит там, где правила могут быть нарушены: комментарии на участке, своя ситуация друга и догадки, ситуации участников, общие дела, бутылки. Решает доля разных людей, пожаловавшихся на человека, от тех, кто с ним связан (друзья + пожаловавшиеся), но не меньше «аудитории». Ступень сама только растёт — снимаешь ты.</p><div id="rb" class="empty">Загружаю…</div>`;
 let d;try{d=await api("reports")}catch(e){$("#rb").textContent=e.message;return}if(sec!=="REP"||!$("#rb"))return;const c=d.cfg,LV=["—","1 · нарушения убраны","2 · нельзя писать другим","3 · доступ закрыт"],K={comment:"комментарий",story:"своя ситуация",guess:"догадка",bottle:"бутылка",sub:"ситуация участника",plan:"общее дело"};
 $("#rb").outerHTML=`<div class="box"><h3>Пороги</h3><div class="g3"><div><label>Ступень 1 — убрать нарушения, % жалоб</label><input id="rp1" type="number" min="1" max="100" value="${c.p1}"></div><div><label>Ступень 2 — + нельзя предлагать ситуации и комментировать, %</label><input id="rp2" type="number" min="1" max="100" value="${c.p2}"></div><div><label>Ступень 3 — + доступ закрыт, %</label><input id="rp3" type="number" min="1" max="100" value="${c.p3}"></div></div>

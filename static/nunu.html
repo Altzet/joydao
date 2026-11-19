@@ -263,7 +263,9 @@ app.innerHTML=`<h1>Настройки</h1>
 <b style="font-weight:500;min-width:64px;text-align:center">${Math.round(prefs.fs*100)}%</b><button class="n" id="fs+" aria-label="Крупнее" ${i>=FS.length-1?"disabled":""}>А+</button></div>
 <p style="margin:0">Так будет выглядеть текст в игре: карточки, ответы и сад.</p><p class="note" style="margin:0">Подписи на карте приближаются жестами: щипком или кнопкой «+».</p></div>
 <div class="card"><h2>Цвет вокруг острова</h2><p style="margin:0">Вода вокруг твоего острова окрашивается тем, что ты отметил в «Как ты сейчас?», и становится ярче от сделанных дел.</p>
-<div class="zone">Показывать друзьям</div><div class="row">${b("ms-off","Нет, только мне",!prefs.moodShare)}${b("ms-on","Да",!!prefs.moodShare)}</div></div>
+<div class="zone">Показывать друзьям</div><div class="row">${b("ms-off","Нет, только мне",!prefs.moodShare)}${b("ms-on","Да",!!prefs.moodShare)}</div>
+<div class="zone">Спрашивать в Telegram</div><div class="row">${b("ma-on","Да",prefs.moodAsk!==false)}${b("ma-off","Не надо",prefs.moodAsk===false)}</div>
+<p class="note" style="margin:0">Идёт проверка: с 23 ноября четыре недели бот через неделю в 19:00 спрашивает «Как ты сейчас?». Так мы узнаем, помогает ли вопрос или мешает.</p></div>
 <div class="card"><h2>Напоминания</h2><div class="row">${b("rm-on","Присылать",prefs.remind!==false)}${b("rm-off","Не надо",prefs.remind===false)}</div>
 <p class="note" style="margin:0">Бот напишет в день, который ты выбрал для дела, и не чаще раза в неделю — если семена ждут полива или сад давно без новых.</p></div>
 <div class="card"><h2>Гости на участке</h2><p style="margin:0">Друзья, с которыми есть мост, могут заглянуть на твой участок: видят только карту и 3D, оставляют комментарии и зовут на дела.</p>
@@ -276,7 +278,7 @@ const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
 ["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});
 [["go","visitClosed"],["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{if(!$(id+"-on"))return;$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
 app.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{prefs.acc=x.dataset.a;save2()});
-$("ms-on").onclick=()=>{prefs.moodShare=1;save2()};$("ms-off").onclick=()=>{delete prefs.moodShare;save2()};
+$("ms-on").onclick=()=>{prefs.moodShare=1;save2()};$("ma-on").onclick=()=>{delete prefs.moodAsk;save2()};$("ma-off").onclick=()=>{prefs.moodAsk=false;save2()};$("ms-off").onclick=()=>{delete prefs.moodShare;save2()};
 $("rm-on").onclick=()=>{prefs.remind=true;save2()};$("rm-off").onclick=()=>{prefs.remind=false;save2()};
 $("fs-").onclick=()=>{prefs.fs=FS[Math.max(0,i-1)];save2()};$("fs+").onclick=()=>{prefs.fs=FS[Math.min(FS.length-1,i+1)];save2()}}
 const r_dark=()=>document.documentElement.dataset.theme==="dark";
@@ -380,7 +382,7 @@ function aura(mood,act){const m=(mood||[]).filter(([q,a])=>MOOD[q]&&a>=0&&a<72).
 const e=Math.min(1,.35+.15*(act[0]||0)+.07*(act[1]||0));return{c:MOOD[m[0]][1],o:+(Math.exp(-m[1]/36)*(.3+.45*e)).toFixed(2)}}
 const myMood=()=>moods.map(m=>[m.q,(Date.now()-Date.parse(m.t))/36e5]),
 myAct=()=>{const d=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);return[seeds.filter(x=>x.life&&x.life.same&&(x.life.d||"")>=d(14)).length,seeds.filter(x=>(x.d||"")>=d(7)).length]};
-function markMood(q){moods=[...moods.filter(m=>Date.now()-Date.parse(m.t)<14*864e5),{id:"m"+Date.now(),t:new Date().toISOString(),q}].slice(-60);ls.set("nunu-mood",moods)}
+function markMood(q){moods=[...moods.filter(m=>Date.now()-Date.parse(m.t)<14*864e5),{id:"m"+Date.now(),t:new Date().toISOString(),q,src:"app"}].slice(-60);ls.set("nunu-mood",moods)}
 function moodNote(){const m=moods[moods.length-1],h=m?(Date.now()-Date.parse(m.t))/36e5:99,who=prefs.moodShare?"Цвет видят друзья.":"Цвет видишь только ты.";
 if(h>=72)return`Отметь, и вода вокруг острова окрасится. ${who} Изменить — в настройках.`;
 return`Отмечено: ${MOOD[m.q][0].toLowerCase()}, ${h<1?"только что":h<24?Math.round(h)+" ч назад":"вчера или раньше"}. Цвет тает за три дня, а сделанные дела делают его ярче. ${who}`}

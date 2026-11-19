@@ -18,7 +18,7 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMa
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 
-from . import config, db, landing, nunu, nunu_admin, nunu_reports, nunu_subs, nunu_wx, pages, rules
+from . import config, db, landing, nunu, nunu_admin, nunu_mood, nunu_reports, nunu_subs, nunu_wx, pages, rules
 from .nunu import remind_loop  # имя nunu ниже занято маршрутом /nunu
 
 TEXT = (
@@ -85,6 +85,19 @@ async def wx_button(cb: CallbackQuery):
         await cb.message.answer(nunu_wx.answer(cb.data))
 
 
+@router.callback_query(F.data.startswith("mood:"))
+async def mood_button(cb: CallbackQuery):
+    """«Как ты сейчас?» из чата: отметка ложится в игру, кнопки убираем (опыт ABAB, app/nunu_mood.py)."""
+    await cb.answer()
+    text = await asyncio.to_thread(nunu_mood.answer, cb.data, cb.from_user.id)
+    if cb.message:
+        try:
+            await cb.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        await cb.message.answer(text)
+
+
 @router.callback_query()
 async def any_callback(cb: CallbackQuery):
     await cb.answer()
@@ -112,6 +125,7 @@ app.include_router(nunu_admin.router)  # комната администрато
 app.include_router(nunu_subs.router)  # ситуации участников
 app.include_router(nunu_reports.router)  # жалобы участников
 app.include_router(nunu_reports.admin)
+app.include_router(nunu_mood.admin)  # опыт «Как ты сейчас?»
 app.include_router(rules.admin)  # рассылка о правилах
 CHAT_URL = config.COMMUNITY_CHAT_URL
 # Страница Mini App: светлая карточка в стиле промо, не зависит от темы Telegram.
@@ -267,7 +281,7 @@ async def main() -> None:
     server = uvicorn.Server(uvicorn.Config(app, host=config.HOST, port=config.PORT, log_level="info"))
     tasks = [asyncio.create_task(dp.start_polling(bot)), asyncio.create_task(server.serve()),
              asyncio.create_task(remind_loop()), asyncio.create_task(nunu_subs.loop()),
-             asyncio.create_task(nunu_wx.loop(bot))]
+             asyncio.create_task(nunu_wx.loop(bot)), asyncio.create_task(nunu_mood.loop(bot))]
     _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     for t in pending:
         t.cancel()
