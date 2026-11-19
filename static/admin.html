@@ -201,7 +201,12 @@ if(d.mv){const[k,i,s2]=d.mv.split(":");const a=P[k].items,j=+i+ +s2;[a[+i],a[j]]
 if(d.del){const[k,i]=d.del.split(":");if(!confirm("Удалить пункт?"))return;P[k].items.splice(+i,1);touch();lpSec();return}
 if(d.add){P[d.add].items.push(d.add==="faq"?{q:"Новый вопрос",a:""}:d.add==="features"?{t:"Новая возможность",d:"",img:""}:{t:d.add==="science"?"Новый пункт":"Новый шаг",d:""});touch();lpSec();return}
 if(d.rm){set(d.rm,"");touch();lpSec();return}if(b.id==="lpdef"){if(!confirm("Заменить все тексты лендинга вариантом по умолчанию? Ссылки и картинки тоже сбросятся."))return;W.LP=clone(B.LP);touch();lpSec();return}if(d.up){upP=d.up;$("#lpf").click()}};
-$("#lpf").onchange=async e=>{const f=e.target.files[0];if(!f||!upP)return;try{const r=await fetch("/nunu/admin/api/upload",{method:"POST",headers:{"X-Admin-Key":KEY,"Content-Type":f.type||"application/octet-stream"},body:f});const j=await r.json();if(!r.ok)throw new Error(j.detail||"Не загрузилось");set(upP,j.url);touch();lpSec()}catch(x){alert(x.message)}};
+/* фото с телефона весят 3–10 МБ, а nginx пускает до 1 МБ: уменьшаем в браузере до 1600 px (WebP/JPEG). GIF не трогаем — сломается анимация */
+async function shrink(f){if(!/^image\/(jpeg|png|webp)$/.test(f.type))return f;const im=await createImageBitmap(f),k=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement("canvas");
+c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+const blob=(t,q)=>new Promise(r=>c.toBlob(r,t,q));let b=await blob("image/webp",.85);if(!b||b.type!=="image/webp")b=await blob("image/jpeg",.85);return b&&b.size<f.size?b:f}
+$("#lpf").onchange=async e=>{const f0=e.target.files[0];if(!f0||!upP)return;try{const f=await shrink(f0).catch(()=>f0),r=await fetch("/nunu/admin/api/upload",{method:"POST",headers:{"X-Admin-Key":KEY,"Content-Type":f.type||"application/octet-stream"},body:f});
+const j=await r.json().catch(()=>({detail:r.status===413?"Картинка слишком большая для сервера — возьми поменьше":"Сервер ответил ошибкой "+r.status}));if(!r.ok)throw new Error(j.detail||"Не загрузилось");set(upP,j.url);touch();lpSec()}catch(x){alert(x.message)}};
 pv()}
 function pvSoon(){clearTimeout(pvT);pvT=setTimeout(pv,500)}
 async function pv(){const f=$("#pvi");if(!f)return;let y=0;try{y=f.contentWindow.scrollY}catch(e){}
