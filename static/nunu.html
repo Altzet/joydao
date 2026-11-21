@@ -376,13 +376,39 @@ let plot=ls.get("nunu-plot")||{};const savePlot=()=>{if(typeof PS==="object"&&PS
 Шкала «энергия × приятность» (Russell 1980; Mood Meter — Brackett 2019). Цвета без оценок, по общим для 30 стран
 связям цвета и чувства (Jonauskaite et al. 2020). Оттенок — последняя отметка, новый перетекает из прошлого; за ~3 дня тает; дела делают ярче.
 Друзья видят цвет, только если включено в настройках (по умолчанию — нет). */
-const MOOD=[["Бодро и светло","#F2B544"],["Спокойно","#5DCAA5"],["Напряжённо","#F0997B"],["Тихо и тяжело","#9C93E6"]];
+const MOOD=[["Бодро и светло","#F2B544"],["Спокойно","#5DCAA5"],["Напряжённо","#F0997B"],["Грустно, без сил","#9C93E6"]];
 let moods=ls.get("nunu-mood")||[];
 function aura(mood,act){const m=(mood||[]).filter(([q,a])=>MOOD[q]&&a>=0&&a<72).sort((x,y)=>x[1]-y[1])[0];if(!m)return null;  /* оттенок — последняя отметка (смешанные оттенки мутнеют) */
 const e=Math.min(1,.35+.15*(act[0]||0)+.07*(act[1]||0));return{c:MOOD[m[0]][1],o:+(Math.exp(-m[1]/36)*(.3+.45*e)).toFixed(2)}}
 const myMood=()=>moods.map(m=>[m.q,(Date.now()-Date.parse(m.t))/36e5]),
 myAct=()=>{const d=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);return[seeds.filter(x=>x.life&&x.life.same&&(x.life.d||"")>=d(14)).length,seeds.filter(x=>(x.d||"")>=d(7)).length]};
-function markMood(q){moods=[...moods.filter(m=>Date.now()-Date.parse(m.t)<14*864e5),{id:"m"+Date.now(),t:new Date().toISOString(),q,src:"app"}].slice(-60);ls.set("nunu-mood",moods)}
+function markMood(q,e,p){moods=[...moods.filter(m=>Date.now()-Date.parse(m.t)<14*864e5),{id:"m"+Date.now(),t:new Date().toISOString(),q,src:"app",...(e!=null?{e:+e.toFixed(2),p:+p.toFixed(2)}:{})}].slice(-60);ls.set("nunu-mood",moods)}
+/* инструмент (21.11): поле «силы × приятность» вместо 4 кнопок — касание = отметка (q — четверть, e/p — где именно),
+потом слово для чувства (affect labeling: Lieberman et al. 2007) и один маленький шаг под состояние, который можно посадить в сад.
+Шаги — бытовые, без советов «лечиться»: свет и движение при упадке сил, медленный выдох при напряжении (Zaccaro et al. 2018). */
+const MOOD_W=[["радостно","вдохновлённо","азартно","бодро"],["спокойно","довольно","расслабленно","уютно"],["тревожно","раздражённо","взвинченно","злюсь"],["грустно","устало","одиноко","пусто"]],
+MOOD_S=[["Сделай самое трудное дело из сада, пока есть заряд","Позови друга на общее дело","15 минут на то, что давно откладываешь"],
+["Наведи порядок в одном уголке участка","Запиши одну мысль о своей цели","Приготовь что-нибудь не спеша и угости кого-нибудь"],
+["Шесть медленных выдохов — выдох длиннее вдоха","Запиши одной строкой, что давит, и один шаг к этому","10 минут пешком без телефона"],
+["Выйди на свет и воздух хотя бы на 10 минут","Напиши другу просто «привет»","Одно крошечное дело — на две минуты","Стакан воды и что-нибудь тёплое"]],
+MOOD_AT=[[1,1],[1,0],[0,1],[0,0]],/* [столбец, ряд снизу] каждой четверти: справа — приятно, сверху — больше сил */
+moodLast=()=>{const m=moods[moods.length-1];return m&&Date.now()-Date.parse(m.t)<72*36e5?m:null};
+function moodPad(){const m=moodLast(),cell=q=>{const[c,r]=MOOD_AT[q],[l,col]=MOOD[q],dot=m&&m.q===q&&m.e!=null?`<span aria-hidden="true" style="position:absolute;left:${((m.p-.5*c)*200).toFixed(0)}%;top:${((1-(m.e-.5*r)*2)*100).toFixed(0)}%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--fg);opacity:.6"></span>`:"";
+return`<button class="n" data-q="${q}" aria-pressed="${!!(m&&m.q===q)}" style="position:relative;min-height:64px;background:${col}${m&&m.q===q?"55":"22"};border-color:${col};grid-column:${c+1};grid-row:${2-r}">${l}${dot}</button>`};
+return`<div class="zone">Как ты сейчас? Выше — больше сил, правее — приятнее. Нажми ближе к своему</div><div id="md" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${[0,1,2,3].map(cell).join("")}</div>
+<div id="mdx">${moodTool()}</div>`}
+function moodTool(){const m=moodLast();if(!m||Date.now()-Date.parse(m.t)>6*36e5)return"";const S=MOOD_S[m.q],i=(m.si||0)%S.length,done=m.sown===i;
+return`<div class="zone">Какое слово точнее?</div><div class="row" id="mw">${MOOD_W[m.q].map(w=>`<button class="n" data-w="${w}" aria-pressed="${m.w===w}"${m.w===w?' style="border-color:var(--fg)"':""}>${w}</button>`).join("")}</div>
+<div class="zone">Маленький шаг</div><p style="margin:0">${S[i]}</p><div class="row">${done?'<span class="note">Посажено в сад 🌱</span>':'<button class="main-btn" id="ms">Посадить на сегодня</button>'}<button class="n" id="mn">Другой шаг</button></div>`}
+function wireMood(){const pad=$("md");if(!pad)return;const redo=()=>{const x=$("mdx");if(x){x.innerHTML=moodTool();wireTool()}};
+pad.onclick=ev=>{const b=ev.target.closest("button[data-q]");if(!b)return;const q=+b.dataset.q,[c,r]=MOOD_AT[q],R=b.getBoundingClientRect(),
+fx=ev.detail?Math.min(1,Math.max(0,(ev.clientX-R.left)/R.width)):.5,fy=ev.detail?Math.min(1,Math.max(0,(ev.clientY-R.top)/R.height)):.5;
+markMood(q,r*.5+(1-fy)*.5,c*.5+fx*.5);drawW(0,"0")};
+const wireTool=()=>{const m=moods[moods.length-1],put=()=>{ls.set("nunu-mood",moods);redo()};
+if($("mw"))$("mw").onclick=ev=>{const b=ev.target.closest("button[data-w]");if(!b)return;m.w=m.w===b.dataset.w?undefined:b.dataset.w;put()};
+if($("mn"))$("mn").onclick=()=>{m.si=((m.si||0)+1)%MOOD_S[m.q].length;put()};
+if($("ms"))$("ms").onclick=()=>{const i=(m.si||0)%MOOD_S[m.q].length;seeds.push({c:"Шаг под состояние",q:MOOD_S[m.q][i]+(m.w?" · было: "+m.w:""),r:"",z:-1,d:today(),life:null,mine:false});saveSeeds();m.sown=i;put()}};
+wireTool()}
 function moodNote(){const m=moods[moods.length-1],h=m?(Date.now()-Date.parse(m.t))/36e5:99,who=prefs.moodShare?"Цвет видят друзья.":"Цвет видишь только ты.";
 if(h>=72)return`Отметь, и вода вокруг острова окрасится. ${who} Изменить — в настройках.`;
 return`Отмечено: ${MOOD[m.q][0].toLowerCase()}, ${h<1?"только что":h<24?Math.round(h)+" ч назад":"вчера или раньше"}. Цвет тает за три дня, а сделанные дела делают его ярче. ${who}`}
@@ -2008,12 +2034,12 @@ if(sel==="bottle"){pn.innerHTML=`<h2>Бутылка в море</h2><p style="ma
 $("bc").onclick=catchBottle;$("bt").onclick=()=>fresh("hero",{bottle:1});return}
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();return}
-if(!f){pn.innerHTML=`<h2>Твой остров</h2><div class="zone">Как ты сейчас?</div><div class="row" id="md">${MOOD.map(([l,c],q)=>`<button class="n" data-q="${q}"><span aria-hidden="true" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join("")}</div>
+if(!f){pn.innerHTML=`<h2>Твой остров</h2>${moodPad()}
 <p class="note" style="margin:0">${moodNote()}</p>
 <p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
 <p class="note" style="margin:0">Море — общее и нейтральное. Цветы растут, когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>
 <div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}${btn("so","Играть одному")}</div>`;
-$("md").onclick=e=>{const b=e.target.closest("button[data-q]");if(!b)return;markMood(+b.dataset.q);drawW(0,"0")};
+wireMood();
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();$("so").onclick=()=>fresh("solo");return}
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
