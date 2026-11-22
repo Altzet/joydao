@@ -95,12 +95,12 @@ def page() -> HTMLResponse:
 <title>Правила «Ну-ну»</title><meta name="description" content="Свод правил игры «Ну-ну»: общение, ситуации участников, гости на участке, приватность, жалобы.">
 <link rel="canonical" href="{landing.SITE}/rules"><meta property="og:title" content="Свод правил «Ну-ну»"><meta property="og:url" content="{landing.SITE}/rules">
 <meta property="og:description" content="Как мы общаемся, что видят друзья, как работают жалобы."><meta property="og:type" content="article"><meta property="og:image" content="{landing.SITE}/og.png"><meta name="twitter:card" content="summary_large_image"><meta property="og:locale" content="ru_RU">
-{landing.ICON}<style>{landing.CSS}{CSS}</style></head><body>
-<header><div class="w"><a class="logo" href="/">← Ну-ну</a><nav></nav><a class="btn sm" href="{play}">Открыть</a></div></header>
+{landing.ICON}<style>{landing.CSS}{landing.HEADER_CSS}{CSS}</style></head><body>
+{landing.header("/rules")}
 <main class="r"><p class="upd">Обновлено {UPDATED} · версия {RULES_V}</p><h1>Свод правил «Ну-ну»</h1>
 <p>«Ну-ну» — игра для друзей и для себя: угадываете друг друга, строите мосты и сажаете семена намерений, которые прорастают в жизни. Здесь нет правильных и неправильных ответов, оценок и рейтингов — только честность и уважение.</p>
 <h2>Главное</h2><ol class="main">{main}</ol><p class="toc">{toc}</p>{body}</main>
-<footer><div class="w"><span>JoyDAO · Ну-ну</span><a class="sp" href="{play}">Играть в Telegram →</a></div></footer></body></html>""")
+<footer><div class="w"><span>JoyDAO · Ну-ну</span><a class="sp" href="{play}">Играть в Telegram →</a></div></footer>{landing.tg_js()}</body></html>""")
 
 
 def inject() -> str:

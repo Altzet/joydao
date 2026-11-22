@@ -12,6 +12,46 @@ from . import config
 SITE = re.sub(r"/nunu/?$", "", (config.WEBAPP_URL or "https://joylao.duckdns.org").rstrip("/"))
 
 
+# ---------- общее меню всех страниц сайта ----------
+# Сайт и игра — одно целое: что можно сделать на сайте (обмен, правила, статьи), делается на сайте;
+# игра живёт в Telegram, туда ведёт кнопка «Играть». Открыли страницу внутри «Ну-ну» (Mini App) —
+# кнопка становится «← В игру», ссылки t.me открывает Telegram, чужие сайты — браузер.
+MENU = (("/", "Главная"), ("/obmen", "Обмен"), ("/uchastok", "Участок"), ("/esli-to", "Если — то"), ("/rules", "Правила"))
+HEADER_CSS = """.site{position:sticky;top:0;z-index:9;background:var(--card,#fff);border-bottom:1px solid var(--line,#ECEEEC);font-family:inherit}
+.site .sw{max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
+.site .logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink,#111);font-weight:700;font-size:17px;white-space:nowrap}
+header.site nav{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.site nav a{padding:8px 11px;border-radius:10px;text-decoration:none;color:var(--muted,#555);font-size:15px;white-space:nowrap}
+.site nav a:hover{color:var(--ink,#111)}.site nav a[aria-current=page]{color:var(--ink,#111);background:var(--bg,#F1F4F2);font-weight:600}
+.site .play{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:12px;background:var(--acc,#1D7A5C);color:var(--acc-fg,#fff);
+text-decoration:none;font-weight:600;font-size:15px;white-space:nowrap}
+@media(max-width:860px){header.site nav{order:3;width:calc(100% + 16px);margin:0 -8px}.site .play{margin-left:auto}}"""
+LOGO = ('<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#86C3D4"/>'
+        '<ellipse cx="12" cy="20" rx="8" ry="4" fill="#F3E8CF"/><ellipse cx="12" cy="18.5" rx="6" ry="2.8" fill="#A9D872"/>'
+        '<path d="M12 18v-5M12 14c-2 0-3-1-3-2.5 2 0 3 1 3 2.5zM12 14c2 0 3-1 3-2.5-2 0-3 1-3 2.5z" stroke="#2E7D5B" stroke-width="1.2" fill="none"/>'
+        '<path d="M18.5 18.5q3.5-2.5 6.5-1" stroke="#BA7517" stroke-width="1.6" fill="none"/><ellipse cx="26" cy="19.5" rx="3" ry="1.6" fill="#F3E8CF"/></svg>')
+TG_JS = """<script>(function(){var d;try{d=JSON.parse(sessionStorage.getItem("__telegram__initParams")||"{}").tgWebAppData}catch(e){}
+if(!d&&!/tgWebAppData/.test(location.hash))return;
+document.querySelectorAll('a[href^="https://t.me/%(bot)s/"]').forEach(function(a){a.href="/nunu";if(a.classList.contains("play"))a.textContent="← В игру"});
+function go(){if(!window.Telegram)return;var W=Telegram.WebApp;W.ready();if(document.body.dataset.back!=="own")try{W.BackButton.show();W.BackButton.onClick(function(){history.length>1?history.back():location.href="/nunu"})}catch(e){}
+document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[href]");if(!a||a.origin===location.origin)return;e.preventDefault();
+/^https:\/\/t\.me\//.test(a.href)?W.openTelegramLink(a.href):W.openLink(a.href)},true)}
+if(window.Telegram&&Telegram.WebApp)go();else{var s=document.createElement("script");s.src="https://telegram.org/js/telegram-web-app.js";s.onload=go;document.head.appendChild(s)}})()</script>"""
+
+
+def header(cur: str, brand: str = "JoyDAO · Ну-ну") -> str:
+    """Шапка с меню: одна на весь сайт, текущая страница отмечена."""
+    from .nunu import link
+    nav = "".join(f'<a href="{u}"{" aria-current=page" if u == cur else ""}>{t}</a>' for u, t in MENU)
+    return (f'<header class="site"><div class="sw"><a class="logo" href="/">{LOGO}{html.escape(brand)}</a>'
+            f'<nav aria-label="Разделы сайта">{nav}</nav><a class="play" href="{link()}">Играть</a></div></header>')
+
+
+def tg_js() -> str:
+    """В конец body любой страницы: поведение внутри Telegram."""
+    return TG_JS % {"bot": config.BOT_USERNAME}
+
+
 def absu(u: str) -> str:
     return SITE + u if u.startswith("/") else u
 
@@ -236,11 +276,8 @@ def render(lp: dict) -> str:
             parts.append(f'<section id="faq" class="alt"><div class="w faq"><h2 class="rv">{E(b["title"])}</h2>'
                          + "".join(f'<details class="rv"><summary>{E(x["q"])}</summary><p>{_p(x["a"])}</p></details>' for x in b["items"])
                          + "</div></section>")
-    navs = [(k, t) for k, t in (("how", "Как это работает"), ("author", "От автора"), ("faq", "Вопросы"))
-            if k not in off and (lp[k].get("items") or lp[k].get("text"))]
-    nav = "".join(f'<a href="#{k}">{E(lp[k]["title"] or t)}</a>' for k, t in navs) + '<a href="/rules">Правила</a>'
     foot = "".join(f'<a href="{E(L[k])}">{t}</a>' for k, t in (("channel", "Канал"), ("chat", "Чат")) if L.get(k)) + \
-        '<a href="/obmen">Обмен</a><a href="/uchastok">Планировщик участка</a><a href="/esli-to">План «если — то»</a><a href="/rules">Правила</a>'
+        ''.join(f'<a href="{u}">{t}</a>' for u, t in MENU[1:])
     seo = lp["seo"]
     title, desc, img = seo["title"] or lp["brand"], seo["desc"], absu(seo.get("img") or "/og.png")
     ld = [{"@context": "https://schema.org", "@type": "WebSite", "name": lp["brand"], "url": SITE + "/", "inLanguage": "ru"},
@@ -258,9 +295,9 @@ def render(lp: dict) -> str:
     return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{E(title)}</title><meta name="description" content="{E(desc)}">
 <meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(desc)}">{head}<meta property="og:type" content="website">
-<meta name="theme-color" content="#ffffff">{ICON}<script>document.documentElement.className="js"</script><style>{CSS}</style></head><body>
-<header><div class="w"><a class="logo" href="#">{E(lp["brand"])}</a><nav>{nav}</nav><a class="btn sm" href="{play}">Открыть</a></div></header>
+<meta name="theme-color" content="#ffffff">{ICON}<script>document.documentElement.className="js"</script><style>{CSS}{HEADER_CSS}</style></head><body>
+{header("/", lp["brand"])}
 <main>{"".join(parts)}</main>
 <footer><div class="w"><span>{E(lp["footer"])}</span>{foot}<a class="sp" href="{play}">Играть в Telegram →</a></div></footer>
 <script>(()=>{{const o=new IntersectionObserver(es=>es.forEach(e=>{{if(e.isIntersecting){{e.target.classList.add("in");o.unobserve(e.target)}}}}),{{rootMargin:"0px 0px -8% 0px"}});
-document.querySelectorAll(".rv").forEach(e=>o.observe(e))}})()</script></body></html>"""
+document.querySelectorAll(".rv").forEach(e=>o.observe(e))}})()</script>{tg_js()}</body></html>"""

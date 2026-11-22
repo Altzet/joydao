@@ -348,10 +348,10 @@ function card(h){app.innerHTML=`<div class="card">${h}</div>`}
 /* ссылки в тексте дела — короткой кнопкой «🔗 открыть», открываются через Telegram */
 const linky=t=>esc(t).replace(/https?:\/\/[^\s<>"«»]+[^\s<>"«».,;:!?)]/g,u=>`<a href="${u}" data-ext style="white-space:nowrap;color:#1D7A5C;text-decoration:none;font-weight:600">🔗 открыть</a>`);
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("a[data-ext]");if(!a)return;e.preventDefault();e.stopPropagation();
-const u=a.getAttribute("href").replace(/&amp;/g,"&");try{TG.openLink(u)}catch(er){window.open(u,"_blank")}},true);
+const u=a.getAttribute("href").replace(/&amp;/g,"&");if(new URL(u,location.href).origin===location.origin){location.href=u;return}try{TG.openLink(u)}catch(er){window.open(u,"_blank")}},true);
 /* свод правил (app/rules.py → window.NUNU_RULES): прежде чем играть — прочитать и принять; поменялась версия — принять заново */
 const RL=window.NUNU_RULES||{v:1,main:[]},rulesOk=()=>!RL.main.length||!!(prefs.rules&&prefs.rules.v===RL.v),
-openRules=()=>{const u=location.origin+"/rules";try{TG.openLink(u)}catch(e){window.open(u,"_blank")}};
+openRules=()=>{location.href="/rules"};  /* страница сайта открывается здесь же, в игре: наверху «← В игру» */
 function rulesGate(done){const nv=$("nav"),re=prefs.rules&&prefs.rules.v;if(nv)nv.hidden=true;
 card(`<h2>${re?"Правила обновились":"Правила «Ну-ну»"}</h2><p style="margin:0">Прежде чем играть — пять главных правил. Полный свод — по ссылке ниже.</p>
 <ol style="margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px">${RL.main.map(([t,x])=>`<li><b style="font-weight:500">${esc(t)}.</b> ${esc(x)}</li>`).join("")}</ol>
@@ -1928,7 +1928,6 @@ function pSatDraw(){const g=$("psat");if(g)g.innerHTML=pBg();const a=$("pvw");if
 const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],
 ["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],
 ["obmen","Обмен","M7 4L3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8",()=>{location.href="/obmen"}],
-["plot","Участок","M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M12 9v3",()=>{guestExit();plotMap()}],
 ["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];NAV.forEach(n=>{if(TX["nav."+n[0]])n[1]=TX["nav."+n[0]]});
 const nav={cur:undefined};
 function setNav(s){nav.back=null;if(s!=="plot"&&typeof PS==="object"&&PS.guest)guestExit();if(typeof p3Stop==="function")p3Stop();if(s!=="plot"&&document.body.classList.contains("full"))setFull(false);if(!API)return;if(s!=="map"&&s!=="bottle")document.body.classList.remove("on-map");if(s!==nav.cur||s===null)scrollTo(0,0);nav.cur=s;let el=$("nav");
@@ -2013,9 +2012,9 @@ if(!f){pn.innerHTML=`<h2>Твой остров</h2><div class="zone">Как ты
 <p class="note" style="margin:0">${moodNote()}</p>
 <p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
 <p class="note" style="margin:0">Море — общее и нейтральное. Цветы растут, когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>
-<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}${btn("so","Играть одному")}</div>`;
+<div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}${btn("so","Играть одному")}${btn("pl","🏡 Мой участок")}</div>`;
 $("md").onclick=e=>{const b=e.target.closest("button[data-q]");if(!b)return;markMood(+b.dataset.q);drawW(0,"0")};
-$("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();$("so").onclick=()=>fresh("solo");return}
+$("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();$("so").onclick=()=>fresh("solo");$("pl").onclick=()=>{guestExit();plotMap()};return}  /* участок — с карточки своего острова, не из меню (22.11) */
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
 const mk=f.mark?`<p style="margin:0">${fn} угадывал твою ситуацию — отметь, угадал ли.</p>`:"";

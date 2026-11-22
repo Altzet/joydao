@@ -211,7 +211,7 @@ async def page_esli_to():
 
 @app.get("/sitemap.xml")
 async def sitemap():
-    u = "".join(f"<url><loc>{landing.SITE}{p}</loc><priority>{w}</priority></url>" for p, w in (("/", "1.0"), ("/uchastok", "0.8"), ("/esli-to", "0.8"), ("/rules", "0.4")))
+    u = "".join(f"<url><loc>{landing.SITE}{p}</loc><priority>{w}</priority></url>" for p, w in (("/", "1.0"), ("/obmen", "0.8"), ("/uchastok", "0.8"), ("/esli-to", "0.8"), ("/rules", "0.4")))
     return Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
                     + u + "</urlset>", media_type="application/xml")
 

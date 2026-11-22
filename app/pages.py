@@ -105,11 +105,11 @@ def render(slug: str) -> HTMLResponse:
 <meta property="og:type" content="article"><meta property="og:title" content="{E(p["h1"])}"><meta property="og:description" content="{E(p["desc"])}">
 <meta property="og:url" content="{url}"><meta property="og:image" content="{landing.absu(p["img"])}"><meta property="og:locale" content="ru_RU"><meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">{ldj}</script>
-{landing.ICON}<style>{landing.CSS}{CSS}</style></head><body>
-<header><div class="w"><a class="logo" href="/">← Ну-ну</a><nav></nav><a class="btn sm" href="{play}">Открыть</a></div></header>
+{landing.ICON}<style>{landing.CSS}{landing.HEADER_CSS}{CSS}</style></head><body>
+{landing.header("/" + slug)}
 <main class="r"><h1>{E(p["h1"])}</h1>{p["body"]}<p><a class="btn go" href="{play}">Открыть «Ну-ну» в Telegram — бесплатно</a></p>
 <h2>Вопросы</h2>{faq}<h2>Ещё</h2><p>{other}<a href="/rules">Правила «Ну-ну»</a></p></main>
-<footer><div class="w"><span>JoyDAO · Ну-ну</span><a class="sp" href="/">На главную</a></div></footer></body></html>""")
+<footer><div class="w"><span>JoyDAO · Ну-ну</span><a class="sp" href="{play}">Играть в Telegram →</a></div></footer>{landing.tg_js()}</body></html>""")
 
 
 def img(name: str) -> FileResponse:

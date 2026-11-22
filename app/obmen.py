@@ -21,7 +21,7 @@ from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from . import config, nunu
+from . import config, landing, nunu
 
 router = APIRouter()
 PAGE = Path(__file__).resolve().parent.parent / "static" / "obmen.html"
@@ -93,7 +93,9 @@ def _visible(o, rel: str) -> bool:
 def page():
     """Вне Telegram — вход виджетом Telegram (домен сайта задан боту в @BotFather → /setdomain)."""
     return HTMLResponse(PAGE.read_text(encoding="utf-8").replace("{{PLAY}}", nunu.link("obmen"))
-                        .replace("{{BOT}}", config.BOT_USERNAME),
+                        .replace("{{BOT}}", config.BOT_USERNAME)
+                        .replace("{{HEADER}}", landing.header("/obmen")).replace("{{HEADER_CSS}}", landing.HEADER_CSS)
+                        .replace("{{TG_JS}}", landing.tg_js()),
                         headers={"Cache-Control": "no-cache"})
 
 
