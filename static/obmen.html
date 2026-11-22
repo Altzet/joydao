@@ -15,30 +15,30 @@
 [data-theme=dark]{--bg:#121A17;--card:#1B2521;--ink:#E6EEEA;--muted:#9DADA6;--line:#2E3B36;--acc:#5DCAA5;--acc-fg:#04342C;
  --sand:#3A2F1A;--sand-fg:#F2D9A6;--sea:#0F2A35;--sea-fg:#CFE6EE;--leaf:#16352B;--leaf-fg:#9FE1CB;--bridge:#EF9F27;--err:#F09595}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Golos Text",system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.5 "Golos Text",system-ui,sans-serif}
 button,input,textarea{font:inherit;color:inherit}
 a{color:var(--acc)}
 .w{max-width:1200px;margin:0 auto;padding:0 16px}
 header{background:var(--card);border-bottom:1px solid var(--line)}
 header .w{display:flex;align-items:center;gap:12px;min-height:60px;flex-wrap:wrap}
 .logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink)}
-.logo b{font:500 18px Unbounded,sans-serif}.logo span{color:var(--acc);font-weight:500}
-header .me{margin-left:auto;font-size:14px;color:var(--muted)}
+.logo b{font:500 1.125rem Unbounded,sans-serif}.logo span{color:var(--acc);font-weight:500}
+header .me{margin-left:auto;font-size:0.875rem;color:var(--muted)}
 h1{font:500 clamp(26px,4vw,38px)/1.2 Unbounded,sans-serif;margin:0}
 .hero{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;padding:28px 0 20px}
-.hero p{margin:10px 0 0;max-width:620px;color:var(--muted);font-size:17px}
+.hero p{margin:10px 0 0;max-width:620px;color:var(--muted);font-size:1.0625rem}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border:0;border-radius:12px;
  background:var(--acc);color:var(--acc-fg);font-weight:600;text-decoration:none;cursor:pointer}
 .btn.o{background:none;color:var(--acc);border:1px solid var(--acc)}
 .btn:disabled{opacity:.5;cursor:default}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.row .lbl{font-size:14px;color:var(--muted);margin-right:4px}
+.row .lbl{font-size:0.875rem;color:var(--muted);margin-right:4px}
 .chip{min-height:40px;padding:0 15px;border:0;border-radius:99px;background:var(--bg);font-weight:500;cursor:pointer}
 .chip[aria-pressed=true]{background:var(--acc);color:var(--acc-fg)}
-.search{flex:1 1 220px;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.search{flex:1 1 220px;max-width:100%;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
 .search input{flex:1;min-width:0;border:0;outline:none;background:none}
-.count{margin:18px 0 10px;font-size:14px;color:var(--muted)}
+.count{margin:18px 0 10px;font-size:0.875rem;color:var(--muted)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding-bottom:40px}
 .card{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;
  text-align:left;cursor:pointer}
@@ -46,36 +46,36 @@ h1{font:500 clamp(26px,4vw,38px)/1.2 Unbounded,sans-serif;margin:0}
 .tile{height:104px;border-radius:12px;display:flex;align-items:center;justify-content:center}
 .tile svg{width:42px;height:42px}
 .give{background:var(--sand);color:var(--sand-fg)}.seek{background:var(--sea);color:var(--sea-fg)}.skill{background:var(--leaf);color:var(--leaf-fg)}
-.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
-.sub{font-size:12px;color:var(--muted)}
-.card h3{margin:0;font-size:17px;line-height:1.3;font-weight:600}
-.card p{margin:0;font-size:14px;color:var(--muted);flex-grow:1}
-.how{font-size:14px}.how i{font-style:normal;color:var(--muted)}
-.who{display:flex;align-items:center;gap:8px;padding-top:9px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
-.av{width:28px;height:28px;flex:none;border-radius:99px;background:var(--sand);color:var(--sand-fg);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:0.75rem;font-weight:600}
+.sub{font-size:0.75rem;color:var(--muted)}
+.card h3{margin:0;font-size:1.0625rem;line-height:1.3;font-weight:600}
+.card p{margin:0;font-size:0.875rem;color:var(--muted);flex-grow:1}
+.how{font-size:0.875rem}.how i{font-style:normal;color:var(--muted)}
+.who{display:flex;align-items:center;gap:8px;padding-top:9px;border-top:1px solid var(--line);font-size:0.8125rem;color:var(--muted)}
+.av{width:28px;height:28px;flex:none;border-radius:99px;background:var(--sand);color:var(--sand-fg);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.8125rem}
 .empty{padding:40px 16px;text-align:center;color:var(--muted)}
 /* лист поверх ленты: карточка и форма */
 .sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}
 .sheet>div{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
 @media(min-width:700px){.sheet{align-items:center}.sheet>div{border-radius:20px}}
-.sheet h2{font:500 21px/1.25 Unbounded,sans-serif;margin:0}
+.sheet h2{font:500 1.3125rem/1.25 Unbounded,sans-serif;margin:0}
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .x{width:44px;height:44px;border:0;border-radius:99px;background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .info{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 14px}
-.info div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+.info div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:0.9375rem}
 .info div:last-child{border:0}.info span:first-child{color:var(--muted)}.info span:last-child{text-align:right}
 .person{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}.person>span:last-child{display:flex;flex-direction:column}
 .bar{height:8px;border-radius:99px;background:var(--bg);overflow:hidden}.bar i{display:block;height:100%;background:var(--bridge);border-radius:99px}
-label.f{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:0.875rem;font-weight:500}
 label.f input,label.f textarea{min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-weight:400;resize:none}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
 .seg .chip{border-radius:12px;background:var(--card)}.seg .chip[aria-pressed=true]{background:var(--acc);color:var(--acc-fg)}
 .opt{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--card);border:2px solid var(--line);cursor:pointer}
 .opt:has(input:checked){border-color:var(--acc)}.opt input{margin:4px 0 0;width:18px;height:18px;accent-color:var(--acc)}
-.opt small{display:block;color:var(--muted);font-size:13px}
-.err{color:var(--err);font-size:14px;margin:0}
-.ok{background:var(--leaf);color:var(--leaf-fg);border-radius:12px;padding:12px 14px;font-size:15px}
-footer{border-top:1px solid var(--line);background:var(--card);font-size:14px;color:var(--muted)}
+.opt small{display:block;color:var(--muted);font-size:0.8125rem}
+.err{color:var(--err);font-size:0.875rem;margin:0}
+.ok{background:var(--leaf);color:var(--leaf-fg);border-radius:12px;padding:12px 14px;font-size:0.9375rem}
+footer{border-top:1px solid var(--line);background:var(--card);font-size:0.875rem;color:var(--muted)}
 footer .w{padding:18px 16px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
@@ -92,8 +92,14 @@ footer .w{padding:18px 16px}
 const PLAY="{{PLAY}}";
 const TG=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData?Telegram.WebApp:null;
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const dark=TG?TG.colorScheme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
-document.documentElement.dataset.theme=dark?"dark":"light";
+/* тема, цвет и размер текста — те же, что выбраны в настройках игры (localStorage "nunu-prefs", один сайт) */
+const ACC={teal:["#1D7A5C","#fff","#5DCAA5","#04342C"],coral:["#B5482A","#fff","#F0997B","#4A1B0C"],blue:["#1F6FB8","#fff","#85B7EB","#042C53"],
+ violet:["#5A4FC4","#fff","#AFA9EC","#26215C"],amber:["#8F530C","#fff","#EF9F27","#412402"]};
+let P={};try{P=JSON.parse(localStorage.getItem("nunu-prefs"))||{}}catch(e){}
+const dark=P.theme==="dark"||P.theme!=="light"&&(TG&&TG.colorScheme?TG.colorScheme==="dark":matchMedia("(prefers-color-scheme: dark)").matches),
+ A=ACC[P.acc]||ACC.teal,R=document.documentElement;
+R.dataset.theme=dark?"dark":"light";R.style.setProperty("--acc",dark?A[2]:A[0]);R.style.setProperty("--acc-fg",dark?A[3]:A[1]);
+if(P.fs)R.style.fontSize=16*P.fs+"px";
 if(TG){TG.ready();TG.expand();try{const bg=getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();TG.setHeaderColor(bg);TG.setBackgroundColor(bg);
  TG.BackButton.show();TG.BackButton.onClick(()=>{$("sheet").innerHTML?closeSheet():location.href="/nunu"})}catch(e){}}
 const API=(p,m="GET",d)=>fetch("/obmen/api"+p,{method:m,headers:{"X-Init-Data":TG.initData,"Content-Type":"application/json"},body:d&&JSON.stringify(d)})
@@ -167,15 +173,15 @@ function alertMsg(e){try{TG.showAlert(String(e))}catch(_){}}
 function form(){const v={kind:"give",type:"thing",how:"gift",circle:"bridge"};
 const seg=(k,o)=>`<div class="seg" role="group">${Object.entries(o).map(([x,l])=>`<button type="button" class="chip" data-f="${k}" data-v="${x}" aria-pressed="${v[k]===x}">${l}</button>`).join("")}</div>`;
 sheet(`${close("Новое предложение")}<h2>Что у тебя?</h2>
-<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:14px;font-weight:500;color:var(--ink)">Что делаешь</span>${seg("kind",KIND)}</div>
-<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:14px;font-weight:500;color:var(--ink)">Это</span>${seg("type",TYPE)}</div>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:0.875rem;font-weight:500;color:var(--ink)">Что делаешь</span>${seg("kind",KIND)}</div>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:0.875rem;font-weight:500;color:var(--ink)">Это</span>${seg("type",TYPE)}</div>
 <label class="f">Название<input id="ti" maxlength="80" placeholder="Например: кабачки, 10 кг"></label>
 <label class="f">Пара слов<textarea id="tx" rows="3" maxlength="500" placeholder="Сколько, какое, на сколько времени"></textarea></label>
 <label class="f">Где и когда<input id="pl" maxlength="80" placeholder="Забрать самому, после 17:00"></label>
-<fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px"><legend style="font-size:14px;font-weight:500;padding:0;margin-bottom:8px">Как обмен</legend>
+<fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px"><legend style="font-size:0.875rem;font-weight:500;padding:0;margin-bottom:8px">Как обмен</legend>
 ${Object.entries(HOW).map(([k,[l,h]])=>`<label class="opt"><input type="radio" name="how" value="${k}" ${k==="gift"?"checked":""}><span><b>${l}</b><small>${h}</small></span></label>`).join("")}
 <label class="f" id="hnw" hidden><span id="hnl"></span><input id="hn" maxlength="80"></label></fieldset>
-<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:14px;font-weight:500;color:var(--ink)">Кому видно</span>${seg("circle",CIRC)}<span class="sub" id="ch"></span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:0.875rem;font-weight:500;color:var(--ink)">Кому видно</span>${seg("circle",CIRC)}<span class="sub" id="ch"></span></div>
 <button class="btn" id="pub">Опубликовать</button><p class="err" id="er"></p>`);
 const hint={bridge:"Увидят только друзья, с кем у тебя мост.",fof:"Увидят друзья и их друзья.",all:"Увидят все участники «Ну-ну»."};
 const sync=()=>{document.querySelectorAll("[data-f]").forEach(b=>b.setAttribute("aria-pressed",v[b.dataset.f]===b.dataset.v));$("ch").textContent=hint[v.circle];
