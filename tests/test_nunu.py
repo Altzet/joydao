@@ -22,8 +22,8 @@ def test_nunu_stage1():
 
 
 def test_my_plot():
-    """«Мой участок» (раздел «Динамическое равновесие»): вкладка в меню, анкета уходит на сервер вместе с садом."""
+    """«Мой участок» (раздел «Динамическое равновесие»): кнопка на карточке своего острова, анкета уходит на сервер вместе с садом."""
     t = TestClient(api.app).get("/nunu").text
-    for marker in ('["plot","Участок"', "function plotHome(", '"nunu-plot":plot', "DeviceOrientation", "LocationManager",
+    for marker in ('btn("pl","🏡 Мой участок")', "function plotHome(", '"nunu-plot":plot', "DeviceOrientation", "LocationManager",
                    "function plotMap(", "function pSun(", "function pMode(", "function pEdgeSeg(", "function pSlope(", "function merge3(", "base:sync.rev", "function markSeed(", "loc?plotMap({fresh:", "function pPoly(", "function pPlace(", "function pMeasure(", "/nunu/api/tile/", "function pMig(", "function plot3d(", "three@0.170.0", "function pD3Panel(", "function pWinAuto(", "function pDwTap(", "function pRoofSpan(", "const DECK1=", "NUNU_CFG", "function goalTree(", "nunu-goals", "function subForm(", "nunu-seen", "pWalls=o=>", "function pLockUI(", "function guestGo("):
         assert marker in t
