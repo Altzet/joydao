@@ -42,3 +42,5 @@ def test_obmen(tmp_path, monkeypatch):
     assert c.post(f"/obmen/api/offer/{ids['all']}/close", headers=anton).status_code == 200
     assert seen(chuzhoy) == set()
     assert "{{PLAY}}" not in c.get("/obmen").text
+    c.put("/nunu/api/state", json={"data": {"nunu-prefs": {"theme": "light", "acc": "coral", "fs": 1}}}, headers=boria)
+    assert c.get("/obmen/api/list", headers=boria).json()["prefs"] == {"theme": "light", "acc": "coral", "fs": 1}

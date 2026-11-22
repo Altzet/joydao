@@ -95,12 +95,12 @@ const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,
 /* тема, цвет и размер текста — те же, что выбраны в настройках игры (localStorage "nunu-prefs", один сайт) */
 const ACC={teal:["#1D7A5C","#fff","#5DCAA5","#04342C"],coral:["#B5482A","#fff","#F0997B","#4A1B0C"],blue:["#1F6FB8","#fff","#85B7EB","#042C53"],
  violet:["#5A4FC4","#fff","#AFA9EC","#26215C"],amber:["#8F530C","#fff","#EF9F27","#412402"]};
-let P={};try{P=JSON.parse(localStorage.getItem("nunu-prefs"))||{}}catch(e){}
-const dark=P.theme==="dark"||P.theme!=="light"&&(TG&&TG.colorScheme?TG.colorScheme==="dark":matchMedia("(prefers-color-scheme: dark)").matches),
- A=ACC[P.acc]||ACC.teal,R=document.documentElement;
-R.dataset.theme=dark?"dark":"light";R.style.setProperty("--acc",dark?A[2]:A[0]);R.style.setProperty("--acc-fg",dark?A[3]:A[1]);
-if(P.fs)R.style.fontSize=16*P.fs+"px";
-if(TG){TG.ready();TG.expand();try{const bg=getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();TG.setHeaderColor(bg);TG.setBackgroundColor(bg);
+function theme(P){P=P||{};const R=document.documentElement,A=ACC[P.acc]||ACC.teal,
+ dark=P.theme==="dark"||P.theme!=="light"&&(TG&&TG.colorScheme?TG.colorScheme==="dark":matchMedia("(prefers-color-scheme: dark)").matches);
+R.dataset.theme=dark?"dark":"light";R.style.setProperty("--acc",dark?A[2]:A[0]);R.style.setProperty("--acc-fg",dark?A[3]:A[1]);R.style.fontSize=16*(P.fs||1)+"px";
+try{const bg=getComputedStyle(R).getPropertyValue("--bg").trim();TG.setHeaderColor(bg);TG.setBackgroundColor(bg)}catch(e){}}
+try{theme(JSON.parse(localStorage.getItem("nunu-prefs")))}catch(e){theme()}  /* сразу — из памяти этого устройства, потом — с сервера */
+if(TG){TG.ready();TG.expand();try{theme(JSON.parse(localStorage.getItem("nunu-prefs")));
  TG.BackButton.show();TG.BackButton.onClick(()=>{$("sheet").innerHTML?closeSheet():location.href="/nunu"})}catch(e){}}
 const API=(p,m="GET",d)=>fetch("/obmen/api"+p,{method:m,headers:{"X-Init-Data":TG.initData,"Content-Type":"application/json"},body:d&&JSON.stringify(d)})
  .then(async r=>{if(r.ok)return r.json();let t="Не получилось. Попробуй ещё раз.";try{t=(await r.json()).detail||t}catch(e){}throw typeof t==="string"?t:"Проверь поля формы"});
@@ -118,7 +118,7 @@ function outside(){$("app").innerHTML=`<div class="hero"><div><h1>Обмен и�
 <p>То, что у тебя в избытке — урожай, вещи, умения, — кому-то рядом как раз нужно. Обмен живёт внутри «Ну-ну»: там видно, кто тебе друг по мосту.</p></div>
 <a class="btn" href="${esc(PLAY)}">Открыть в Telegram</a></div>`}
 
-function load(){API("/list").then(r=>{D=r;$("me").textContent=r.me.name+" · мостов: "+r.me.bridges;list()},e=>{$("app").innerHTML=`<p class="empty">${esc(e)}</p>`})}
+function load(){API("/list").then(r=>{D=r;if(r.prefs&&r.prefs.theme)theme(r.prefs);$("me").textContent=r.me.name+" · мостов: "+r.me.bridges;list()},e=>{$("app").innerHTML=`<p class="empty">${esc(e)}</p>`})}
 
 function chips(key,opts){return opts.map(([v,l])=>`<button class="chip" data-k="${key}" data-v="${v}" aria-pressed="${F[key]===v}">${l}</button>`).join("")}
 function list(){

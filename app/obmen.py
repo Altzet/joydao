@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import html
+import json
 from contextlib import closing
 from pathlib import Path
 
@@ -85,7 +86,10 @@ def offers(x_init_data: str | None = Header(default=None)):
                                               "circle", "username", "name", "created_at")}
                            | {"rel": rel, "replied": bool(o["replied"]),
                               "replies": o["replies"] if rel == "me" else None})
-        return {"me": {"id": u.id, "name": u.first_name, "bridges": len(fr)}, "offers": out}
+        st = c.execute("SELECT data FROM state WHERE tg_id=?", (u.id,)).fetchone()
+        prefs = (json.loads(st["data"]) if st else {}).get("nunu-prefs") or {}  # тема из настроек игры, с любого устройства
+        return {"me": {"id": u.id, "name": u.first_name, "bridges": len(fr)}, "offers": out,
+                "prefs": {k: prefs.get(k) for k in ("theme", "acc", "fs")}}
 
 
 class OfferIn(BaseModel):
