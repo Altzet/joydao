@@ -831,13 +831,13 @@ def world(x_init_data: str | None = Header(default=None)):
                 "friends": sorted(fr.values(), key=lambda f: -f["boards"])}
 
 
-async def _notify(tg_id: int, text: str, url: str) -> None:
+async def _notify(tg_id: int, text: str, url: str, html: bool = False) -> None:
     """Сообщение хозяину игры. Не написал боту /start — Telegram не пустит, это не ошибка игры."""
     from aiogram import Bot
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
     bot = Bot(token=config.BOT_TOKEN)
     try:
-        await bot.send_message(tg_id, text, reply_markup=InlineKeyboardMarkup(
+        await bot.send_message(tg_id, text, parse_mode="HTML" if html else None, reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[[InlineKeyboardButton(text="Открыть «Ну-ну»", url=url)]]))
     except Exception as e:
         log.info("Не отправил уведомление %s: %s", tg_id, e)

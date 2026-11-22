@@ -240,7 +240,7 @@ def render(lp: dict) -> str:
             if k not in off and (lp[k].get("items") or lp[k].get("text"))]
     nav = "".join(f'<a href="#{k}">{E(lp[k]["title"] or t)}</a>' for k, t in navs) + '<a href="/rules">Правила</a>'
     foot = "".join(f'<a href="{E(L[k])}">{t}</a>' for k, t in (("channel", "Канал"), ("chat", "Чат")) if L.get(k)) + \
-        '<a href="/uchastok">Планировщик участка</a><a href="/esli-to">План «если — то»</a><a href="/rules">Правила</a>'
+        '<a href="/obmen">Обмен</a><a href="/uchastok">Планировщик участка</a><a href="/esli-to">План «если — то»</a><a href="/rules">Правила</a>'
     seo = lp["seo"]
     title, desc, img = seo["title"] or lp["brand"], seo["desc"], absu(seo.get("img") or "/og.png")
     ld = [{"@context": "https://schema.org", "@type": "WebSite", "name": lp["brand"], "url": SITE + "/", "inLanguage": "ru"},

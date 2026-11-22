@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Обмен излишками · Ну-ну</title>
+<meta name="description" content="Обмен излишками между друзьями: отдам, ищу, умею. Вещи и услуги без денег.">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500&display=swap" rel="stylesheet">
+<style>
+/* токены JoyDAO (дизайн-система): светлая и тёмная */
+:root{--bg:#EDF2EE;--card:#FFFFFF;--ink:#1D2A25;--muted:#5D6B65;--line:#D4DDD8;--acc:#1D7A5C;--acc-fg:#FFFFFF;
+ --sand:#F3E8CF;--sand-fg:#6B4A12;--sea:#CFE6EE;--sea-fg:#1D2A25;--leaf:#DCEFE6;--leaf-fg:#145A43;--bridge:#BA7517;--err:#C0392B}
+[data-theme=dark]{--bg:#121A17;--card:#1B2521;--ink:#E6EEEA;--muted:#9DADA6;--line:#2E3B36;--acc:#5DCAA5;--acc-fg:#04342C;
+ --sand:#3A2F1A;--sand-fg:#F2D9A6;--sea:#0F2A35;--sea-fg:#CFE6EE;--leaf:#16352B;--leaf-fg:#9FE1CB;--bridge:#EF9F27;--err:#F09595}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Golos Text",system-ui,sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+a{color:var(--acc)}
+.w{max-width:1200px;margin:0 auto;padding:0 16px}
+header{background:var(--card);border-bottom:1px solid var(--line)}
+header .w{display:flex;align-items:center;gap:12px;min-height:60px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink)}
+.logo b{font:500 18px Unbounded,sans-serif}.logo span{color:var(--acc);font-weight:500}
+header .me{margin-left:auto;font-size:14px;color:var(--muted)}
+h1{font:500 clamp(26px,4vw,38px)/1.2 Unbounded,sans-serif;margin:0}
+.hero{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;padding:28px 0 20px}
+.hero p{margin:10px 0 0;max-width:620px;color:var(--muted);font-size:17px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border:0;border-radius:12px;
+ background:var(--acc);color:var(--acc-fg);font-weight:600;text-decoration:none;cursor:pointer}
+.btn.o{background:none;color:var(--acc);border:1px solid var(--acc)}
+.btn:disabled{opacity:.5;cursor:default}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.row .lbl{font-size:14px;color:var(--muted);margin-right:4px}
+.chip{min-height:40px;padding:0 15px;border:0;border-radius:99px;background:var(--bg);font-weight:500;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--acc);color:var(--acc-fg)}
+.search{flex:1 1 220px;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.search input{flex:1;min-width:0;border:0;outline:none;background:none}
+.count{margin:18px 0 10px;font-size:14px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding-bottom:40px}
+.card{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;
+ text-align:left;cursor:pointer}
+.card:hover{border-color:var(--acc)}
+.tile{height:104px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.tile svg{width:42px;height:42px}
+.give{background:var(--sand);color:var(--sand-fg)}.seek{background:var(--sea);color:var(--sea-fg)}.skill{background:var(--leaf);color:var(--leaf-fg)}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.sub{font-size:12px;color:var(--muted)}
+.card h3{margin:0;font-size:17px;line-height:1.3;font-weight:600}
+.card p{margin:0;font-size:14px;color:var(--muted);flex-grow:1}
+.how{font-size:14px}.how i{font-style:normal;color:var(--muted)}
+.who{display:flex;align-items:center;gap:8px;padding-top:9px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.av{width:28px;height:28px;flex:none;border-radius:99px;background:var(--sand);color:var(--sand-fg);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+/* лист поверх ленты: карточка и форма */
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}
+.sheet>div{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+@media(min-width:700px){.sheet{align-items:center}.sheet>div{border-radius:20px}}
+.sheet h2{font:500 21px/1.25 Unbounded,sans-serif;margin:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.x{width:44px;height:44px;border:0;border-radius:99px;background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.info{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 14px}
+.info div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+.info div:last-child{border:0}.info span:first-child{color:var(--muted)}.info span:last-child{text-align:right}
+.person{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}.person>span:last-child{display:flex;flex-direction:column}
+.bar{height:8px;border-radius:99px;background:var(--bg);overflow:hidden}.bar i{display:block;height:100%;background:var(--bridge);border-radius:99px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500}
+label.f input,label.f textarea{min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-weight:400;resize:none}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
+.seg .chip{border-radius:12px;background:var(--card)}.seg .chip[aria-pressed=true]{background:var(--acc);color:var(--acc-fg)}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--card);border:2px solid var(--line);cursor:pointer}
+.opt:has(input:checked){border-color:var(--acc)}.opt input{margin:4px 0 0;width:18px;height:18px;accent-color:var(--acc)}
+.opt small{display:block;color:var(--muted);font-size:13px}
+.err{color:var(--err);font-size:14px;margin:0}
+.ok{background:var(--leaf);color:var(--leaf-fg);border-radius:12px;padding:12px 14px;font-size:15px}
+footer{border-top:1px solid var(--line);background:var(--card);font-size:14px;color:var(--muted)}
+footer .w{padding:18px 16px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<header><div class="w">
+<a class="logo" href="/"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#86C3D4"/><ellipse cx="12" cy="20" rx="8" ry="4" fill="#F3E8CF"/><ellipse cx="12" cy="18.5" rx="6" ry="2.8" fill="#A9D872"/><path d="M12 18v-5M12 14c-2 0-3-1-3-2.5 2 0 3 1 3 2.5zM12 14c2 0 3-1 3-2.5-2 0-3 1-3 2.5z" stroke="#2E7D5B" stroke-width="1.2" fill="none"/><path d="M18.5 18.5q3.5-2.5 6.5-1" stroke="#BA7517" stroke-width="1.6" fill="none"/><ellipse cx="26" cy="19.5" rx="3" ry="1.6" fill="#F3E8CF"/></svg><b>JoyDAO</b><span>· Ну-ну</span></a>
+<span class="me" id="me"></span>
+</div></header>
+<main class="w" id="app"></main>
+<footer><div class="w">Закон сообщества: между друзьями денег нет. Договариваетесь напрямую. <a href="/rules">Правила</a></div></footer>
+<div id="sheet"></div>
+<script>
+const PLAY="{{PLAY}}";
+const TG=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData?Telegram.WebApp:null;
+const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dark=TG?TG.colorScheme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
+document.documentElement.dataset.theme=dark?"dark":"light";
+if(TG){TG.ready();TG.expand();try{const bg=getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();TG.setHeaderColor(bg);TG.setBackgroundColor(bg);
+ TG.BackButton.show();TG.BackButton.onClick(()=>{$("sheet").innerHTML?closeSheet():location.href="/nunu"})}catch(e){}}
+const API=(p,m="GET",d)=>fetch("/obmen/api"+p,{method:m,headers:{"X-Init-Data":TG.initData,"Content-Type":"application/json"},body:d&&JSON.stringify(d)})
+ .then(async r=>{if(r.ok)return r.json();let t="Не получилось. Попробуй ещё раз.";try{t=(await r.json()).detail||t}catch(e){}throw typeof t==="string"?t:"Проверь поля формы"});
+const KIND={give:"Отдам",seek:"Ищу",skill:"Умею"},TYPE={thing:"Вещь",service:"Услуга"},
+ HOW={gift:["Дарю","Просто отдаю, ничего взамен"],swap:["Меняю на…","Напишу, что хотел бы получить"],hours:["Часами","Банк времени: час за час"]},
+ CIRC={bridge:"Мостам",fof:"Друзьям друзей",all:"Всем"},
+ ICON={give:"M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8c-1.5-3-5-3.5-5-1.5S10 8 12 8zM12 8c1.5-3 5-3.5 5-1.5S14 8 12 8z",
+  seek:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4",skill:"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"};
+const svg=(d,w=42)=>`<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+let D={me:null,offers:[]},F={kind:"all",type:"all",circle:"all",q:""};
+const howText=o=>o.how==="gift"?"Дарю":o.how==="swap"?"Меняю"+(o.how_note?" на "+o.how_note:""):"Часами"+(o.how_note?" · "+o.how_note:"");
+const relText=o=>o.rel==="me"?"Твоё предложение":o.rel==="bridge"?"Мост: ты и "+o.name:o.rel==="fof"?o.name+" · друг друга":o.name+" · новый человек";
+
+function outside(){$("app").innerHTML=`<div class="hero"><div><h1>Обмен излишками</h1>
+<p>То, что у тебя в избытке — урожай, вещи, умения, — кому-то рядом как раз нужно. Обмен живёт внутри «Ну-ну»: там видно, кто тебе друг по мосту.</p></div>
+<a class="btn" href="${esc(PLAY)}">Открыть в Telegram</a></div>`}
+
+function load(){API("/list").then(r=>{D=r;$("me").textContent=r.me.name+" · мостов: "+r.me.bridges;list()},e=>{$("app").innerHTML=`<p class="empty">${esc(e)}</p>`})}
+
+function chips(key,opts){return opts.map(([v,l])=>`<button class="chip" data-k="${key}" data-v="${v}" aria-pressed="${F[key]===v}">${l}</button>`).join("")}
+function list(){
+$("app").innerHTML=`<div class="hero"><div><h1>Обмен излишками</h1>
+<p>То, что у тебя в избытке — урожай, вещи, умения, — кому-то рядом как раз нужно. Сначала видят друзья по мостам, потом их друзья, потом все.</p></div>
+<button class="btn" id="add">${svg("M12 5v14M5 12h14",18)}Предложить</button></div>
+<div class="panel">
+<div class="row" role="group" aria-label="Что">${chips("kind",[["all","Всё"],["give","Отдам"],["seek","Ищу"],["skill","Умею"],["mine","Моё"]])}</div>
+<div class="row" role="group" aria-label="Тип">${chips("type",[["all","Вещи и услуги"],["thing","Вещи"],["service","Услуги"]])}</div>
+<div class="row"><span class="lbl">Чей круг:</span>${chips("circle",[["bridge","Мосты"],["fof","Друзья друзей"],["all","Все"]])}
+<label class="search">${svg(ICON.seek,18)}<span class="sr">Поиск</span><input id="q" type="search" placeholder="Кабачки, дрель, хлеб…" value="${esc(F.q)}"></label></div>
+</div><p class="count" id="count"></p><div class="grid" id="grid"></div>`;
+$("add").onclick=form;
+document.querySelectorAll(".chip[data-k]").forEach(b=>b.onclick=()=>{F[b.dataset.k]=b.dataset.v;list()});
+$("q").oninput=e=>{F.q=e.target.value;cards()};cards()}
+
+function cards(){const R={me:-1,bridge:0,fof:1,all:2},q=F.q.trim().toLowerCase();
+const xs=D.offers.filter(o=>(F.kind==="all"||(F.kind==="mine"?o.rel==="me":o.kind===F.kind))&&(F.type==="all"||o.type===F.type)
+ &&R[o.rel]<=R[F.circle]&&(!q||(o.title+" "+o.text+" "+o.place).toLowerCase().includes(q)));
+$("count").textContent=xs.length?"Найдено: "+xs.length:"";
+$("grid").innerHTML=xs.length?xs.map(o=>`<button class="card" data-id="${o.id}">
+<div class="tile ${o.kind}">${svg(ICON[o.kind])}</div>
+<div><span class="tag ${o.kind}">${KIND[o.kind]}</span> <span class="sub">${TYPE[o.type]}</span></div>
+<h3>${esc(o.title)}</h3><p>${esc(o.text)}</p>
+<div class="how"><i>Как: </i>${esc(howText(o))}</div>
+<div class="who"><span class="av">${esc(o.name[0])}</span><span>${esc(relText(o))}</span></div></button>`).join("")
+ :`<p class="empty" style="grid-column:1/-1">${D.offers.length?"Ничего не нашлось — попробуй круг пошире.":"Пока пусто. Предложи первым: что у тебя в избытке?"}</p>`;
+document.querySelectorAll(".card").forEach(b=>b.onclick=()=>item(D.offers.find(o=>o.id==b.dataset.id)))}
+
+function sheet(h){$("sheet").innerHTML=`<div class="sheet" id="sh"><div role="dialog" aria-modal="true">${h}</div></div>`;
+$("sh").onclick=e=>{if(e.target.id==="sh")closeSheet()};document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet)}
+function closeSheet(){$("sheet").innerHTML=""}
+const close=t=>`<div class="top"><span class="sub">${t}</span><button class="x" data-close aria-label="Закрыть">${svg("M6 6l12 12M18 6L6 18",20)}</button></div>`;
+
+function item(o){const mine=o.rel==="me";
+sheet(`${close("Предложение")}<div class="tile ${o.kind}" style="height:150px">${svg(ICON[o.kind],60)}</div>
+<div><span class="tag ${o.kind}">${KIND[o.kind]}</span> <span class="sub">${TYPE[o.type]}</span></div>
+<h2>${esc(o.title)}</h2>${o.text?`<p style="margin:0;color:var(--muted)">${esc(o.text)}</p>`:""}
+<div class="info">${o.place?`<div><span>Где и когда</span><span>${esc(o.place)}</span></div>`:""}<div><span>Как</span><span><b>${esc(howText(o))}</b></span></div>
+${mine?`<div><span>Видят</span><span>${CIRC[o.circle]}</span></div><div><span>Откликов</span><span>${o.replies}</span></div>`:""}</div>
+${mine?`<button class="btn o" id="cl">Закрыть предложение</button>`
+:`<div class="person"><span class="av" style="width:40px;height:40px">${esc(o.name[0])}</span>
+<span><b>${esc(o.name)}</b><span class="sub">${esc(relText(o))}${o.username?" · @"+esc(o.username):""}</span></span></div>
+${o.replied?`<div class="ok">Ты уже откликнулся — ${esc(o.name)} получил сообщение от бота.</div>`
+:`<label class="f">Пара слов (можно пусто)<textarea id="rt" rows="2" maxlength="300" placeholder="Например: заберу в субботу, взамен — банка мёда"></textarea></label>
+<button class="btn" id="rp">Откликнуться</button><p class="err" id="er"></p>`}`}`);
+if(mine)$("cl").onclick=()=>API("/offer/"+o.id+"/close","POST").then(()=>{closeSheet();load()},e=>alertMsg(e));
+else if(!o.replied)$("rp").onclick=()=>{$("rp").disabled=true;API("/offer/"+o.id+"/reply","POST",{text:$("rt").value})
+ .then(()=>{o.replied=true;item(o)},e=>{$("rp").disabled=false;$("er").textContent=e})}}
+function alertMsg(e){try{TG.showAlert(String(e))}catch(_){}}
+
+function form(){const v={kind:"give",type:"thing",how:"gift",circle:"bridge"};
+const seg=(k,o)=>`<div class="seg" role="group">${Object.entries(o).map(([x,l])=>`<button type="button" class="chip" data-f="${k}" data-v="${x}" aria-pressed="${v[k]===x}">${l}</button>`).join("")}</div>`;
+sheet(`${close("Новое предложение")}<h2>Что у тебя?</h2>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:14px;font-weight:500;color:var(--ink)">Что делаешь</span>${seg("kind",KIND)}</div>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:14px;font-weight:500;color:var(--ink)">Это</span>${seg("type",TYPE)}</div>
+<label class="f">Название<input id="ti" maxlength="80" placeholder="Например: кабачки, 10 кг"></label>
+<label class="f">Пара слов<textarea id="tx" rows="3" maxlength="500" placeholder="Сколько, какое, на сколько времени"></textarea></label>
+<label class="f">Где и когда<input id="pl" maxlength="80" placeholder="Забрать самому, после 17:00"></label>
+<fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px"><legend style="font-size:14px;font-weight:500;padding:0;margin-bottom:8px">Как обмен</legend>
+${Object.entries(HOW).map(([k,[l,h]])=>`<label class="opt"><input type="radio" name="how" value="${k}" ${k==="gift"?"checked":""}><span><b>${l}</b><small>${h}</small></span></label>`).join("")}
+<label class="f" id="hnw" hidden><span id="hnl"></span><input id="hn" maxlength="80"></label></fieldset>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:14px;font-weight:500;color:var(--ink)">Кому видно</span>${seg("circle",CIRC)}<span class="sub" id="ch"></span></div>
+<button class="btn" id="pub">Опубликовать</button><p class="err" id="er"></p>`);
+const hint={bridge:"Увидят только друзья, с кем у тебя мост.",fof:"Увидят друзья и их друзья.",all:"Увидят все участники «Ну-ну»."};
+const sync=()=>{document.querySelectorAll("[data-f]").forEach(b=>b.setAttribute("aria-pressed",v[b.dataset.f]===b.dataset.v));$("ch").textContent=hint[v.circle];
+ $("hnw").hidden=v.how==="gift";$("hnl").textContent=v.how==="swap"?"На что меняешь":"Сколько часов";$("hn").placeholder=v.how==="swap"?"Банка мёда, овощи…":"Около 2 ч"};
+document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{v[b.dataset.f]=b.dataset.v;sync()});
+document.querySelectorAll("input[name=how]").forEach(r=>r.onchange=()=>{v.how=r.value;sync()});sync();
+$("pub").onclick=()=>{const t=$("ti").value.trim();if(t.length<2){$("er").textContent="Напиши название";return}$("pub").disabled=true;
+ API("/offer","POST",{...v,title:t,text:$("tx").value,place:$("pl").value,how_note:$("hn").value})
+ .then(()=>{closeSheet();F.kind="mine";load()},e=>{$("pub").disabled=false;$("er").textContent=e})}}
+
+TG?load():outside();
+</script>
+</body>
+</html>

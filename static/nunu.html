@@ -1927,6 +1927,7 @@ function pSatDraw(){const g=$("psat");if(g)g.innerHTML=pBg();const a=$("pvw");if
 
 const NAV=[["map","Карта","M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15",()=>world()],["garden","Сад","M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z",()=>garden()],
 ["week","Удиви себя","M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z",()=>{curFid=null;stepWeek()}],
+["obmen","Обмен","M7 4L3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8",()=>{location.href="/obmen"}],
 ["plot","Участок","M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M12 9v3",()=>{guestExit();plotMap()}],
 ["settings","Настройки","M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM19 13.5l2-1.5-2-3.5-2.3.9a7 7 0 0 0-1.6-.9L14.7 6h-4l-.4 2.5a7 7 0 0 0-1.6.9L6.4 8.5 4.4 12l2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.5 2.3-.9a7 7 0 0 0 1.6.9l.4 2.5h4l.4-2.5a7 7 0 0 0 1.6-.9l2.3.9 2-3.5-2-1.5a7 7 0 0 0 0-1.8z",()=>settings()]];NAV.forEach(n=>{if(TX["nav."+n[0]])n[1]=TX["nav."+n[0]]});
 const nav={cur:undefined};
@@ -2105,6 +2106,7 @@ if(d){adopt(dirty&&sync.base?mergeAll(sync.base,mine(),d):dirty?mergeAll({},mine
 takeInbox(r.inbox);if(dirty)flush();
 if(!rulesOk())await new Promise(res=>rulesGate(res));
 const sp=(TG.initDataUnsafe||{}).start_param;
+if(sp==="obmen"){location.href="/obmen";return}
 if(sp&&sp[0]==="m"){const r=await API("/meet/"+sp+"/accept","POST");if(r.bridge){focus=r.friend.id;return world()}
 card(`<h2>Приглашение принято</h2><p style="margin:0">Мост появится, когда ${esc(r.friend.name)} тоже откроет приглашение. Бот напишет тебе.</p><button class="main-btn" id="mp">На карту</button>`);$("mp").onclick=world;return}
 if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.friend)focus=r.friend.id;return world()}
