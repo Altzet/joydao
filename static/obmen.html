@@ -102,8 +102,10 @@ try{const bg=getComputedStyle(R).getPropertyValue("--bg").trim();TG.setHeaderCol
 try{theme(JSON.parse(localStorage.getItem("nunu-prefs")))}catch(e){theme()}  /* сразу — из памяти этого устройства, потом — с сервера */
 if(TG){TG.ready();TG.expand();try{theme(JSON.parse(localStorage.getItem("nunu-prefs")));
  TG.BackButton.show();TG.BackButton.onClick(()=>{$("sheet").innerHTML?closeSheet():location.href="/nunu"})}catch(e){}}
-const API=(p,m="GET",d)=>fetch("/obmen/api"+p,{method:m,headers:{"X-Init-Data":TG.initData,"Content-Type":"application/json"},body:d&&JSON.stringify(d)})
- .then(async r=>{if(r.ok)return r.json();let t="Не получилось. Попробуй ещё раз.";try{t=(await r.json()).detail||t}catch(e){}throw typeof t==="string"?t:"Проверь поля формы"});
+/* на сайте — вход виджетом Telegram: данные с подписью храним на этом устройстве и шлём с каждым запросом */
+const LOGIN=()=>{try{return localStorage.getItem("obmen-login")||""}catch(e){return""}};
+const API=(p,m="GET",d)=>fetch("/obmen/api"+p,{method:m,headers:{...(TG?{"X-Init-Data":TG.initData}:{"X-Tg-Login":LOGIN()}),"Content-Type":"application/json"},body:d&&JSON.stringify(d)})
+ .then(async r=>{if(r.ok)return r.json();if(r.status===401&&!TG){logout();throw"Войди через Telegram"}let t="Не получилось. Попробуй ещё раз.";try{t=(await r.json()).detail||t}catch(e){}throw typeof t==="string"?t:"Проверь поля формы"});
 const KIND={give:"Отдам",seek:"Ищу",skill:"Умею"},TYPE={thing:"Вещь",service:"Услуга"},
  HOW={gift:["Дарю","Просто отдаю, ничего взамен"],swap:["Меняю на…","Напишу, что хотел бы получить"],hours:["Часами","Банк времени: час за час"]},
  CIRC={bridge:"Мостам",fof:"Друзьям друзей",all:"Всем"},
@@ -114,11 +116,17 @@ let D={me:null,offers:[]},F={kind:"all",type:"all",circle:"all",q:""};
 const howText=o=>o.how==="gift"?"Дарю":o.how==="swap"?"Меняю"+(o.how_note?" на "+o.how_note:""):"Часами"+(o.how_note?" · "+o.how_note:"");
 const relText=o=>o.rel==="me"?"Твоё предложение":o.rel==="bridge"?"Мост: ты и "+o.name:o.rel==="fof"?o.name+" · друг друга":o.name+" · новый человек";
 
-function outside(){$("app").innerHTML=`<div class="hero"><div><h1>Обмен излишками</h1>
-<p>То, что у тебя в избытке — урожай, вещи, умения, — кому-то рядом как раз нужно. Обмен живёт внутри «Ну-ну»: там видно, кто тебе друг по мосту.</p></div>
-<a class="btn" href="${esc(PLAY)}">Открыть в Telegram</a></div>`}
+function outside(){$("me").textContent="";$("app").innerHTML=`<div class="hero"><div><h1>Обмен излишками</h1>
+<p>То, что у тебя в избытке — урожай, вещи, умения, — кому-то рядом как раз нужно. Войди через Telegram — увидишь, что предлагают друзья по мостам, их друзья и все участники «Ну-ну».</p></div></div>
+<div class="panel" style="align-items:flex-start;padding:20px"><div id="tgw"></div>
+<p class="sub" style="font-size:.875rem;margin:0">Или <a href="${esc(PLAY)}">открой обмен в приложении «Ну-ну»</a> в Telegram.</p></div>`;
+const sc=document.createElement("script");sc.async=true;sc.src="https://telegram.org/js/telegram-widget.js?22";
+sc.setAttribute("data-telegram-login","{{BOT}}");sc.setAttribute("data-size","large");sc.setAttribute("data-radius","12");
+sc.setAttribute("data-request-access","write");sc.setAttribute("data-onauth","onTgAuth(user)");$("tgw").appendChild(sc)}
+window.onTgAuth=u=>{try{localStorage.setItem("obmen-login",encodeURIComponent(JSON.stringify(u)))}catch(e){}load()};
+function logout(){try{localStorage.removeItem("obmen-login")}catch(e){}outside()}
 
-function load(){API("/list").then(r=>{D=r;if(r.prefs&&r.prefs.theme)theme(r.prefs);$("me").textContent=r.me.name+" · мостов: "+r.me.bridges;list()},e=>{$("app").innerHTML=`<p class="empty">${esc(e)}</p>`})}
+function load(){API("/list").then(r=>{D=r;if(r.prefs&&r.prefs.theme)theme(r.prefs);$("me").innerHTML=esc(r.me.name+" · мостов: "+r.me.bridges)+(TG?"":` · <a href="#" id="out">Выйти</a>`);if(!TG)$("out").onclick=e=>{e.preventDefault();logout()};list()},e=>{if(!TG&&!LOGIN())return;$("app").innerHTML=`<p class="empty">${esc(e)}</p>`})}
 
 function chips(key,opts){return opts.map(([v,l])=>`<button class="chip" data-k="${key}" data-v="${v}" aria-pressed="${F[key]===v}">${l}</button>`).join("")}
 function list(){
@@ -192,7 +200,7 @@ $("pub").onclick=()=>{const t=$("ti").value.trim();if(t.length<2){$("er").textCo
  API("/offer","POST",{...v,title:t,text:$("tx").value,place:$("pl").value,how_note:$("hn").value})
  .then(()=>{closeSheet();F.kind="mine";load()},e=>{$("pub").disabled=false;$("er").textContent=e})}}
 
-TG?load():outside();
+TG||LOGIN()?load():outside();
 </script>
 </body>
 </html>

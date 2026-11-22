@@ -7,8 +7,13 @@
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import html
 import json
+import time
+import urllib.parse
+from types import SimpleNamespace
 from contextlib import closing
 from pathlib import Path
 
@@ -16,7 +21,7 @@ from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from . import nunu
+from . import config, nunu
 
 router = APIRouter()
 PAGE = Path(__file__).resolve().parent.parent / "static" / "obmen.html"
@@ -32,6 +37,31 @@ CREATE TABLE IF NOT EXISTS offers (id INTEGER PRIMARY KEY AUTOINCREMENT, owner I
 CREATE TABLE IF NOT EXISTS offer_replies (offer INTEGER NOT NULL, by INTEGER NOT NULL, text TEXT NOT NULL DEFAULT '',
     created_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (offer, by));
 """
+
+
+LOGIN_DAYS = 30  # ponytail: вход на сайте через Telegram живёт месяц, потом нажать «Войти» ещё раз
+
+
+def _who(init_data: str | None, tg_login: str | None):
+    """В Telegram — initData, как в игре. На сайте — данные виджета «Войти через Telegram»
+    (подпись: HMAC-SHA256 ключом sha256(токена бота), core.telegram.org/widgets/login)."""
+    if init_data or not tg_login:
+        return nunu._user(init_data)
+    try:
+        d = {k: str(v) for k, v in json.loads(urllib.parse.unquote(tg_login)).items()}
+        h = d.pop("hash")
+        check = "\n".join(f"{k}={d[k]}" for k in sorted(d))
+        good = hmac.new(hashlib.sha256(config.BOT_TOKEN.encode()).digest(), check.encode(), hashlib.sha256).hexdigest()
+        ok = hmac.compare_digest(h, good) and time.time() - int(d["auth_date"]) < LOGIN_DAYS * 86400
+        u = SimpleNamespace(id=int(d["id"]), first_name=d.get("first_name", "")[:30] or "Участник", username=d.get("username"))
+    except Exception:
+        ok = False
+    if not ok:
+        raise HTTPException(401, "Войди через Telegram ещё раз")
+    with closing(nunu._db()) as c:
+        if nunu._level(c, u.id) >= 3:
+            raise HTTPException(403, "Доступ к «Ну-ну» закрыт по жалобам участников.")
+    return u
 
 
 def _db():
@@ -61,14 +91,16 @@ def _visible(o, rel: str) -> bool:
 
 @router.get("/obmen")
 def page():
-    """Вне Telegram страница зовёт открыть обмен в «Ну-ну» — по ссылке, которая сразу ведёт сюда."""
-    return HTMLResponse(PAGE.read_text(encoding="utf-8").replace("{{PLAY}}", nunu.link("obmen")),
+    """Вне Telegram — вход виджетом Telegram (домен сайта задан боту в @BotFather → /setdomain)."""
+    return HTMLResponse(PAGE.read_text(encoding="utf-8").replace("{{PLAY}}", nunu.link("obmen"))
+                        .replace("{{BOT}}", config.BOT_USERNAME),
                         headers={"Cache-Control": "no-cache"})
 
 
 @router.get("/obmen/api/list")
-def offers(x_init_data: str | None = Header(default=None)):
-    u = nunu._user(x_init_data)
+def offers(x_init_data: str | None = Header(default=None),
+           x_tg_login: str | None = Header(default=None)):
+    u = _who(x_init_data, x_tg_login)
     with closing(_db()) as c:
         nunu._seen(c, u)
         fr, fof = _circles(c, u.id)
@@ -104,8 +136,9 @@ class OfferIn(BaseModel):
 
 
 @router.post("/obmen/api/offer")
-def create(body: OfferIn, x_init_data: str | None = Header(default=None)):
-    u = nunu._user(x_init_data)
+def create(body: OfferIn, x_init_data: str | None = Header(default=None),
+           x_tg_login: str | None = Header(default=None)):
+    u = _who(x_init_data, x_tg_login)
     if body.kind not in KINDS or body.type not in TYPES or body.how not in HOWS or body.circle not in CIRCLES:
         raise HTTPException(422, "Неверный выбор")
     with closing(_db()) as c:
@@ -123,8 +156,9 @@ def create(body: OfferIn, x_init_data: str | None = Header(default=None)):
 
 
 @router.post("/obmen/api/offer/{oid}/close")
-def close(oid: int, x_init_data: str | None = Header(default=None)):
-    u = nunu._user(x_init_data)
+def close(oid: int, x_init_data: str | None = Header(default=None),
+           x_tg_login: str | None = Header(default=None)):
+    u = _who(x_init_data, x_tg_login)
     with closing(_db()) as c, c:
         n = c.execute("UPDATE offers SET closed=1 WHERE id=? AND owner=?", (oid, u.id)).rowcount
     if not n:
@@ -137,9 +171,10 @@ class ReplyIn(BaseModel):
 
 
 @router.post("/obmen/api/offer/{oid}/reply")
-def reply(oid: int, body: ReplyIn, x_init_data: str | None = Header(default=None)):
+def reply(oid: int, body: ReplyIn, x_init_data: str | None = Header(default=None),
+           x_tg_login: str | None = Header(default=None)):
     """Отклик: один на человека и предложение. Автору пишет бот, с упоминанием — ответить можно в один тап."""
-    u = nunu._user(x_init_data)
+    u = _who(x_init_data, x_tg_login)
     with closing(_db()) as c:
         nunu._muted(c, u.id)
         o = c.execute("SELECT * FROM offers WHERE id=? AND closed=0", (oid,)).fetchone()

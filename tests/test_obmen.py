@@ -44,3 +44,26 @@ def test_obmen(tmp_path, monkeypatch):
     assert "{{PLAY}}" not in c.get("/obmen").text
     c.put("/nunu/api/state", json={"data": {"nunu-prefs": {"theme": "light", "acc": "coral", "fs": 1}}}, headers=boria)
     assert c.get("/obmen/api/list", headers=boria).json()["prefs"] == {"theme": "light", "acc": "coral", "fs": 1}
+
+
+def test_site_login(tmp_path, monkeypatch):
+    """На сайте: вход виджетом Telegram — подпись ключом sha256(токена), протухает через LOGIN_DAYS."""
+    import hashlib, hmac, json, time
+    from urllib.parse import quote
+    from app import config
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    c = TestClient(pause.app)
+
+    def login(uid, name, ago=0):
+        d = {"id": uid, "first_name": name, "auth_date": int(time.time()) - ago}
+        check = "\n".join(f"{k}={d[k]}" for k in sorted(d))
+        d["hash"] = hmac.new(hashlib.sha256(config.BOT_TOKEN.encode()).digest(), check.encode(), hashlib.sha256).hexdigest()
+        return {"X-Tg-Login": quote(json.dumps(d))}
+    r = c.get("/obmen/api/list", headers=login(7, "Мирослава"))
+    assert r.status_code == 200 and r.json()["me"]["name"] == "Мирослава"
+    bad = login(7, "Мирослава")
+    bad["X-Tg-Login"] = bad["X-Tg-Login"].replace("7", "8", 1)
+    assert c.get("/obmen/api/list", headers=bad).status_code == 401
+    assert c.get("/obmen/api/list", headers=login(7, "М", ago=31 * 86400)).status_code == 401
+    assert c.get("/obmen/api/list").status_code == 401
+    assert "{{BOT}}" not in c.get("/obmen").text
