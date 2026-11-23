@@ -371,7 +371,7 @@ function go(){setNav(null);if(!st.name||!(st.seed>=0)||!st.started)return home()
 if(st.join&&st.friend&&st.friend.pending)return st.story&&st.sg===undefined?storyGuess():sendPlay();
 if(API&&(M==="hero"||M==="duo"&&!st.friend))return shareTG(M);
 if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")guessResult();else result();tail(M)}
-function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<button class="main-btn" id="mp">На карту</button>`:""}<button class="${API?"n":"main-btn"}" id="sw">Удиви себя</button>${M!=="guess"?`<button class="n" id="gd">Мой сад: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=()=>stepWeek(curFid&&st.friend?st.friend.name:"");if(M!=="guess")$("gd").onclick=garden;if(API)$("mp").onclick=world}
+function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<button class="main-btn" id="mp">На карту</button>`:""}<button class="${API?"n":"main-btn"}" id="sw">Удиви себя</button>${M!=="guess"?`<button class="n" id="gd">Сад добрых дел: ${seeds.length}</button>`:""}</div>`);$("sw").onclick=()=>stepWeek(curFid&&st.friend?st.friend.name:"");if(M!=="guess")$("gd").onclick=garden;if(API)$("mp").onclick=world}
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
 let plot=ls.get("nunu-plot")||{};const savePlot=()=>{if(typeof PS==="object"&&PS.guest)return;ls.set("nunu-plot",plot)};
@@ -383,7 +383,7 @@ let plot=ls.get("nunu-plot")||{};const savePlot=()=>{if(typeof PS==="object"&&PS
 Шкала «энергия × приятность» (Russell 1980; Mood Meter — Brackett 2019). Цвета без оценок, по общим для 30 стран
 связям цвета и чувства (Jonauskaite et al. 2020). Оттенок — последняя отметка, новый перетекает из прошлого; за ~3 дня тает; дела делают ярче.
 Друзья видят цвет, только если включено в настройках (по умолчанию — нет). */
-const MOOD=[["Бодро и светло","#F2B544"],["Спокойно","#5DCAA5"],["Напряжённо","#F0997B"],["Тихо и тяжело","#9C93E6"]];
+const MOOD=[["Бодро и светло","#F2B544"],["Спокойно","#5DCAA5"],["Напряжённо","#F0997B"],["Грустно, без сил","#9C93E6"]];
 let moods=ls.get("nunu-mood")||[];
 function aura(mood,act){const m=(mood||[]).filter(([q,a])=>MOOD[q]&&a>=0&&a<72).sort((x,y)=>x[1]-y[1])[0];if(!m)return null;  /* оттенок — последняя отметка (смешанные оттенки мутнеют) */
 const e=Math.min(1,.35+.15*(act[0]||0)+.07*(act[1]||0));return{c:MOOD[m[0]][1],o:+(Math.exp(-m[1]/36)*(.3+.45*e)).toFixed(2)}}
@@ -441,7 +441,7 @@ function markSeed(k,same,note){const x=seeds[k];x.life={same,note:String(note||"
 if(x.with&&same&&!x.bridged){const b=x.fid?"id:"+x.fid:x.with;bridges[b]=(bridges[b]||0)+3;if(x.fid&&API)API("/friend/"+x.fid+"/deed","POST",{pid:x.pid||null}).catch(()=>{});x.bridged=1;ls.set("nunu-bridges",bridges)}saveSeeds()}
 function garden(){setNav("garden");const mineN=seeds.filter(x=>x.mine&&inView(x)).length,inN=seeds.filter(inView).length;
 const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length,tile=v=>`data-v="${v}" role="button" tabindex="0" aria-pressed="${gview===v}"`;
-let h=`<h1>Мой сад</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя взойдёт.</p>
+let h=`<h1>Сад добрых дел</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя взойдёт.</p>
 <div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>${lc(SAME())}</div>
 <div ${tile("other")} style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
 <div ${tile("wait")} style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>${pl(seeds.length-up-other,["семя","семени","семян"])}</div></div>
