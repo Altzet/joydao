@@ -39,6 +39,7 @@ h1{font:500 clamp(26px,4vw,38px)/1.2 Unbounded,sans-serif;margin:0}
 .card{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;
  text-align:left;cursor:pointer}
 .card:hover{border-color:var(--acc)}
+.card.ex{border-style:dashed;background:transparent;cursor:default}.exb{position:absolute;top:8px;right:8px;font-size:.75rem;font-weight:600;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:99px;padding:2px 9px}
 .tile{height:104px;border-radius:12px;display:flex;align-items:center;justify-content:center}
 .tile svg{width:42px;height:42px}
 .give{background:var(--sand);color:var(--sand-fg)}.seek{background:var(--sea);color:var(--sea-fg)}.skill{background:var(--leaf);color:var(--leaf-fg)}
@@ -109,6 +110,12 @@ const KIND={give:"Отдам",seek:"Ищу",skill:"Умею"},TYPE={food:"Про
   seek:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4",skill:"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"};
 const svg=(d,w=42)=>`<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 let D={me:null,offers:[]},F={kind:"all",type:"all",circle:"all",q:""};
+/* Примеры (23.11): пока предложений мало, показываем, как они выглядят — с пометкой «Пример», нажать нельзя.
+Пример понятнее объяснения: люди учатся по образцу (worked examples — Sweller & Cooper 1985) */
+const EX=[{kind:"give",type:"food",title:"Кабачки, 10 кг",text:"Свежие, со своей грядки. Заберёшь сам.",how:"gift"},
+{kind:"seek",type:"thing",title:"Дрель на выходные",text:"Повесить полки. Верну в понедельник.",how:"swap",how_note:"банку мёда"},
+{kind:"skill",type:"service",title:"Помогу с ремонтом крыши",text:"Есть опыт и свои инструменты.",how:"hours",how_note:"3 часа"},
+{kind:"give",type:"thing",title:"Детские вещи 2–4 года",text:"Пакет: куртка, штаны, кофты.",how:"gift"}];
 const howText=o=>o.how==="gift"?"Дарю":o.how==="swap"?"Меняю"+(o.how_note?" на "+o.how_note:""):"Часами"+(o.how_note?" · "+o.how_note:"");
 const relText=o=>o.rel==="me"?"Твоё предложение":o.rel==="bridge"?"Мост: ты и "+o.name:o.rel==="fof"?o.name+" · друг друга":o.name+" · новый человек";
 
@@ -150,7 +157,12 @@ $("grid").innerHTML=xs.length?xs.map(o=>`<button class="card" data-id="${o.id}">
 <div class="how"><i>Как: </i>${esc(howText(o))}</div>
 <div class="who"><span class="av">${esc(o.name[0])}</span><span>${esc(relText(o))}</span></div></button>`).join("")
  :`<p class="empty" style="grid-column:1/-1">${D.offers.length?"Ничего не нашлось — попробуй круг пошире.":"Пока пусто. Предложи первым: что у тебя в избытке?"}</p>`;
-document.querySelectorAll(".card").forEach(b=>b.onclick=()=>item(D.offers.find(o=>o.id==b.dataset.id)))}
+const ex=D.offers.length<6?EX.filter(o=>(F.kind==="all"||o.kind===F.kind)&&(F.type==="all"||o.type===F.type)):[];
+if(ex.length)$("grid").insertAdjacentHTML("beforeend",`<p class="count" style="grid-column:1/-1;margin:8px 0 0">Примеры — так выглядят предложения</p>`+ex.map(o=>`<div class="card ex" aria-label="Пример предложения">
+<div class="tile ${o.kind}" style="position:relative">${svg(ICON[o.kind])}<span class="exb">Пример</span></div>
+<div><span class="tag ${o.kind}">${KIND[o.kind]}</span> <span class="sub">${TYPE[o.type]}</span></div>
+<h3>${esc(o.title)}</h3><p>${esc(o.text)}</p><div class="how"><i>Как: </i>${esc(howText(o))}</div></div>`).join(""));
+document.querySelectorAll("button.card").forEach(b=>b.onclick=()=>item(D.offers.find(o=>o.id==b.dataset.id)))}
 
 function sheet(h){$("sheet").innerHTML=`<div class="sheet" id="sh"><div role="dialog" aria-modal="true">${h}</div></div>`;
 $("sh").onclick=e=>{if(e.target.id==="sh")closeSheet()};document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet)}
