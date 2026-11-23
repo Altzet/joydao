@@ -42,7 +42,7 @@ def test_game_by_link(tmp_path, monkeypatch):
                headers=evgen).json()
     assert v["s"] == [0] * 10 and quiet.sent[0] == 1  # Евген видит Антона, Антону ушло сообщение
     own = c.get(f"/nunu/api/game/{g['id']}", headers=anton).json()
-    assert own["plays"] == [{"id": 2, "name": "Евген", "s": [2] * 10, "g": [0] * 10, "guess": None, "mark": None}]
+    assert own["plays"] == [{"id": 2, "name": "Евген", "s": [2] * 10, "g": [0] * 10, "guess": None, "mark": None, "gn": ""}]
     assert c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Я", "s": [0] * 10, "g": [0] * 10},
                   headers=anton).status_code == 409
     assert c.post("/nunu/api/game", json={"name": "А", "seed": 5, "mode": "duo", "s": [9] * 10},
@@ -64,7 +64,7 @@ def test_world_map(tmp_path, monkeypatch):
     assert quiet.sent[0] == 2  # Евгену сразу сообщение
     w = c.get("/nunu/api/world", headers=evgen).json()
     assert w["friends"][0] | {} == {"id": 1, "name": "Антон", "boards": 0, "turn": "me", "gid": g["id"],
-                                    "last": None, "mark": None, "island": [0, 0, 0], "bloom": [0, 0, 0]}
+                                    "last": None, "mark": None, "island": [0, 0, 0], "bloom": [0, 0, 0], "gn": ""}
     c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Евген", "s": [2] * 10, "g": [0] * 10}, headers=evgen)
     assert c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 1, "n": 5.5}, headers=evgen).json()["total"] == 5.5
     r = c.post(f"/nunu/api/game/{g['id']}/boards", json={"friend": 2, "n": 9}, headers=anton)
@@ -99,7 +99,7 @@ def test_invite_first(tmp_path, monkeypatch):
     i = c.post("/nunu/api/invite", headers=anton).json()
     assert i["link"].endswith("startapp=" + i["id"]) and i["id"].startswith("i")
     assert c.post(f"/nunu/api/invite/{i['id']}/accept", headers=anton).json() == {"friend": None}
-    assert c.post(f"/nunu/api/invite/{i['id']}/accept", headers=evgen).json() == {"friend": {"id": 1, "name": "Антон"}}
+    assert c.post(f"/nunu/api/invite/{i['id']}/accept", headers=evgen).json() == {"friend": {"id": 1, "name": "Антон", "gn": ""}}
     assert quiet.sent[0] == 1
     f = c.get("/nunu/api/world", headers=anton).json()["friends"]
     assert [(x["name"], x["boards"], x["last"]) for x in f] == [("Евген", 0, None)]
@@ -250,9 +250,9 @@ def test_meet_friends(tmp_path, monkeypatch):
     assert c.post("/nunu/api/friend/3/meet", json={"other": 2}, headers=anton).json() == {"ok": True}
     assert len(sent) == 2  # повтор никому не пишет
     assert c.post(f"/nunu/api/meet/{mid}/accept", headers=max_).status_code == 404
-    assert c.post(f"/nunu/api/meet/{mid}/accept", headers=evgen).json() == {"friend": {"id": 3, "name": "Оля"}, "bridge": False}
+    assert c.post(f"/nunu/api/meet/{mid}/accept", headers=evgen).json() == {"friend": {"id": 3, "name": "Оля", "gn": ""}, "bridge": False}
     assert [f["id"] for f in c.get("/nunu/api/world", headers=evgen).json()["friends"]] == [1]
-    assert c.post(f"/nunu/api/meet/{mid}/accept", headers=olya).json() == {"friend": {"id": 2, "name": "Евген"}, "bridge": True}
+    assert c.post(f"/nunu/api/meet/{mid}/accept", headers=olya).json() == {"friend": {"id": 2, "name": "Евген", "gn": ""}, "bridge": True}
     assert sorted(f["id"] for f in c.get("/nunu/api/world", headers=evgen).json()["friends"]) == [1, 3]
 
 
@@ -360,3 +360,26 @@ def test_mood_aura_private_by_default(tmp_path, monkeypatch):
     c.put("/nunu/api/state", json=state(True), headers=evgen)
     f = c.get("/nunu/api/world", headers=anton).json()["friends"][0]
     assert [q for q, _ in f["mood"]] == [1] and 4.5 < f["mood"][0][1] < 5.5 and f["act"] == [1, 1]
+
+
+def test_gender_words():
+    from app.nunu import gw
+    assert gw("f", "сделал", "сделала", "сделано") == "сделала"
+    assert gw("n", "сделал", "сделала", "сделано") == "сделано"
+    assert gw("", "сделал", "сделала", "сделано") == "сделал"  # не выбрано — как раньше
+    assert gw("n", "он", "она") == "он"  # нейтрального варианта нет — мужской
+
+
+def test_gender_reaches_friend(tmp_path, monkeypatch):
+    """Выбор «Как к тебе обращаться» виден другу и меняет слова в сообщении бота."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+
+    async def quiet(*a):
+        quiet.sent = a
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c, anton, evgen = TestClient(pause.app), init_data(1, "Аня"), init_data(2, "Евген")
+    c.put("/nunu/api/state", json={"data": {"nunu-prefs": {"gn": "f"}}}, headers=anton)
+    g = c.post("/nunu/api/game", json={"name": "Аня", "seed": 7, "mode": "duo", "s": [0] * 10, "g": [1] * 10,
+                                       "to": 2}, headers=anton).json()
+    assert "прислала" in quiet.sent[1]
+    assert c.get(f"/nunu/api/game/{g['id']}", headers=evgen).json()["gn"] == "f"

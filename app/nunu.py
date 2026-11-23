@@ -237,8 +237,9 @@ async def new_game(body: GameIn, x_init_data: str | None = Header(default=None))
         c.execute("INSERT INTO games(id, owner, name, seed, mode, s, g, to_id, story, bottle) VALUES(?,?,?,?,?,?,?,?,?,?)",
                   (gid, u.id, name, body.seed, body.mode, s, g, body.to, story, 1 if body.bottle else None))
         _seen(c, u)
+        ga = _gn(c, u.id)
     if body.to:
-        _bg(_notify(body.to, f"{name} прислал тебе партию в «Ну-ну». Твой ход 🏝", link(gid)))
+        _bg(_notify(body.to, f"{name} {gw(ga, 'прислал', 'прислала', 'шлёт')} тебе партию в «Ну-ну». Твой ход 🏝", link(gid)))
     return {"id": gid, "link": link(gid)}
 
 
@@ -251,7 +252,7 @@ def _view(c: sqlite3.Connection, gid: str, uid: int) -> dict:
     plays = c.execute("SELECT player, name, s, g, guess, mark FROM plays WHERE game_id=? ORDER BY created_at",
                       (gid,)).fetchall()
     played = any(p["player"] == uid for p in plays)
-    out = {"id": gid, "link": link(gid), "mode": r["mode"], "seed": r["seed"], "name": r["name"], "owner": r["owner"],
+    out = {"id": gid, "link": link(gid), "mode": r["mode"], "seed": r["seed"], "name": r["name"], "owner": r["owner"], "gn": _gn(c, r["owner"]),
            "mine": mine, "played": played, "plays": [], "bottle": bool(r["bottle"])}
     if mine or played:
         out |= {"s": json.loads(r["s"]), "g": json.loads(r["g"])}
@@ -268,7 +269,7 @@ def _view(c: sqlite3.Connection, gid: str, uid: int) -> dict:
         if r["bottle"]:
             out["my"]["wish"] = _wish(c, uid, r["owner"])
     if mine:
-        out["plays"] = [{"id": p["player"], "name": p["name"], "s": json.loads(p["s"]), "g": json.loads(p["g"]),
+        out["plays"] = [{"id": p["player"], "name": p["name"], "gn": _gn(c, p["player"]), "s": json.loads(p["s"]), "g": json.loads(p["g"]),
                          "guess": p["guess"], "mark": p["mark"],
                          **({"wish": _wish(c, uid, p["player"])} if r["bottle"] else {})} for p in plays]
     return out
@@ -300,10 +301,17 @@ async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=
                        guess or None, auto))
         view = _view(c, gid, u.id)
         _seen(c, u)
-    text = (f"Твою бутылку выловил {name} и угадывал тебя 🍾 Посмотри, как он тебя понял" if r["bottle"]
-            else f"{name} угадывал твою ситуацию и {'угадал' if auto else 'не угадал'} 🌉" if auto is not None
-            else f"{name} ответил в «Ну-ну» и угадывал твою ситуацию. Отметь, угадал ли ✍️" if guess
-            else f"{name} ответил в «Ну-ну». Посмотри ваш мост 🌉")
+        ga = _gn(c, u.id)
+    V = lambda m, f, n: gw(ga, m, f, n)  # noqa: E731 — слово в роде того, кто сыграл
+    text = (V(f"Твою бутылку выловил {name} и угадывал тебя 🍾 Посмотри, как он тебя понял",
+              f"Твою бутылку выловила {name} и угадывала тебя 🍾 Посмотри, как она тебя поняла",
+              f"{name}: твоя бутылка выловлена, догадки о тебе готовы 🍾 Посмотри, как тебя поняли") if r["bottle"]
+            else V(f"{name} угадывал твою ситуацию и {'угадал' if auto else 'не угадал'} 🌉",
+                   f"{name} угадывала твою ситуацию и {'угадала' if auto else 'не угадала'} 🌉",
+                   f"{name}: догадка о твоей ситуации — {'угадано' if auto else 'не угадано'} 🌉") if auto is not None
+            else f"{name} {V('ответил', 'ответила', 'отвечает')} в «Ну-ну» и {V('угадывал', 'угадывала', 'угадывает')} твою ситуацию. "
+                 f"Отметь, {V('угадал ли', 'угадала ли', 'угадано ли')} ✍️" if guess
+            else f"{name} {V('ответил', 'ответила', 'отвечает')} в «Ну-ну». Посмотри ваш мост 🌉")
     _bg(_notify(r["owner"], text, link(gid)))
     return view
 
@@ -321,9 +329,12 @@ async def mark(gid: str, body: MarkIn, x_init_data: str | None = Header(default=
         with c:
             n = c.execute("UPDATE plays SET mark=? WHERE game_id=? AND player=? AND guess IS NOT NULL AND mark IS NULL",
                           (body.mark, gid, body.player)).rowcount
+        ga, gp = _gn(c, u.id), _gn(c, body.player)
     if n:
-        word = ["не совсем угадал", "почти угадал", "угадал"][body.mark]
-        _bg(_notify(body.player, f"{u.first_name} отметил твою догадку: ты {word} 🌉", link(gid)))
+        m_, f_, n_ = [("не совсем угадал", "не совсем угадала", "не совсем угадано"), ("почти угадал", "почти угадала", "почти угадано"),
+                      ("угадал", "угадала", "угадано")][body.mark]
+        word = gw(gp, "ты " + m_, "ты " + f_, n_)
+        _bg(_notify(body.player, f"{u.first_name} {gw(ga, 'отметил', 'отметила', 'отмечает')} твою догадку: {word} 🌉", link(gid)))
     return {"ok": bool(n)}
 
 
@@ -426,9 +437,10 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
         with c:
             c.execute("INSERT INTO inbox(tg_id, seed) VALUES(?, ?)", (fid, json.dumps(seed, ensure_ascii=False)))
         _seen(c, u)
+        gf = _gn(c, fid)
     at = f" — на твоём участке у «{here.get('n', '')}»" if here else ""
     _bg(_notify(fid, f"{u.first_name} зовёт тебя на общее дело 🤝{at}\n\n{text}\n\nОно уже в твоём саду. "
-                     f"Когда сделаете, отметьте «Так и сделал» — ваш мост получит +3 доски", link()))
+                     f"Когда сделаете, отметьте «{gw(gf, 'Так и сделал', 'Так и сделала', 'Получилось')}» — ваш мост получит +3 доски", link()))
     return {"ok": True}
 
 
@@ -471,10 +483,11 @@ async def accept(iid: str, x_init_data: str | None = Header(default=None)):
             new = c.execute("INSERT OR IGNORE INTO friends(a, b) VALUES(?, ?)", (a, b)).rowcount
         _seen(c, u)
         n = c.execute("SELECT name FROM users WHERE tg_id=?", (r["owner"],)).fetchone()
+        gr, ga = _gn(c, r["owner"]), _gn(c, u.id)
     if new:
-        _bg(_notify(r["owner"], f"{u.first_name} пришёл на твою карту в «Ну-ну». Между вами канатный мост — "
+        _bg(_notify(r["owner"], f"{u.first_name} {gw(ga, 'пришёл на твою карту', 'пришла на твою карту', 'теперь на твоей карте')} в «Ну-ну». Между вами канатный мост — "
                                 "начните партию 🏝", f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"))
-    return {"friend": {"id": r["owner"], "name": n["name"] if n else "Друг"}}
+    return {"friend": {"id": r["owner"], "name": n["name"] if n else "Друг", "gn": gr}}
 
 
 class MeetIn(BaseModel):
@@ -520,10 +533,11 @@ async def meet_accept(mid: str, x_init_data: str | None = Header(default=None)):
             new = c.execute("INSERT OR IGNORE INTO friends(a, b) VALUES(?, ?)", (r["a"], r["b"])).rowcount if both else 0
         _seen(c, u)
         n = c.execute("SELECT name FROM users WHERE tg_id=?", (other,)).fetchone()
+        go, ga = _gn(c, other), _gn(c, u.id)
     if new:
-        _bg(_notify(other, f"{u.first_name} тоже открыл приглашение. Между вашими островами канатный мост — "
+        _bg(_notify(other, f"{u.first_name} {gw(ga, 'тоже открыл', 'тоже открыла', 'тоже открывает')} приглашение. Между вашими островами канатный мост — "
                            "начните партию 🏝", link()))
-    return {"friend": {"id": other, "name": n["name"] if n else "Друг"}, "bridge": both}
+    return {"friend": {"id": other, "name": n["name"] if n else "Друг", "gn": go}, "bridge": both}
 
 
 def _friends(c: sqlite3.Connection, a: int, b: int) -> bool:
@@ -619,7 +633,7 @@ def _island(c: sqlite3.Connection, uid: int) -> dict:
             z[s["z"]] += 1
             if isinstance(s.get("life"), dict) and s["life"].get("same"):
                 b[s["z"]] += 1
-    out = {"island": z, "bloom": b}
+    out = {"island": z, "bloom": b, "gn": g if (g := (d.get("nunu-prefs") or {}).get("gn")) in ("m", "f", "n") else ""}
     if isinstance(d.get("nunu-prefs"), dict) and d["nunu-prefs"].get("moodShare"):
         out |= _mood(d)  # цвет вокруг острова — только если сам разрешил друзьям
     return out
@@ -883,7 +897,7 @@ def reminders_due(today: date, now: datetime | None = None, daily: bool = True) 
                 kind = "due:" + str(s.get("pid") or s.get("r", ""))[:60]
                 if c.execute("INSERT OR IGNORE INTO reminders VALUES(?,?,?)", (uid, kind, iso)).rowcount:
                     out.append((uid, f"{'Пора: твоё дело ⏰' if w else 'Сегодня твоё дело 📅'}\n\n{s.get('r', '')}\n\n"
-                                     "Когда сделаешь, отметь в саду «Так и сделал»."))
+                                     f"Когда сделаешь, отметь в саду «{gw((d.get('nunu-prefs') or {}).get('gn') or '', 'Так и сделал', 'Так и сделала', 'Получилось')}»."))
             if not daily:
                 continue
             last = c.execute("SELECT at FROM reminders WHERE tg_id=? AND kind='garden'", (uid,)).fetchone()
@@ -919,6 +933,17 @@ async def remind_loop(hour_utc: int = 6) -> None:
 
 
 # ---------- в гости на участок: только друзья по мосту, только карта и 3D, комментарии к объектам ----------
+def _gn(c: sqlite3.Connection, uid: int) -> str:
+    """Как человек просит к себе обращаться (Настройки → «Как к тебе обращаться?»): m, f, n или "" — не выбрано."""
+    g = (_owner_state(c, uid).get("nunu-prefs") or {}).get("gn")
+    return g if g in ("m", "f", "n") else ""
+
+
+def gw(g: str, m: str, f: str, n: str | None = None) -> str:
+    """Слово в роде человека; «без разницы» — нейтральный вариант, если он есть; не выбрано — как раньше (м. р.)."""
+    return f if g == "f" else n if g == "n" and n is not None else m
+
+
 def _owner_state(c: sqlite3.Connection, uid: int) -> dict:
     r = c.execute("SELECT data FROM state WHERE tg_id=?", (uid,)).fetchone()
     return json.loads(r["data"]) if r else {}

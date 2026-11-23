@@ -248,6 +248,12 @@ let pushT,tgName="";
 const ACC={teal:["Бирюза","#1D7A5C","#fff","#5DCAA5","#04342C"],coral:["Коралл","#B5482A","#fff","#F0997B","#4A1B0C"],blue:["Синий","#1F6FB8","#fff","#85B7EB","#042C53"],
 violet:["Фиолетовый","#5A4FC4","#fff","#AFA9EC","#26215C"],amber:["Янтарь","#8F530C","#fff","#EF9F27","#412402"]},FS=[.875,1,1.125,1.25,1.4];
 let prefs={theme:"auto",acc:"teal",fs:1,...(ls.get("nunu-prefs")||{})};
+/* род в обращении (23.11): человек сам выбирает «он / она / без разницы»; друзья видят фразы о нём в его роде.
+Обращение не в своём роде отталкивает (Stout & Dasgupta 2011). Не выбрано — как раньше (мужской род) */
+const gF=(g,m,f,n)=>g==="f"?f:g==="n"&&n!=null?n:m,gMe=(m,f,n)=>gF(prefs.gn,m,f,n),GNK=[["m","Он"],["f","Она"],["n","Без разницы"]],
+gnAsk=()=>prefs.gn?"":`<div class="card"><h2>Как к тебе обращаться?</h2><p class="note" style="margin:0">Один раз — чтобы игра и друзья писали о тебе правильно. Поменять можно в настройках.</p><div class="row">${GNK.map(([k,l])=>`<button class="n" data-gn="${k}">${l}</button>`).join("")}</div></div>`,
+SAME=()=>gMe("Так и сделал","Так и сделала","Получилось"),DIFF=()=>gMe("Сделал иначе","Сделала иначе","Вышло иначе"),lc=x=>x[0].toLowerCase()+x.slice(1);
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-gn]");if(!b)return;prefs.gn=b.dataset.gn;ls.set("nunu-prefs",prefs);const c=b.closest(".card");if(c)c.remove()});
 function applyPrefs(){const r=document.documentElement,a=ACC[prefs.acc]||ACC.teal,
 dark=prefs.theme==="dark"||prefs.theme==="auto"&&(TG&&TG.colorScheme?TG.colorScheme==="dark":!!(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches));
 r.dataset.theme=dark?"dark":"light";r.style.setProperty("--acc",dark?a[3]:a[1]);r.style.setProperty("--acc-fg",dark?a[4]:a[2]);r.style.setProperty("--fs",prefs.fs);
@@ -255,19 +261,20 @@ try{TG&&TG.setHeaderColor&&TG.setHeaderColor(getComputedStyle(r).getPropertyValu
 applyPrefs();try{TG&&TG.onEvent("themeChanged",applyPrefs)}catch(e){}
 function settings(){setNav("settings");const b=(id,txt,on)=>`<button class="${on?"t":"n"}" id="${id}" aria-pressed="${on}">${txt}</button>`,i=FS.indexOf(prefs.fs);
 app.innerHTML=`<h1>Настройки</h1>
-<div class="card"><h2>Правила</h2><p style="margin:0">${prefs.rules?"Ты принял правила "+esc(fmtD(prefs.rules.at))+".":"Как мы общаемся, что видят друзья, как работают жалобы."}</p><button class="n" id="rlset" style="align-self:flex-start">📜 Свод правил</button></div>
+<div class="card"><h2>Как к тебе обращаться?</h2><div class="row">${GNK.map(([k,l])=>b("gn-"+k,l,prefs.gn===k)).join("")}</div><p class="note" style="margin:0">Так это звучит: «${gMe("Ты принял правила","Ты приняла правила","Правила приняты")}», «${SAME()}». Друзья видят фразы о тебе так же.</p></div>
+<div class="card"><h2>Правила</h2><p style="margin:0">${prefs.rules?gMe("Ты принял правила ","Ты приняла правила ","Правила приняты ")+esc(fmtD(prefs.rules.at))+".":"Как мы общаемся, что видят друзья, как работают жалобы."}</p><button class="n" id="rlset" style="align-self:flex-start">📜 Свод правил</button></div>
 <div class="card"><h2>Тема</h2><div class="row">${b("th-auto","Как в Telegram",prefs.theme==="auto")}${b("th-light","Светлая",prefs.theme==="light")}${b("th-dark","Тёмная",prefs.theme==="dark")}</div></div>
 <div class="card"><h2>Цвет</h2><div class="row">${Object.entries(ACC).map(([k,a])=>`<button class="sw" data-a="${k}" aria-label="${a[0]}" aria-pressed="${prefs.acc===k}" style="background:${r_dark()?a[3]:a[1]}"></button>`).join("")}</div>
 <p class="note" style="margin:0">${ACC[prefs.acc][0]}: кнопки, меню и выделение.</p><button class="main-btn" style="align-self:flex-start">Так выглядит кнопка</button></div>
 <div class="card"><h2>Размер текста</h2><div class="row" style="align-items:center"><button class="n" id="fs-" aria-label="Мельче" ${i<=0?"disabled":""}>А−</button>
 <b style="font-weight:500;min-width:64px;text-align:center">${Math.round(prefs.fs*100)}%</b><button class="n" id="fs+" aria-label="Крупнее" ${i>=FS.length-1?"disabled":""}>А+</button></div>
 <p style="margin:0">Так будет выглядеть текст в игре: карточки, ответы и сад.</p><p class="note" style="margin:0">Подписи на карте приближаются жестами: щипком или кнопкой «+».</p></div>
-<div class="card"><h2>Цвет вокруг острова</h2><p style="margin:0">Вода вокруг твоего острова окрашивается тем, что ты отметил в «Как ты сейчас?», и становится ярче от сделанных дел.</p>
+<div class="card"><h2>Цвет вокруг острова</h2><p style="margin:0">Вода вокруг твоего острова окрашивается тем, что ты ${gMe("отметил","отметила","отмечаешь")} в «Как ты сейчас?», и становится ярче от сделанных дел.</p>
 <div class="zone">Показывать друзьям</div><div class="row">${b("ms-off","Нет, только мне",!prefs.moodShare)}${b("ms-on","Да",!!prefs.moodShare)}</div>
 <div class="zone">Спрашивать в Telegram</div><div class="row">${b("ma-on","Да",prefs.moodAsk!==false)}${b("ma-off","Не надо",prefs.moodAsk===false)}</div>
 <p class="note" style="margin:0">Идёт проверка: с 23 ноября четыре недели бот через неделю в 19:00 спрашивает «Как ты сейчас?». Так мы узнаем, помогает ли вопрос или мешает.</p></div>
 <div class="card"><h2>Напоминания</h2><div class="row">${b("rm-on","Присылать",prefs.remind!==false)}${b("rm-off","Не надо",prefs.remind===false)}</div>
-<p class="note" style="margin:0">Бот напишет в день, который ты выбрал для дела, и не чаще раза в неделю — если семена ждут полива или сад давно без новых.</p></div>
+<p class="note" style="margin:0">Бот напишет в день, ${gMe("который ты выбрал","который ты выбрала","выбранный")} для дела, и не чаще раза в неделю — если семена ждут полива или сад давно без новых.</p></div>
 <div class="card"><h2>Гости на участке</h2><p style="margin:0">Друзья, с которыми есть мост, могут заглянуть на твой участок: видят только карту и 3D, оставляют комментарии и зовут на дела.</p>
 <div class="zone">Пускать друзей в гости</div><div class="row">${b("go-on","Да",!prefs.visitClosed)}${b("go-off","Нет, участок закрыт",!!prefs.visitClosed)}</div>
 ${prefs.visitClosed?`<p class="note" style="margin:0">Участок закрыт: друзья увидят, что ты пока не пускаешь гостей.</p>`:`<div class="zone">Сообщать, когда друг зашёл</div><div class="row">${b("gv-on","Да",!prefs.visitOff)}${b("gv-off","Не надо",!!prefs.visitOff)}</div>
@@ -275,7 +282,7 @@ ${prefs.visitClosed?`<p class="note" style="margin:0">Участок закры�
 ${API?`<div class="card"><h2>Свои ситуации</h2><p style="margin:0">Пройдено ситуаций: ${scenePool().filter(k=>seen.includes(k)).length} из ${scenePool().length}. Когда пройдёшь все, сможешь предложить свою — её опубликуют в канале на голосование.</p><button class="n" id="sbm" style="align-self:flex-start">Мои ситуации</button></div>`:""}`;
 if($("sbm"))$("sbm").onclick=()=>subForm(settings);$("rlset").onclick=openRules;
 const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
-["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});
+["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});GNK.forEach(([k])=>$("gn-"+k).onclick=()=>{prefs.gn=k;save2()});
 [["go","visitClosed"],["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{if(!$(id+"-on"))return;$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
 app.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{prefs.acc=x.dataset.a;save2()});
 $("ms-on").onclick=()=>{prefs.moodShare=1;save2()};$("ma-on").onclick=()=>{delete prefs.moodAsk;save2()};$("ma-off").onclick=()=>{prefs.moodAsk=false;save2()};$("ms-off").onclick=()=>{delete prefs.moodShare;save2()};
@@ -368,7 +375,7 @@ function tail(M){app.insertAdjacentHTML("beforeend",`<div class="row">${API?`<bu
 /* семя -> дневник -> цветок: ответ в игре это намерение; цветок распускается, когда так же поступил в жизни */
 let seeds=ls.get("nunu-seeds")||[];const saveSeeds=()=>ls.set("nunu-seeds",seeds);
 let plot=ls.get("nunu-plot")||{};const savePlot=()=>{if(typeof PS==="object"&&PS.guest)return;ls.set("nunu-plot",plot)};
-/* «Моя цель»: большая цель на месяцы — ствол; дела недели с пометкой goal — шаги к ней. Дерево растёт от сделанных шагов.
+/* «Большая цель» (до 23.11 — «Моя цель»; люди не понимали масштаб): большая цель на месяцы — ствол; дела недели с пометкой goal — шаги к ней. Дерево растёт от сделанных шагов.
 Одна активная цель за раз: так понятнее, к чему ведёт неделя. Достигнутые и отпущенные остаются в истории */
 /* пройденные карточки (id: s12 сцена, w3 разминка, a5 «Кто я», c1 личное): новые партии подбираются без повторов,
 а прошедший все ситуации может предложить свою (сервер сверяет по этому же списку) */
@@ -397,16 +404,19 @@ const fr=done?[[48,46],[72,40],[60,58],[42,62],[78,60]].map(([x,y])=>`<circle cx
 return`<svg class="gtree" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="${gStage(n,done)}"><ellipse cx="60" cy="104" rx="40" ry="8" fill="#C9A66B" opacity=".5"/>
 ${lv?`<path d="M60 102 C60 ${102-h/2} ${lv>=3?58:61} ${102-h*.8} 60 ${102-h}" stroke="#8A5A2B" stroke-width="${tr}" fill="none" stroke-linecap="round"/>`:`<ellipse cx="60" cy="99" rx="6" ry="4" fill="#8A5A2B"/>`}${L.join("")}${fr}</svg>`}
 function dPlus(n){const d=new Date(today()+"T12:00");if(n<0)n=(6-d.getDay()+7)%7;d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}  /* «Сегодня / Завтра / В субботу» */
-function goalCard(){const g=goalNow(),past=goals.filter(x=>x.done).length;if(!g)return`<div class="card goal"><span class="who">Моя цель</span><div class="gwrap">${goalTree(0)}<div>
-<p style="margin:0">Поставь большую цель на месяцы — дела каждой недели станут шагами к ней, а дерево будет расти с каждым сделанным шагом.</p>
+/* тропинка: сделанные шаги — залитые кружки, начатые — пунктир, следующий — пустой «+» (Bandura & Schunk 1981: близкие подцели; Kivetz и др. 2006: видимый путь) */
+function gPath(n){const k=Math.min(n.done,7),w=Math.min(n.all-n.done,3),c="width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;font-weight:600;flex:none";
+return`<div aria-label="Сделано шагов: ${n.done}" style="display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 0">${n.done>7?`<span style="${c};color:var(--muted)">…</span>`:""}${Array.from({length:k},(_,i)=>`<span style="${c};background:var(--acc);color:var(--acc-fg)">${n.done-k+i+1}</span>`).join("")}${"<span style=\""+c+";border:1.5px dashed var(--acc);color:var(--acc)\">·</span>".repeat(w)}<span style="${c};border:1.5px dashed var(--muted);color:var(--muted)">+</span></div>`}
+function goalCard(){const g=goalNow(),past=goals.filter(x=>x.done).length;if(!g)return`<div class="card goal"><span class="who">Большая цель</span><div class="gwrap">${goalTree(0)}<div>
+<p style="margin:0">То, к чему идёшь месяцами. Большая цель растёт маленькими шагами — с каждым сделанным шагом растёт и дерево.</p><p class="note" style="margin:6px 0 0">Например: «Построить печь» → выбрать место · купить кирпич · залить основание.</p>
 <button class="main-btn" id="gnew" style="margin-top:10px">Поставить цель</button></div></div>${past?`<p class="note" style="margin:0">Достигнуто целей: ${past} 🍎</p>`:""}</div>`;
 const n=gSteps(g),left=g.by?Math.ceil((new Date(g.by)-new Date(today()))/864e5):null;
-return`<div class="card goal"><span class="who">Моя цель · ${gStage(n.done)}</span><div class="gwrap">${goalTree(n.done)}<div style="min-width:0">
+return`<div class="card goal"><span class="who">Большая цель · ${gStage(n.done).toLowerCase()}</span><div class="gwrap">${goalTree(n.done)}<div style="min-width:0">
 <div class="q" style="margin:0">${esc(g.t)}</div>${g.why?`<p class="note" style="margin:4px 0 0">Зачем: ${esc(g.why)}</p>`:""}
-<p class="note" style="margin:6px 0 0">Шагов сделано: <b>${n.done}</b>${n.all>n.done?` · в пути: ${n.all-n.done}`:""}${left!=null?` · ${left>0?"до срока "+left+" "+pl(left,["день","дня","дней"]):left===0?"срок сегодня":"срок прошёл — можно продлить"}`:""}</p>
-${g.wx?`<p class="note" style="margin:6px 0 0">${wxSum(g.wx)} · бот напишет, когда погода подойдёт</p>`:""}<div class="row" style="margin-top:8px"><button class="n" id="ged">Изменить цель</button>${g.wx?"":`<button class="n" id="gwx">☀ Добавить погоду</button>`}</div></div></div>${past?`<p class="note" style="margin:0">Достигнуто целей: ${past} 🍎</p>`:""}</div>`}
+${gPath(n)}<p class="note" style="margin:6px 0 0">Большая цель растёт маленькими шагами. Сделано: <b>${n.done}</b>${n.all>n.done?` · в пути: ${n.all-n.done}`:""}${left!=null?` · ${left>0?"до срока "+left+" "+pl(left,["день","дня","дней"]):left===0?"срок сегодня":"срок прошёл — можно продлить"}`:""}</p>
+${g.wx?`<p class="note" style="margin:6px 0 0">${wxSum(g.wx)} · бот напишет, когда погода подойдёт</p>`:""}<div class="row" style="margin-top:8px"><button class="main-btn" id="gnext">Наметить шаг</button><button class="n" id="ged">Изменить цель</button>${g.wx?"":`<button class="n" id="gwx">☀ Добавить погоду</button>`}</div></div></div>${past?`<p class="note" style="margin:0">Достигнуто целей: ${past} 🍎</p>`:""}</div>`}
 function goalEdit(back,sky0){const g=goalNow(),v=g?{...g}:{t:"",why:"",by:""},o=wxNew(g&&g.wx);let sky=!!(g&&g.wx)||!!sky0;
-const draw=()=>{app.innerHTML=`<h1>${g?"Моя цель":"Новая цель"}</h1><div class="card"><div class="zone">К чему иду (одной фразой)</div><input id="gt" maxlength="80" placeholder="Построить печь на участке" value="${esc(v.t)}">
+const draw=()=>{app.innerHTML=`<h1>${g?"Большая цель":"Новая большая цель"}</h1><div class="card"><div class="zone">К чему иду (одной фразой)</div><input id="gt" maxlength="80" placeholder="Построить печь на участке" value="${esc(v.t)}">
 <div class="zone">Зачем мне это</div><textarea id="gw" maxlength="200" rows="3" placeholder="Хочу собирать друзей и печь хлеб сам">${esc(v.why||"")}</textarea>
 <div class="zone">К какому сроку (по желанию)</div><input type="date" id="gb" min="${today()}" value="${esc(v.by||"")}" style="align-self:flex-start">
 <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sky" style="flex:none"${sky?" checked":""}> 🌦 По погоде — бот напишет, когда погода подойдёт или предупредит</label>${sky?wxUI(o):""}
@@ -432,21 +442,21 @@ if(x.with&&same&&!x.bridged){const b=x.fid?"id:"+x.fid:x.with;bridges[b]=(bridge
 function garden(){setNav("garden");const mineN=seeds.filter(x=>x.mine&&inView(x)).length,inN=seeds.filter(inView).length;
 const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length,tile=v=>`data-v="${v}" role="button" tabindex="0" aria-pressed="${gview===v}"`;
 let h=`<h1>Мой сад</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя взойдёт.</p>
-<div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>так и сделал</div>
+<div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>${lc(SAME())}</div>
 <div ${tile("other")} style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
 <div ${tile("wait")} style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>${pl(seeds.length-up-other,["семя","семени","семян"])}</div></div>
 <p class="note" style="margin:0">По исследованиям, задуманное чаще сбывается, если заранее решить: «когда случится X, я сделаю Y» (Голльвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
 h+=`<h2 id="gv" style="scroll-margin-top:12px">${{wait:"Ждут в земле",bloom:"Распустилось",other:"Проросло иначе"}[gview]}</h2><div class="row" id="gf">${GF.map(([k,l])=>[k,l,seeds.filter(x=>inView(x)&&gfOk[k](x)).length]).filter(([k,,n])=>n||k==="all"||k===gf).map(([k,l,n])=>`<button class="${gf===k?"p":"n"}" data-f="${k}">${l}: ${n}</button>`).join("")}</div>`;
 if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пуст. Сыграй партию, и твои ответы станут семенами.</p></div>`;
-else if(!inN)h+=`<p class="note" style="margin:0">${{wait:"Все семена уже проросли. Сыграй ещё партию — появятся новые.",bloom:"Пока ничего не распустилось. Когда в жизни поступишь так, как ответил в игре, отметь «Так и сделал».",other:"Пока ничего. Здесь будет то, что в жизни вышло по-другому."}[gview]}</p>`;
+else if(!inN)h+=`<p class="note" style="margin:0">${{wait:"Все семена уже проросли. Сыграй ещё партию — появятся новые.",bloom:"Пока ничего не распустилось. Когда в жизни поступишь так, как ответил в игре, отметь «"+SAME()+"».",other:"Пока ничего. Здесь будет то, что в жизни вышло по-другому."}[gview]}</p>`;
 /* одинаковые семена (тот же вопрос и тот же ответ) растут одной грядкой: повтор — знак, что намерение устойчивое */
 const beds=[],bi={};seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>inView(x)&&gfOk[gf](x)).forEach(([x,k])=>{const key=x.c+"|"+x.q+"|"+x.r+"|"+(x.with||"")+"|"+(x.due||"");
 if(bi[key]===undefined){bi[key]=beds.length;beds.push([x,k,[k]])}else{const g=beds[bi[key]];g[2].push(k);g[1]=k;if(x.mine)g[0]={...g[0],mine:true}}});
 beds.sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k,ks])=>{const st2=x.life?(x.life.same?"open":"fog"):"",n=ks.length;
 h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${x.place?"📍 "+esc(x.place)+" · ":""}${esc(x.c)} · ${n>1?ks.map(i=>sd(seeds[i].d)).filter((d,i,a)=>a.indexOf(d)===i).slice(0,3).join(", ")+(n>3?"…":""):sd(x.d)}</span><span>${n>1?`<span class="tag p" title="одинаковые семена">грядка ×${n}</span> `:""}${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
 <div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${linky(x.r)}</b>${x.by&&x.pid&&x.by!==myId()?" "+repBtn("plan",x.pid):""}</div>
-${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты и ${esc(x.with)} — +3 доски</div>`:""}${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?"так и сделал":"сделал иначе"))}</div>`:
-`${x.wx?`<button class="tag" data-wx="${k}" style="align-self:flex-start;border:0">${wxSum(x.wx)} · изменить погоду</button>`:`<button class="n" data-wx="${k}" style="align-self:flex-start">☀ Добавить погоду</button>`}<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">Так и сделал</button><button class="n" data-k="${k}" data-s="0">Сделал иначе</button></div>`}</div>`});
+${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты и ${esc(x.with)} — +3 доски</div>`:""}${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?lc(SAME()):lc(DIFF())))}</div>`:
+`${x.wx?`<button class="tag" data-wx="${k}" style="align-self:flex-start;border:0">${wxSum(x.wx)} · изменить погоду</button>`:`<button class="n" data-wx="${k}" style="align-self:flex-start">☀ Добавить погоду</button>`}<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">${SAME()}</button><button class="n" data-k="${k}" data-s="0">${DIFF()}</button></div>`}</div>`});
 h+=`<button class="n" id="bk" style="align-self:flex-start">Назад</button>`;
 app.innerHTML=h;
 app.querySelectorAll("button[data-wx]").forEach(b=>b.onclick=()=>wxEdit(+b.dataset.wx));app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;markSeed(k,b.dataset.s==="1",$("nt"+k).value);sprouted(b.closest(".card"),b.dataset.s==="1")});
@@ -528,11 +538,11 @@ const obs=()=>{const x=o<SO.length?SO[o]:own.obs.trim()||"…";return x[0].toLow
 const plan=()=>{const d=own.due?fmtD(own.due)+(own.at?" в "+own.at:""):own.at?"в "+own.at:"";if(w>0&&o<SO.length)return(d?d+". ":"")+SP[w-1][o];
 const head=w===0?`«${own.what||"…"}»${d?" — "+d:""}${own.where.trim()?", "+own.where.trim():""}`:`${W[w]}${d?" — "+d:""}`;return`${head}. Если ${obs()}, то ${own.act.trim().replace(/[.!]$/,"")||"…"}${own.act.trim()?".":""}`};
 const mate=()=>mateSel?mateSel.name:own.who.trim();
-const bonus=()=>mateSel&&mateSel.id?`${mateSel.name} получит сообщение и это дело в свой сад. Когда отметите «Так и сделал», ваш мост получит +3 доски.`
-:mate()?"Когда отметишь в саду «Так и сделал», ваш мост (ты и "+mate()+") получит +3 доски.":"Выбери друга, и дело укрепит ваш мост.";
+const bonus=()=>mateSel&&mateSel.id?`${mateSel.name} получит сообщение и это дело в свой сад. Когда отметите «${SAME()}», ваш мост получит +3 доски.`
+:mate()?"Когда отметишь в саду «"+SAME()+"», ваш мост (ты и "+mate()+") получит +3 доски.":"Выбери друга, и дело укрепит ваш мост.";
 const chips=(a,id,cur)=>`<select id="${id}" style="width:100%">${a.map((x,k)=>`<option value="${k}"${k===cur?" selected":""}>${esc(x)}</option>`).join("")}</select>`;  /* выпадающий список: дела и помехи не растягивают форму */
 const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" maxlength="${max}" placeholder="${ph}" value="${esc(v)}">`;
-let toGoal=null;const draw=()=>{const G=goalNow();app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}
+let toGoal=null;const draw=()=>{const G=goalNow();app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${gnAsk()}${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}
 <div class="card">${G?`<label style="display:flex;gap:10px;align-items:center;background:#E6F2EC;border:1px solid #BFDCCD;border-radius:12px;padding:10px 12px;font-weight:500;cursor:pointer"><input type="checkbox" id="gstep" style="flex:none;width:20px;height:20px;margin:0"${toGoal!==false?" checked":""}><span>Это шаг к цели «${esc(G.t)}»?</span></label>`:""}<div class="zone">1. На этой неделе попробую…</div>${chips(W,"cw",w)}
 ${w===0?fld("ow",tg?"Что сделаем":"Что сделаю","Испечь пиццу в печи",own.what,80):""}
 <div class="zone">Когда напомнить (по желанию)</div><div class="row" style="gap:6px;flex-wrap:wrap">${[["Сегодня",0],["Завтра",1],["В субботу",-1]].map(([l,n])=>{const v=dPlus(n);return`<button class="n" data-dd="${v}"${own.due===v?' aria-pressed="true" style="border-color:var(--acc);color:var(--acc)"':""}>${l}</button>`}).join("")}</div><div class="pgrid" style="grid-template-columns:1fr 1fr;gap:8px"><label class="pf"><span class="zone">📅 День</span><input type="date" id="od" min="${today()}" value="${own.due}"></label><label class="pf"><span class="zone">🕒 Во сколько</span><input type="time" id="ot" value="${own.at}"></label></div>
@@ -549,8 +559,8 @@ ${tg&&!fr?(FR.length?`<select id="cf" style="width:100%"><option value="">— в
 ${tg?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}
 <div class="err" id="er"></div>
 <div class="row"><button class="main-btn" id="pt">Посадить в сад</button><button class="n" id="bk">Назад</button></div></div>
-<p class="note">${own.sky?"Когда прогноз подойдёт, бот напишет накануне вечером. ":""}${own.due?(own.at?"В этот день в "+own.at+" бот напомнит о деле.":"В этот день утром бот напомнит о деле. Хочешь в своё время — поставь час."):own.at?"Бот напомнит в "+own.at+" — сегодня, а если время уже прошло, завтра.":"Через неделю загляни в сад и отметь: «так и сделал» или «сделал иначе»."} Не вышло — ничего страшного, семя подождёт.</p>`;
-const redraw=()=>stepWeek(fr,own.what,loc);if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(redraw);if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
+<p class="note">${own.sky?"Когда прогноз подойдёт, бот напишет накануне вечером. ":""}${own.due?(own.at?"В этот день в "+own.at+" бот напомнит о деле.":"В этот день утром бот напомнит о деле. Хочешь в своё время — поставь час."):own.at?"Бот напомнит в "+own.at+" — сегодня, а если время уже прошло, завтра.":"Через неделю загляни в сад и отметь: «"+lc(SAME())+"» или «"+lc(DIFF())+"»."} Не вышло — ничего страшного, семя подождёт.</p>`;
+const redraw=()=>stepWeek(fr,own.what,loc);if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(redraw);if($("gnext"))$("gnext").onclick=()=>{const t=$("gstep");if(!t)return;t.checked=true;toGoal=null;t.closest(".card").scrollIntoView({behavior:"smooth",block:"start"})};if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
 if($("gstep"))$("gstep").onchange=()=>{toGoal=$("gstep").checked};
 $("cw").onchange=e=>{w=+e.target.value;draw()};$("co").onchange=e=>{{o=+e.target.value;if(w===0&&SO[o]==="Испортится погода"&&!own.sky){own.sky=true;if(!own.act)own.act="перенесу на первый подходящий день"}draw()}};  /* помеха-погода → погодное семя: бот сам подскажет хороший день */
 app.querySelectorAll("[data-dd]").forEach(b=>b.onclick=()=>{own.due=own.due===b.dataset.dd?"":b.dataset.dd;draw()});$("od").onchange=$("od").oninput=()=>{own.due=$("od").value&&$("od").value>=today()?$("od").value:"";$("pl").textContent=plan();$("er").textContent=""};$("ot").onchange=()=>{own.at=$("ot").value||"";draw()};
@@ -570,18 +580,18 @@ app.innerHTML=`<h1>Ну-ну</h1><div class="card"><p style="margin:0">Игра 
 <a class="main-btn" style="text-decoration:none" href="https://t.me/JOYDAO_bot/nunu">Открыть в Telegram</a></div>
 <p class="note">Компас, а не рентген: игра показывает, как ты видишь себя и как тебя видят другие. В основе — окно Джохари (Лафт и Ингэм, 1955).</p>`}
 /* кто сейчас отвечает: я — тёплый песок, друг — бирюза; разные цвет, буква и слова, чтобы не перепутать шаги */
-const ask=(me,name,warm)=>me?`<div class="ask me"><span class="av">Я</span><div><b>Отвечаю за себя</b><small>${warm?"Мой выбор на данный момент":"Как поступлю я сам на данный момент?"}</small></div></div>`
-:`<div class="ask fr"><span class="av">${name?esc(name[0].toUpperCase()):"?"}</span><div><b>${name?"Теперь за друга: "+esc(name):"Теперь за друга"}</b><small>Как ответил бы ${name?esc(name):"твой друг"}? В вопросе «я» и «ты» — это ${name?esc(name):"он"}.</small></div></div>`;
+const ask=(me,name,warm,gn)=>me?`<div class="ask me"><span class="av">Я</span><div><b>Отвечаю за себя</b><small>${warm?"Мой выбор на данный момент":gMe("Как поступлю я сам на данный момент?","Как поступлю я сама на данный момент?","Как поступлю я на данный момент?")}</small></div></div>`
+:`<div class="ask fr"><span class="av">${name?esc(name[0].toUpperCase()):"?"}</span><div><b>${name?"Теперь за друга: "+esc(name):"Теперь за друга"}</b><small>${gF(gn,"Как ответил бы","Как ответила бы","Как ответит")} ${name?esc(name):"твой друг"}? В вопросе «я» и «ты» — это ${name?esc(name):gF(gn,"он","она","друг")}.</small></div></div>`;
 const LV=["#9FD8E6","#5DB8CF","#2E8FA8","#17607A"];
 const scenePool=()=>{const D=DECKS[DLAST];return[...D.P2.map(k=>"s"+k),...D.P3.filter(k=>k[0]==="s")]},allSeen=()=>scenePool().every(k=>seen.includes(k));
 function play(i){
 if(i===0&&!st.s.length&&!st.g.length&&(st.mode||"")!=="guess"&&!st.friend&&!st.rep&&API&&allSeen()){card(`<span class="who">Все ситуации пройдены 🎉</span><h2>Предложи свою</h2>
-<p style="margin:0">Ты прошёл все ситуации игры. Придумай свою — её опубликуют в канале, и, если участники проголосуют «за», она войдёт в игру с твоим именем.</p>
+<p style="margin:0">${gMe("Ты прошёл","Ты прошла","Пройдены")} все ситуации игры. Придумай свою — её опубликуют в канале, и, если участники проголосуют «за», она войдёт в игру с твоим именем.</p>
 <div class="row"><button class="main-btn" id="sbn">Предложить ситуацию</button><button class="n" id="sbr">Сыграть всё равно</button></div>
 <p class="note" style="margin:0">«Сыграть всё равно» — карточки уже знакомые.</p>`);$("sbn").onclick=()=>subForm(()=>play(0));$("sbr").onclick=()=>{st.rep=1;save();play(0)};return}
 st.started=1;const M=st.mode||(st.solo?"solo":"duo"),one=M!=="duo",s=sit(i),self=draft===null;
 card(`<div class="lad" role="img" aria-label="Карточка ${i+1} из ${N}">${[...Array(N)].map((_,k)=>`<i style="background:${LV[sit(k).lv]}${k<i?"":k===i?";height:8px":";opacity:.3"}"></i>`).join("")}</div><div class="meta"><span>${i+1} из ${N} · ${s.c}${s.id&&s.id[0]==="s"&&AU[s.id.slice(1)]?" "+repBtn("sub",s.id.slice(1)):""}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
-${M==="guess"?ask(0,st.friend.name):self?ask(1,0,s.lv===0):ask(0,st.friend&&st.friend.name||st.toName)}<div class="q">${s.q}</div><div id="o"></div>`);
+${M==="guess"?ask(0,st.friend.name,0,st.friend.gn):self?ask(1,0,s.lv===0):ask(0,st.friend&&st.friend.name||st.toName,0,st.friend?st.friend.gn:gnOf(st.to))}<div class="q">${s.q}</div><div id="o"></div>`);
 const idx=s.o.map((_,k)=>k);for(let k=idx.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
 const r=document.createElement("div");r.className=s.lv===0?"duo":"row col";
 const ans=x=>{markSeen(s.id);if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};
@@ -628,7 +638,7 @@ const sc=G.map(f=>({n:f.name,p:f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length
 const ops=G.length?st.s.map((x,k)=>.32+.68*G.filter(f=>Z(sit(k),f.g[k])>=0&&Z(sit(k),f.g[k])===Z(sit(k),x)).length/G.length):null;
 const B=st.bottle;
 let h=B?`<h1>Твоя бутылка в море</h1><div class="card"><p style="margin:0">Бутылка плавает. Когда её выловит незнакомец, бот пришлёт сообщение. Выловить могут до пяти человек.</p></div>
-<div class="card"><h2>Кто выловил</h2>${G.length?G.map(f=>`<div class="res"><div style="display:flex;justify-content:space-between;gap:8px"><span>${esc(f.name)}</span><span class="note">понял тебя: ${f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length} из ${N}</span></div>${wishBox(f.wish,f.name,f.id)}</div>`).join(""):`<p class="note" style="margin:0">Пока никто.</p>`}<button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>`
+<div class="card"><h2>Кто выловил</h2>${G.length?G.map(f=>`<div class="res"><div style="display:flex;justify-content:space-between;gap:8px"><span>${esc(f.name)}</span><span class="note">${gF(f.gn,"понял","поняла","понимает")} тебя: ${f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length} из ${N}</span></div>${wishBox(f.wish,f.name,f.id)}</div>`).join(""):`<p class="note" style="margin:0">Пока никто.</p>`}<button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>`
 :`<h1>${esc(st.name)}: угадайте меня</h1><div class="card"><h2>Ссылка для компании</h2>${linkBox("Режим компании: одна ссылка на всех. Кинь её в общий чат или покажи QR-код — каждый угадает тебя у себя в телефоне, а их острова появятся на твоей карте.")}</div>
 <div class="card"><h2>Мосты к друзьям</h2>${sc.length?sc.map(r=>`<div class="res" style="flex-direction:row;justify-content:space-between"><span>${esc(r.n)}</span><span class="note">досок: ${r.p} из ${N}</span></div>`).join(""):`<p class="note" style="margin:0">Пока никого.</p>`}
 <button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>`;
@@ -638,11 +648,11 @@ app.innerHTML=h;$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};sav
 wireWish(st.gid,w=>go());
 app.querySelectorAll("button[data-p]").forEach(b=>b.onclick=()=>{const f=G.find(x=>x.id===+b.dataset.p),m=+b.dataset.m;API("/game/"+st.gid+"/mark","POST",{player:f.id,mark:m}).then(()=>{f.mark=m;save();heroShare()},()=>oops(go))})}
 function guessResult(){
-const H=st.friend,hn=esc(H.name),L=["Не угадал","Почти угадал","Точно в цель"];
+const H=st.friend,hn=esc(H.name),L=[cap1(MKf(H.gn)[0]),cap1(MKf(H.gn)[1]),"Точно в цель"];
 if(st.only){app.innerHTML=`<h1>Ты и ${hn}</h1>${storyBlock()}<p class="note">${hn} увидит твою догадку: бот уже прислал сообщение.</p><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;wireMark();$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()};return}
 const v=[...Array(N)].map((_,k)=>hit(sit(k),H.s[k],st.g[k]));
 const B=st.bottle,u=v.filter(x=>x>0).length;
-let h=B?`<h1>Бутылка от: ${hn}</h1><div class="card">${bridge(v,2)}<p style="margin:0">Ты понял незнакомца в ${u} ${pl(u,["карточке","карточках","карточках"])} из ${N}.</p>${wishBox(st.wish,H.name,H.id)}</div>${storyBlock()}`
+let h=B?`<h1>Бутылка от: ${hn}</h1><div class="card">${bridge(v,2)}<p style="margin:0">${gMe("Ты понял","Ты поняла","Ты понимаешь")} незнакомца в ${u} ${pl(u,["карточке","карточках","карточках"])} из ${N}.</p>${wishBox(st.wish,H.name,H.id)}</div>${storyBlock()}`
 :`<h1>Ты и ${hn}</h1>${bridgeCard(v,2,H.name,"Мост: ты и "+hn)}${storyBlock()}${`<p class="note">${hn} увидит ваш мост у себя: бот уже прислал сообщение.</p>`}<div class="card"><h2>По ситуациям</h2>`;
 for(let k=0;k<N;k++){const a=hit(sit(k),H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[lb(sit(k),a)].toLowerCase()}</span></div></div>`}
 h+=`</div><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
@@ -684,7 +694,7 @@ return`<div class="card"><h2>${title}</h2>${bridge(v,max)}
 <p class="note" style="margin:0">Общее дело в жизни сближает сильнее разговоров. Выберите его вместе, а когда сделаете — отметь в саду.</p></div>`}
 function bridgeBtns(name){$("brd").onclick=()=>stepWeek(name);$("brp").onclick=()=>{const f=st.friend;st={name:st.name,seed:newSeed(),s:[],g:[],friend:null,started:1,mode:"duo",guessers:[],...(API&&f&&f.id?{to:f.id,toName:f.name}:{})};save();go()}}
 function result(){
-const f=st.friend,fn=esc(f.name),L=["Не угадал","Почти угадал","Точно в цель"];
+const f=st.friend,fn=esc(f.name),L=[cap1(MKf(f.gn)[0]),cap1(MKf(f.gn)[1]),"Точно в цель"];
 const v=[...Array(N)].map((_,k)=>hit(sit(k),f.s[k],st.g[k])+hit(sit(k),st.s[k],f.g[k]));
 let h=`<h1>Ну-ну: ${esc(st.name)} и ${fn}</h1>${bridgeCard(v,4,f.name,"Ваш мост")}${storyBlock()}<div class="card"><h2>По ситуациям</h2>`;
 for(let k=0;k<N;k++){const s=sit(k),a=hit(s,st.s[k],f.g[k]),b=hit(s,f.s[k],st.g[k]);
@@ -770,7 +780,7 @@ g+=`<g data-i="bottle" style="cursor:pointer"><g class="bob">${artBottle(bot[0],
 <rect x="${f1(inv[0]-34)}" y="${f1(inv[1]+28)}" width="68" height="20" rx="10" fill="#FFF8E7" stroke="#D9C9A3"/><text x="${f1(inv[0])}" y="${f1(inv[1]+42)}" text-anchor="middle" font-size="12" fill="#3B2F1A" font-family="Golos Text,system-ui">позвать</text></g>`;
 return g+`</svg>`}
 /* ===== механика карты ===== */
-let W=null,curFid=null,focus=null;const W0=()=>W;
+let W=null,curFid=null,focus=null;const W0=()=>W,gnOf=id=>((W&&W.friends||[]).find(f=>f.id===id)||{}).gn;
 /* меню: всегда под рукой; «Назад» в шапке Telegram ведёт на карту; новый экран — сверху */
 /* «Мой участок» — раздел проекта «Динамическое равновесие» в боте (решение 12.11): анкета исходных данных участка.
 Живёт в том же JSON игрока (ключ nunu-plot), сервер не менялся. Принцип: ни одно улучшение не уводит другой поток в минус.
@@ -1791,8 +1801,8 @@ if(PS.seed!=null&&seeds[PS.seed]){const k=PS.seed,x=seeds[k],L=x.life;
 h=`<div class="prow"><span class="who" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${L?L.same?"🌸 Распустилось":"🌿 Проросло иначе":pDue(x)?"💧 Пора":"🌱 Семя в земле"}${x.place?" · 📍 "+esc(x.place):""}</span><button class="n pi" id="sx" aria-label="Закрыть">✕</button></div>
 <p style="margin:0"><b style="font-weight:500">${linky(x.r)}</b></p>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
 ${x.with?`<p class="note" style="margin:0">Вместе: ${esc(x.with)}</p>`:""}
-${L?`<div class="tag ${L.same?"open":"fog"}" style="align-self:flex-start">${L.d}: ${esc(L.note||(L.same?"так и сделал":"сделал иначе"))}</div>`:
-`<input id="snt" placeholder="Что было в жизни (можно пусто)" maxlength="200"><div class="row"><button class="p" id="sy">Так и сделал</button><button class="n" id="sn">Сделал иначе</button></div>`}
+${L?`<div class="tag ${L.same?"open":"fog"}" style="align-self:flex-start">${L.d}: ${esc(L.note||(L.same?lc(SAME()):lc(DIFF())))}</div>`:
+`<input id="snt" placeholder="Что было в жизни (можно пусто)" maxlength="200"><div class="row"><button class="p" id="sy">${SAME()}</button><button class="n" id="sn">${DIFF()}</button></div>`}
 <div class="row"><button class="n" id="smv">Пересадить</button><button class="n" id="srm">Убрать с участка</button></div>`;
 pn.innerHTML=h;const mk=s=>{markSeed(k,s,$("snt").value);PS.fresh=k;pDraw();pPanel();setTimeout(()=>{PS.fresh=null},1400)};
 if($("sy"))$("sy").onclick=()=>mk(true);if($("sn"))$("sn").onclick=()=>mk(false);
@@ -2011,14 +2021,14 @@ if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();return}
 if(!f){pn.innerHTML=`<h2>Твой остров</h2><div class="zone">Как ты сейчас?</div><div class="row" id="md">${MOOD.map(([l,c],q)=>`<button class="n" data-q="${q}"><span aria-hidden="true" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join("")}</div>
 <p class="note" style="margin:0">${moodNote()}</p>
-<p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":"Пока ты один в море. Позови первого друга."}</p>
+<p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":gMe("Пока ты один в море.","Пока ты одна в море.","Пока в море только твой остров.")+" Позови первого друга."}</p>
 <p class="note" style="margin:0">Море — общее и нейтральное. Цветы растут, когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>
 <div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}${btn("so","Играть одному")}${btn("pl","🏡 Мой участок")}</div>`;
 $("md").onclick=e=>{const b=e.target.closest("button[data-q]");if(!b)return;markMood(+b.dataset.q);drawW(0,"0")};
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();$("so").onclick=()=>fresh("solo");$("pl").onclick=()=>{guestExit();plotMap()};return}  /* участок — с карточки своего острова, не из меню (22.11) */
-const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} прислал партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
+const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} ${gF(f.gn,"прислал","прислала","присылает")} партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
-const mk=f.mark?`<p style="margin:0">${fn} угадывал твою ситуацию — отметь, угадал ли.</p>`:"";
+const mk=f.mark?`<p style="margin:0">${fn} ${gF(f.gn,"угадывал","угадывала","угадывает")} твою ситуацию — отметь, ${gF(f.gn,"угадал ли","угадала ли","угадано ли")}.</p>`:"";
 pn.innerHTML=`<h2>${fn}</h2>${turn}${mk}${fresh0}<p class="note" style="margin:0">${stage(f.boards)}</p><div class="row">${f.turn==="me"?btn("an","Ответить: "+fn,1):btn("ng","Новая партия",!f.turn&&!f.mark)}${btn("os","Своя ситуация")}${f.mark?btn("mk","Отметить догадку",!f.turn):""}${f.last?btn("ls","Последняя партия"):""}${btn("dd","Дело вместе: +3 доски")}${btn("vs","🏡 В гости на участок")}${W.friends.length>1?btn("mt","Познакомить с другом"):""}</div>`;
 if($("an"))$("an").onclick=()=>{busy("Открываю партию…");join(f.gid).then(go,()=>oops(world))};
 if($("ng"))$("ng").onclick=()=>fresh("duo",{to:f.id,toName:f.name});$("os").onclick=()=>onlyStory({to:f.id,toName:f.name});
@@ -2031,7 +2041,7 @@ if($("mt"))$("mt").onclick=()=>{pn.innerHTML=`<h2>С кем познакомит
 pn.querySelectorAll("button[data-o]").forEach(b=>b.onclick=()=>{const o=W.friends.find(x=>x.id===+b.dataset.o);API("/friend/"+f.id+"/meet","POST",{other:o.id}).then(()=>{pn.innerHTML=`<h2>Приглашение ушло</h2><p style="margin:0">Позвал: ${fn} и ${esc(o.name)}. Если они ещё не знакомы в игре, бот написал обоим.</p>`},()=>oops(world))})}}
 /* своя ситуация: личная история сближает сильнее готовых вопросов (Collins & Miller 1994).
 Друг угадывает своими словами, автор отмечает: угадал — доска мосту, почти — верёвочка */
-const MK=["не угадал","почти угадал","угадал"],cap1=x=>x[0].toUpperCase()+x.slice(1),mkBtns=(a="")=>[2,1,0].map(m=>`<button class="${m?"t":"n"}" ${a} data-m="${m}">${cap1(MK[m])}</button>`).join("");
+const MKf=g=>[gF(g,"не угадал","не угадала","не угадано"),gF(g,"почти угадал","почти угадала","почти угадано"),gF(g,"угадал","угадала","угадано")],cap1=x=>x[0].toUpperCase()+x.slice(1),mkBtns=(a="",g)=>[2,1,0].map(m=>`<button class="${m?"t":"n"}" ${a} data-m="${m}">${cap1(MKf(g)[m])}</button>`).join("");
 function storyWrite(M){const O=st.only;card(`<span class="who">${O?"Без карточек":"По желанию"}</span><h2>Своя ситуация</h2>
 <p style="margin:0">Расскажи случай из жизни и как ты поступил. ${M==="hero"&&!st.to?"Каждый":"Друг"} угадает, как ты поступил: выберет из твоих вариантов или напишет своими словами. Угадал — доска мосту.</p>
 <div class="zone">Что случилось</div><textarea id="sq" maxlength="400" rows="3" placeholder="Сосед просит дрель, а прошлую вернул сломанной"></textarea>
@@ -2057,14 +2067,14 @@ if(s.c)$("sc").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.sg
 function storyBlock(){const s=st.story;if(!s||!s.a)return"";const own=!st.join,f=st.friend,fn=esc(f.name),gs=own?f.guess:st.sg,mk=own?f.mark:st.smark;
 let h=`<div class="card"><h2>Своя ситуация</h2><div class="q">${esc(s.q)}</div>`;
 if(own){h+=`<div>${fn} думает: ${gs?esc(gs)+" "+repBtn("guess",st.gid+":"+f.id):"проехали"}</div><div class="note">Ты: ${esc(s.a)}</div>`;
-if(gs)h+=mk==null?`<div class="zone">Угадал ли ${fn}?</div><div class="row" id="mkr">${mkBtns()}</div>`:`<span class="tag ${mk?"open":"fog"}" style="align-self:flex-start">${fn}: ${MK[mk]}</span>`}
+if(gs)h+=mk==null?`<div class="zone">${gF(f.gn,"Угадал ли","Угадала ли","Угадано ли:")} ${fn}?</div><div class="row" id="mkr">${mkBtns("",f.gn)}</div>`:`<span class="tag ${mk?"open":"fog"}" style="align-self:flex-start">${fn}: ${MKf(f.gn)[mk]}</span>`}
 else{h+=`<div>Ты думал: ${gs?esc(gs):"проехали"}</div><div>${fn}: ${esc(s.a)} ${repBtn("story",st.join)}</div>`;
-if(gs)h+=mk==null?`<p class="note" style="margin:0">${fn} отметит, угадал ли ты. Угадал — доска мосту.</p>`:`<span class="tag ${mk?"open":"fog"}" style="align-self:flex-start">Ты ${MK[mk]}</span>`}
+if(gs)h+=mk==null?`<p class="note" style="margin:0">${fn} отметит, ${gMe("угадал ли ты","угадала ли ты","угадано ли")}. Угадано — доска мосту.</p>`:`<span class="tag ${mk?"open":"fog"}" style="align-self:flex-start">${gMe("Ты","Ты","Итог:")} ${MKf(prefs.gn)[mk]}</span>`}
 return h+`</div>`}
 function wireMark(){const r=$("mkr");if(!r)return;r.onclick=e=>{const b=e.target.closest("button");if(!b)return;const m=+b.dataset.m,f=st.friend;
 API("/game/"+st.gid+"/mark","POST",{player:f.id,mark:m}).then(()=>{f.mark=m;save();go()},()=>oops(go))}}
 function storyHero(G){const s=st.story;if(!s||!s.a)return"";const SG=G.filter(f=>f.guess);
-return`<div class="card"><h2>Своя ситуация</h2><div class="q">${esc(s.q)}</div><div class="note">Ты: ${esc(s.a)}</div>${SG.length?SG.map(f=>`<div class="res"><div>${esc(f.name)}: ${esc(f.guess)} ${repBtn("guess",st.gid+":"+f.id)}</div>${f.mark==null?`<div class="row">${mkBtns(`data-p="${f.id}"`)}</div>`:`<span class="tag ${f.mark?"open":"fog"}" style="align-self:flex-start">${MK[f.mark]}</span>`}</div>`).join(""):`<p class="note" style="margin:0">Догадок пока нет.</p>`}</div>`}
+return`<div class="card"><h2>Своя ситуация</h2><div class="q">${esc(s.q)}</div><div class="note">Ты: ${esc(s.a)}</div>${SG.length?SG.map(f=>`<div class="res"><div>${esc(f.name)}: ${esc(f.guess)} ${repBtn("guess",st.gid+":"+f.id)}</div>${f.mark==null?`<div class="row">${mkBtns(`data-p="${f.id}"`,f.gn)}</div>`:`<span class="tag ${f.mark?"open":"fog"}" style="align-self:flex-start">${MKf(f.gn)[f.mark]}</span>`}</div>`).join(""):`<p class="note" style="margin:0">Догадок пока нет.</p>`}</div>`}
 function busy(t){card(`<p style="margin:0">${t}</p>`)}
 function oops(f){card(`<p style="margin:0">Не получилось связаться с сервером. Проверь интернет.</p><button class="main-btn" id="rt">Ещё раз</button>`);$("rt").onclick=f}
 /* ссылка: в чат Telegram, скопировать или QR-код — когда все рядом (режим компании) */
@@ -2091,13 +2101,13 @@ wireLink("Сыграй со мной в «Ну-ну»");$("rf").onclick=go;$("rs
 app.querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>{st.friend=fp(P[+b.dataset.k],st.seed);save();go()});tail(M)},()=>oops(go))}
 /* друг пришёл по ссылке: его ответы уходят на сервер, в ответ приходят ответы хозяина */
 function sendPlay(){busy("Отправляю ответы…");API("/game/"+st.join+"/play","POST",{name:st.name,s:st.mode==="guess"?[]:st.s,g:st.g,guess:st.sg||null})
-.then(v=>{st.friend={id:v.owner,name:v.name,s:v.s,g:v.g,seed:v.seed};st.story=v.story||null;st.smark=v.my?v.my.mark:null;st.wish=v.my&&v.my.wish;save();go()},()=>oops(sendPlay))}
-const fp=(p,seed)=>({id:p.id,name:p.name,s:p.s,g:p.g,seed,guess:p.guess,mark:p.mark});
+.then(v=>{st.friend={id:v.owner,name:v.name,gn:v.gn,s:v.s,g:v.g,seed:v.seed};st.story=v.story||null;st.smark=v.my?v.my.mark:null;st.wish=v.my&&v.my.wish;save();go()},()=>oops(sendPlay))}
+const fp=(p,seed)=>({id:p.id,name:p.name,gn:p.gn,s:p.s,g:p.g,seed,guess:p.guess,mark:p.mark});
 async function join(sp,fid){const v=await API("/game/"+sp),md=v.mode==="hero"?"guess":"duo";
 if(v.mine){const p=fid&&v.mode==="duo"&&v.plays.find(p=>p.id===fid);st={name:v.name,seed:v.seed,s:v.s,g:v.mode==="hero"?v.s:v.g,mode:v.mode,started:1,planted:1,gid:v.id,glink:v.link,guessers:[],
 friend:p?fp(p,v.seed):null,story:v.story||null,only:v.story&&v.story.only?1:0,storyAsk:1,bottle:v.bottle};save();return}
-st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,s:v.s,g:v.g,seed:v.seed},story:v.story||null,only:v.story&&v.story.only?1:0,sg:v.my.guess||"",smark:v.my.mark,bottle:v.bottle,wish:v.my.wish}
-:{name:st.name||tgName||"Друг",seed:v.seed,...(v.story&&v.story.only?{s:P10(),g:P10(),only:1}:{s:[],g:[]}),mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,pending:1},story:v.story||null,bottle:v.bottle};save()}
+st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,s:v.s,g:v.g,seed:v.seed},story:v.story||null,only:v.story&&v.story.only?1:0,sg:v.my.guess||"",smark:v.my.mark,bottle:v.bottle,wish:v.my.wish}
+:{name:st.name||tgName||"Друг",seed:v.seed,...(v.story&&v.story.only?{s:P10(),g:P10(),only:1}:{s:[],g:[]}),mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,pending:1},story:v.story||null,bottle:v.bottle};save()}
 async function boot(){if(!API)return home();busy("Загружаю твой остров…");
 try{const r=await API("/state"),d=r.data;tgName=r.name||"";
 /* на этом устройстве остались несохранённые действия — сливаем их с сервером, иначе берём серверное */
