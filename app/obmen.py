@@ -25,7 +25,7 @@ from . import config, landing, nunu
 
 router = APIRouter()
 PAGE = Path(__file__).resolve().parent.parent / "static" / "obmen.html"
-KINDS, TYPES, HOWS, CIRCLES = ("give", "seek", "skill"), ("thing", "service"), ("gift", "swap", "hours"), ("bridge", "fof", "all")
+KINDS, TYPES, HOWS, CIRCLES = ("give", "seek", "skill"), ("food", "thing", "service"), ("gift", "swap", "hours"), ("bridge", "fof", "all")
 MAX_OPEN = 20  # ponytail: открытых предложений на человека; поднять, если упрутся
 
 SCHEMA = """

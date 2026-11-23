@@ -22,7 +22,7 @@ def test_obmen(tmp_path, monkeypatch):
     with nunu._db() as db:  # мосты: Антон — Боря — Оля
         db.executemany("INSERT INTO friends(a, b) VALUES(?, ?)", [(1, 2), (2, 3)])
 
-    offer = {"kind": "give", "type": "thing", "title": "Кабачки", "how": "gift", "circle": "bridge"}
+    offer = {"kind": "give", "type": "food", "title": "Кабачки", "how": "gift", "circle": "bridge"}
     ids = {cir: c.post("/obmen/api/offer", json=offer | {"circle": cir}, headers=anton).json()["id"]
            for cir in ("bridge", "fof", "all")}
     seen = lambda h: {o["circle"] for o in c.get("/obmen/api/list", headers=h).json()["offers"]}  # noqa: E731
