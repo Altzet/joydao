@@ -175,7 +175,7 @@ items=(k,a,b,mx,withImg)=>`${P[k].items.map((x,i)=>`<div class="grp" style="marg
 ${F(`${k}.items.${i}.${a[0]}`,a[1],x[a[0]],{max:120})}${F(`${k}.items.${i}.${b[0]}`,b[1],x[b[0]],{ta:1})}${withImg?img(`${k}.items.${i}.img`,x.img,"без картинки"):""}</div>`).join("")}
 ${P[k].items.length<mx?`<div class="bar" style="border:0;padding-top:10px"><button data-add="${k}">＋ Добавить</button></div>`:""}`,
 blk={hero:()=>`${F("hero.kicker","Надпись над заголовком",P.hero.kicker,{max:60})}${F("hero.title","Заголовок",P.hero.title,{ta:1,max:120,h:56})}${F("hero.sub","Текст под заголовком",P.hero.sub,{ta:1,max:400})}
-<div class="g2"><div>${F("hero.cta","Главная кнопка (ведёт в игру)",P.hero.cta,{max:40})}</div><div>${F("hero.cta2","Вторая кнопка (к «Как это работает»)",P.hero.cta2,{max:40})}</div></div>${img("hero.img",P.hero.img,"нет — показан телефон с игрой")}`,
+<div class="g2"><div>${F("hero.cta","Главная кнопка (ведёт в игру)",P.hero.cta,{max:40})}</div><div>${F("hero.cta2","Вторая кнопка (к «Как это работает»)",P.hero.cta2,{max:40})}</div></div>${img("hero.img",P.hero.img,"нет — показано дерево с цветами, которое растёт от намерения")}`,
 how:()=>`${F("how.title","Заголовок блока",P.how.title,{max:80})}${items("how",["t","Шаг"],["d","Пояснение"],6)}`,
 features:()=>`${F("features.title","Заголовок блока",P.features.title,{max:80})}${items("features",["t","Название"],["d","Описание"],8,1)}`,
 author:()=>`${F("author.title","Заголовок",P.author.title,{max:80})}${F("author.text","Текст (пустая строка — новый абзац)",P.author.text,{ta:1,max:2000,h:200})}${F("author.sign","Подпись",P.author.sign,{max:80})}${img("author.img",P.author.img,"нет фото — показан росток")}`,
