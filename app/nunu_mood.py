@@ -118,7 +118,7 @@ async def send(bot, uid: int) -> None:
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
     b = lambda t, d: InlineKeyboardButton(text=t, callback_data=d)  # noqa: E731
     try:
-        await bot.send_message(uid, "🌊 Как ты сейчас?\nОдно касание — и вода вокруг твоего острова окрасится.",
+        await bot.send_message(uid, "🌊 Как ты себя чувствуешь?\nОдно касание — и вода вокруг твоего острова станет цвета твоего состояния.",
                                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                                    [b("🟡 Бодро и светло", "mood:0"), b("🟢 Спокойно", "mood:1")],
                                    [b("🟠 Напряжённо", "mood:2"), b("🟣 Грустно, без сил", "mood:3")],

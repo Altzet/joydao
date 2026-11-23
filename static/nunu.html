@@ -87,6 +87,13 @@ input,textarea,select{font:inherit;padding:9px 12px;border-radius:10px;border:1p
 .gbar{position:absolute;left:62px;right:62px;top:10px;z-index:3;display:flex;gap:8px;align-items:center;justify-content:space-between;background:rgba(255,248,231,.94);border-radius:12px;padding:6px 6px 6px 12px;font-size:14px}
 body.guest #pmode,body.guest #pu,body.guest #pvw,body.guest .pslope{display:none}
 .goal .gwrap{display:flex;gap:12px;align-items:center}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mgrid button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:2px solid var(--line);border-radius:16px;background:var(--card);font-weight:600;font-size:1rem;line-height:1.25;text-align:center}
+.mgrid button[aria-pressed=true]{border-color:var(--mc);background:color-mix(in srgb,var(--mc) 18%,var(--card))}.mgrid .mfig{background:color-mix(in srgb,var(--mc) 22%,transparent);border-radius:50%}
+.mfig g{transform-box:fill-box;transform-origin:50% 100%}.mf0{animation:mfJump 1s ease-in-out infinite}.mf1{animation:mfBreath 4s ease-in-out infinite}
+.mf2{animation:mfShake .35s linear infinite}.mf3{animation:mfSway 3.2s ease-in-out infinite}
+@keyframes mfJump{0%,100%{transform:translateY(0)}45%{transform:translateY(-5px)}}@keyframes mfBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes mfShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-1px)}75%{transform:translateX(1px)}}@keyframes mfSway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+@media (prefers-reduced-motion:reduce){.mfig g{animation:none}}
 /* план по шагам: крупные заметные кнопки — старшим так понятнее, куда нажимать */
 .wz h2{font-size:1.375rem}.wz .row{flex-direction:column;align-items:stretch;gap:10px}.wz .row button,.wz .main-btn{min-height:54px;font-size:1.0625rem;width:100%}
 .wz .row .n{border:2px solid var(--acc);color:var(--acc);font-weight:600;background:var(--card)}.wz .row .n[aria-pressed=true]{background:var(--acc);color:var(--acc-fg)}.wz .row button{justify-content:center;text-align:center}.wz #pv{border-color:var(--line);color:var(--muted);font-weight:500}
@@ -273,10 +280,10 @@ app.innerHTML=`<h1>Настройки</h1>
 <div class="card"><h2>Размер текста</h2><div class="row" style="align-items:center"><button class="n" id="fs-" aria-label="Мельче" ${i<=0?"disabled":""}>А−</button>
 <b style="font-weight:500;min-width:64px;text-align:center">${Math.round(prefs.fs*100)}%</b><button class="n" id="fs+" aria-label="Крупнее" ${i>=FS.length-1?"disabled":""}>А+</button></div>
 <p style="margin:0">Так будет выглядеть текст в игре: карточки, ответы и сад.</p><p class="note" style="margin:0">Подписи на карте приближаются жестами: щипком или кнопкой «+».</p></div>
-<div class="card"><h2>Цвет вокруг острова</h2><p style="margin:0">Вода вокруг твоего острова окрашивается тем, что ты ${gMe("отметил","отметила","отмечаешь")} в «Как ты сейчас?», и становится ярче от сделанных дел.</p>
+<div class="card"><h2>Цвет вокруг острова</h2><p style="margin:0">Вода вокруг твоего острова окрашивается цветом того, как ты себя чувствуешь (ты ${gMe("отметил","отметила","отмечаешь")} на карте, под своим островом), и становится ярче от сделанных дел.</p>
 <div class="zone">Показывать друзьям</div><div class="row">${b("ms-off","Нет, только мне",!prefs.moodShare)}${b("ms-on","Да",!!prefs.moodShare)}</div>
 <div class="zone">Спрашивать в Telegram</div><div class="row">${b("ma-on","Да",prefs.moodAsk!==false)}${b("ma-off","Не надо",prefs.moodAsk===false)}</div>
-<p class="note" style="margin:0">Идёт проверка: с 23 ноября четыре недели бот через неделю в 19:00 спрашивает «Как ты сейчас?». Так мы узнаем, помогает ли вопрос или мешает.</p></div>
+<p class="note" style="margin:0">Идёт проверка: с 23 ноября четыре недели бот через неделю в 19:00 спрашивает «Как ты себя чувствуешь?». Так мы узнаем, помогает ли вопрос или мешает.</p></div>
 <div class="card"><h2>Напоминания</h2><div class="row">${b("rm-on","Присылать",prefs.remind!==false)}${b("rm-off","Не надо",prefs.remind===false)}</div>
 <p class="note" style="margin:0">Бот напишет в день, ${gMe("который ты выбрал","который ты выбрала","выбранный")} для дела, и не чаще раза в неделю — если семена ждут полива или сад давно без новых.</p></div>
 <div class="card"><h2>Гости на участке</h2><p style="margin:0">Друзья, с которыми есть мост, могут заглянуть на твой участок: видят только карту и 3D, оставляют комментарии и зовут на дела.</p>
@@ -388,15 +395,25 @@ let plot=ls.get("nunu-plot")||{};const savePlot=()=>{if(typeof PS==="object"&&PS
 связям цвета и чувства (Jonauskaite et al. 2020). Оттенок — последняя отметка, новый перетекает из прошлого; за ~3 дня тает; дела делают ярче.
 Друзья видят цвет, только если включено в настройках (по умолчанию — нет). */
 const MOOD=[["Бодро и светло","#F2B544"],["Спокойно","#5DCAA5"],["Напряжённо","#F0997B"],["Грустно, без сил","#9C93E6"]];
+/* «Как ты себя чувствуешь?» (23.11): вместо точек — четыре человечка в движении. Позу и движение тело узнаёт быстрее слова
+(эмоции по позе тела — de Gelder 2006; по одному движению фигуры из точек — Atkinson и др. 2004). ⚠ ГИПОТЕЗА, что так понятнее старшим */
+const MFIG=[
+'<g class="mf0"><circle cx="30" cy="16" r="7" fill="C"/><path d="M30 23v17M30 28 18 15M30 28l12-13M30 40l-9 14M30 40l9 14"/></g>',
+'<g class="mf1"><circle cx="30" cy="17" r="7" fill="C"/><path d="M30 24v16M30 29l-11 10M30 29l11 10M30 40l-13 7 12 3M30 40l13 7-12 3"/></g>',
+'<g class="mf2"><circle cx="30" cy="13" r="7" fill="C"/><path d="M30 20v18M30 25l-11-4 4-9M30 25l11-4-4-9M30 38l-8 14M30 38l8 14M14 6l3 3-3 3M46 6l-3 3 3 3"/></g>',
+'<g class="mf3"><circle cx="35" cy="22" r="7" fill="C"/><path d="M30 28q-3 8-1 16M30 31q-4 7-7 14M30 31q2 7 2 14M29 44l-5 11M29 44l5 11"/></g>'],
+mfig=q=>`<svg class="mfig" viewBox="0 0 60 58" width="84" height="80" aria-hidden="true" fill="none" stroke="var(--fg)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${MFIG[q].replace("C",MOOD[q][1])}</svg>`;
 let moods=ls.get("nunu-mood")||[];
 function aura(mood,act){const m=(mood||[]).filter(([q,a])=>MOOD[q]&&a>=0&&a<72).sort((x,y)=>x[1]-y[1])[0];if(!m)return null;  /* оттенок — последняя отметка (смешанные оттенки мутнеют) */
 const e=Math.min(1,.35+.15*(act[0]||0)+.07*(act[1]||0));return{c:MOOD[m[0]][1],o:+(Math.exp(-m[1]/36)*(.3+.45*e)).toFixed(2)}}
 const myMood=()=>moods.map(m=>[m.q,(Date.now()-Date.parse(m.t))/36e5]),
 myAct=()=>{const d=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);return[seeds.filter(x=>x.life&&x.life.same&&(x.life.d||"")>=d(14)).length,seeds.filter(x=>(x.d||"")>=d(7)).length]};
 function markMood(q){moods=[...moods.filter(m=>Date.now()-Date.parse(m.t)<14*864e5),{id:"m"+Date.now(),t:new Date().toISOString(),q,src:"app"}].slice(-60);ls.set("nunu-mood",moods)}
+function moodPick(){const m=moods[moods.length-1],cur=m&&(Date.now()-Date.parse(m.t))/36e5<72?m.q:-1;
+return`<div class="mgrid" id="md">${MOOD.map(([l,c],q)=>`<button class="n" data-q="${q}"${q===cur?' aria-pressed="true"':""} style="--mc:${c}">${mfig(q)}<span>${l}</span></button>`).join("")}</div>`}
 function moodNote(){const m=moods[moods.length-1],h=m?(Date.now()-Date.parse(m.t))/36e5:99,who=prefs.moodShare?"Цвет видят друзья.":"Цвет видишь только ты.";
-if(h>=72)return`Отметь, и вода вокруг острова окрасится. ${who} Изменить — в настройках.`;
-return`Отмечено: ${MOOD[m.q][0].toLowerCase()}, ${h<1?"только что":h<24?Math.round(h)+" ч назад":"вчера или раньше"}. Цвет тает за три дня, а сделанные дела делают его ярче. ${who}`}
+if(h>=72)return`Нажми на человечка — и вода вокруг твоего острова станет его цвета. Так видно, как ты. ${who} Изменить — в настройках.`;
+return`Отмечено: ${MOOD[m.q][0].toLowerCase()}, ${h<1?"только что":h<24?Math.round(h)+" ч назад":"вчера или раньше"}. Это цвет воды вокруг твоего острова: он тает за три дня, а сделанные дела делают его ярче. ${who}`}
 let auraPrev=null;
 let seen=ls.get("nunu-seen")||[];const markSeen=id=>{if(id&&!seen.includes(id)){seen.push(id);ls.set("nunu-seen",seen)}};
 let goals=ls.get("nunu-goals")||[];const saveGoals=()=>ls.set("nunu-goals",goals),goalNow=()=>goals.find(g=>!g.done&&!g.gone)||null,
@@ -2040,7 +2057,7 @@ if(sel==="bottle"){pn.innerHTML=`<h2>Бутылка в море</h2><p style="ma
 $("bc").onclick=catchBottle;$("bt").onclick=()=>fresh("hero",{bottle:1});return}
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();return}
-if(!f){pn.innerHTML=`<h2>Твой остров</h2><div class="zone">Как ты сейчас?</div><div class="row" id="md">${MOOD.map(([l,c],q)=>`<button class="n" data-q="${q}"><span aria-hidden="true" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join("")}</div>
+if(!f){pn.innerHTML=`<h2>Твой остров</h2><div class="zone" style="font-size:1.0625rem;color:var(--fg);font-weight:600">Как ты себя чувствуешь?</div>${moodPick()}
 <p class="note" style="margin:0">${moodNote()}</p>
 <p style="margin:0">Цветы ${z[0]} · деревья ${z[1]} · скалы ${z[2]}. ${W.friends.length?"Нажми на остров друга, чтобы сыграть с ним.":gMe("Пока ты один в море.","Пока ты одна в море.","Пока в море только твой остров.")+" Позови первого друга."}</p>
 <p class="note" style="margin:0">Море — общее и нейтральное. Цветы растут, когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>
