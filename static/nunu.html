@@ -86,7 +86,11 @@ input,textarea,select{font:inherit;padding:9px 12px;border-radius:10px;border:1p
 .res .s{font-size:0.875rem;color:var(--muted)}
 .gbar{position:absolute;left:62px;right:62px;top:10px;z-index:3;display:flex;gap:8px;align-items:center;justify-content:space-between;background:rgba(255,248,231,.94);border-radius:12px;padding:6px 6px 6px 12px;font-size:14px}
 body.guest #pmode,body.guest #pu,body.guest #pvw,body.guest .pslope{display:none}
-.goal .gwrap{display:flex;gap:12px;align-items:center}.goal .gtree{flex:none}.tag{font-size:0.75rem;padding:2px 8px;border-radius:99px;display:inline-block}
+.goal .gwrap{display:flex;gap:12px;align-items:center}
+/* план по шагам: крупные заметные кнопки — старшим так понятнее, куда нажимать */
+.wz h2{font-size:1.375rem}.wz .row{flex-direction:column;align-items:stretch;gap:10px}.wz .row button,.wz .main-btn{min-height:54px;font-size:1.0625rem;width:100%}
+.wz .row .n{border:2px solid var(--acc);color:var(--acc);font-weight:600;background:var(--card)}.wz .row .n[aria-pressed=true]{background:var(--acc);color:var(--acc-fg)}.wz .row button{justify-content:center;text-align:center}.wz #pv{border-color:var(--line);color:var(--muted);font-weight:500}
+.wz input,.wz select,.wz textarea{min-height:52px;font-size:1.0625rem;border-width:2px}.wz .zone{font-size:.9375rem;color:var(--fg)}.goal .gtree{flex:none}.tag{font-size:0.75rem;padding:2px 8px;border-radius:99px;display:inline-block}
 .open{background:var(--les);color:var(--les-fg)}.fog{background:var(--sk);color:var(--sk-fg)}
 .isl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .isl div{border-radius:12px;padding:12px}.isl div[data-v]{cursor:pointer}.isl div[aria-pressed="true"]{box-shadow:0 0 0 2px currentColor}
@@ -416,8 +420,8 @@ return`<div class="card goal"><span class="who">Большая цель · ${gSt
 ${gPath(n)}<p class="note" style="margin:6px 0 0">Большая цель растёт маленькими шагами. Сделано: <b>${n.done}</b>${n.all>n.done?` · в пути: ${n.all-n.done}`:""}${left!=null?` · ${left>0?"до срока "+left+" "+pl(left,["день","дня","дней"]):left===0?"срок сегодня":"срок прошёл — можно продлить"}`:""}</p>
 ${g.wx?`<p class="note" style="margin:6px 0 0">${wxSum(g.wx)} · бот напишет, когда погода подойдёт</p>`:""}<div class="row" style="margin-top:8px"><button class="main-btn" id="gnext">Наметить шаг</button><button class="n" id="ged">Изменить цель</button>${g.wx?"":`<button class="n" id="gwx">☀ Добавить погоду</button>`}</div></div></div>${past?`<p class="note" style="margin:0">Достигнуто целей: ${past} 🍎</p>`:""}</div>`}
 function goalEdit(back,sky0){const g=goalNow(),v=g?{...g}:{t:"",why:"",by:""},o=wxNew(g&&g.wx);let sky=!!(g&&g.wx)||!!sky0;
-const draw=()=>{app.innerHTML=`<h1>${g?"Большая цель":"Новая большая цель"}</h1><div class="card"><div class="zone">К чему иду (одной фразой)</div><input id="gt" maxlength="80" placeholder="Построить печь на участке" value="${esc(v.t)}">
-<div class="zone">Зачем мне это</div><textarea id="gw" maxlength="200" rows="3" placeholder="Хочу собирать друзей и печь хлеб сам">${esc(v.why||"")}</textarea>
+const draw=()=>{app.innerHTML=`<h1>${g?"Большая цель":"Новая большая цель"}</h1><div class="card"><div class="zone">К чему иду (одной фразой)</div><input id="gt" maxlength="80" placeholder="Напиши свою большую цель" value="${esc(v.t)}">
+<div class="zone">Зачем мне это</div><textarea id="gw" maxlength="200" rows="3" placeholder="Напиши, зачем тебе это">${esc(v.why||"")}</textarea>
 <div class="zone">К какому сроку (по желанию)</div><input type="date" id="gb" min="${today()}" value="${esc(v.by||"")}" style="align-self:flex-start">
 <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sky" style="flex:none"${sky?" checked":""}> 🌦 По погоде — бот напишет, когда погода подойдёт или предупредит</label>${sky?wxUI(o):""}
 <div class="err" id="ge"></div><div class="row"><button class="main-btn" id="gs">${g?"Сохранить":"Посадить семя"}</button><button class="n" id="gx">Назад</button></div>
@@ -542,7 +546,7 @@ const bonus=()=>mateSel&&mateSel.id?`${mateSel.name} получит сообще
 :mate()?"Когда отметишь в саду «"+SAME()+"», ваш мост (ты и "+mate()+") получит +3 доски.":"Выбери друга, и дело укрепит ваш мост.";
 const chips=(a,id,cur)=>`<select id="${id}" style="width:100%">${a.map((x,k)=>`<option value="${k}"${k===cur?" selected":""}>${esc(x)}</option>`).join("")}</select>`;  /* выпадающий список: дела и помехи не растягивают форму */
 const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" maxlength="${max}" placeholder="${ph}" value="${esc(v)}">`;
-let toGoal=null,cur=null;
+let toGoal=null,cur=null,focus=false;  /* focus: начал заполнять план — всё лишнее скрыто */
 /* «Удиви себя» по шагам (23.11): одна карточка за раз, заполнил — следующая; необязательное — «Пропустить».
 Сделанные шаги — строки сверху, нажал — вернулся. Опоры: меньше выбора на экране — меньше отказов (Hick 1952; Iyengar & Lepper 2000);
 видимый прогресс тянет дойти до конца (Kivetz и др. 2006) */
@@ -554,26 +558,26 @@ friend:()=>tg?"вдвоём: "+(mate()||"друг"):"сам",plan:()=>""},
 keys=()=>[goalNow()&&"goal","what","when",w===0&&"where","obs",!fr&&"friend","plan"].filter(Boolean),
 need=k=>k==="what"&&w===0&&!own.what.trim()?"Напиши, что сделаешь":k==="where"&&own.sky?wxMiss(own)
 :k==="obs"?(o===SO.length&&!own.obs.trim()?"Напиши, что может помешать":ownAct()&&!own.act.trim()?"Напиши, что сделаешь, если помешает":""):"",
-step=d=>{const K=keys(),i=Math.max(0,K.indexOf(cur));cur=K[Math.min(K.length-1,Math.max(0,i+d))];draw();const z=$("wz");if(z)z.scrollIntoView({behavior:"smooth",block:"start"})};
-const H={goal:G=>`<h2>Это шаг к цели?</h2><p class="note" style="margin:0">«${esc(G.t)}»</p><div class="row"><button class="main-btn" data-tg="1">Да, шаг к цели</button><button class="n" data-tg="0">Нет, отдельное дело</button></div>`,
-what:()=>`<h2>${tg?"Что сделаем вместе?":"Что попробуешь?"}</h2>${chips(W,"cw",w)}${w===0?fld("ow",tg?"Что сделаем":"Что сделаю","Испечь пиццу в печи",own.what,80):""}`,
+step=d=>{const K=keys(),i=Math.max(0,K.indexOf(cur));cur=K[Math.min(K.length-1,Math.max(0,i+d))];if(d>0)focus=true;draw();scrollTo(0,0)};
+const H={goal:G=>`<h2>Это шаг к большой цели?</h2><div style="background:var(--acc-soft,#E3F1EA);border:2px solid var(--acc);border-radius:14px;padding:14px 16px"><div class="zone" style="margin:0 0 4px;color:var(--acc);font-weight:600">Твоя большая цель</div><div style="font-weight:600;font-size:1.25rem;line-height:1.35">${esc(G.t)}</div></div><div class="row"><button class="main-btn" data-tg="1">Да, это шаг к ней</button><button class="n" data-tg="0">Нет, отдельное дело</button></div>`,
+what:()=>`<h2>${tg?"Что сделаем вместе?":"Что попробуешь?"}</h2>${chips(W,"cw",w)}${w===0?fld("ow",tg?"Что сделаем":"Что сделаю",tg?"Напиши, что сделаете":"Напиши, что сделаешь",own.what,80):""}`,
 when:()=>`<h2>Когда напомнить?</h2><div class="row" style="gap:6px;flex-wrap:wrap">${[["Сегодня",0],["Завтра",1],["В субботу",-1]].map(([l,n])=>{const v=dPlus(n);return`<button class="n" data-dd="${v}"${own.due===v?' aria-pressed="true" style="border-color:var(--acc);color:var(--acc)"':""}>${l}</button>`}).join("")}</div><div class="pgrid" style="grid-template-columns:1fr 1fr;gap:8px"><label class="pf"><span class="zone">📅 День</span><input type="date" id="od" min="${today()}" value="${own.due}"></label><label class="pf"><span class="zone">🕒 Во сколько</span><input type="time" id="ot" value="${own.at}"></label></div>`,
-where:()=>`<h2>Где?</h2>${fld("on","Место или ссылка","У меня во дворе или https://…",own.where,500)}<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sky" style="flex:none"${own.sky?" checked":""}> 🌦 По погоде — бот напишет, когда погода подойдёт или предупредит</label>${own.sky?wxUI(own):""}`,
-obs:()=>`<h2>Что может помешать?</h2>${chips(O,"co",o)}${o===SO.length?fld("ob","Моя помеха","Устану после работы",own.obs,80):""}${ownAct()?fld("oa","Если помешает, что я сделаю","Напишу ему первым, а не буду ждать",own.act,100):""}`,
+where:()=>`<h2>Где?</h2>${fld("on","Место или ссылка","Напиши место или вставь ссылку",own.where,500)}<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sky" style="flex:none"${own.sky?" checked":""}> 🌦 По погоде — бот напишет, когда погода подойдёт или предупредит</label>${own.sky?wxUI(own):""}`,
+obs:()=>`<h2>Что может помешать?</h2>${chips(O,"co",o)}${o===SO.length?fld("ob","Моя помеха","Напиши, что может помешать",own.obs,80):""}${ownAct()?fld("oa","Если помешает, что я сделаю","Напиши, что сделаешь тогда",own.act,100):""}`,
 friend:()=>`<h2>Вместе с другом?</h2><label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tg" style="flex:none"${tg?" checked":""}> Сделаем вместе с другом</label>
 ${tg?(FR.length?`<select id="cf" style="width:100%"><option value="">— выбери друга —</option>${FR.map(f=>`<option value="${f.id}"${mateSel&&mateSel.id===f.id?" selected":""}>${esc(f.name)}</option>`).join("")}</select>`:"")
-+(!mateSel?`<input id="oc" maxlength="30" placeholder="${FR.length?"Или впиши имя":"Имя друга — тогда дело укрепит ваш мост"}" value="${esc(own.who)}">`:"")+`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}`,
++(!mateSel?`<input id="oc" maxlength="30" placeholder="${FR.length?"Или впиши имя друга":"Впиши имя друга"}" value="${esc(own.who)}">`:"")+`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}`,
 plan:()=>`<h2>Твой план</h2><div class="q" id="pl">${esc(plan())}</div>${fr?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}`};
 const draw=()=>{const G=goalNow(),K=keys();if(!K.includes(cur))cur=K[0];const i=K.indexOf(cur);
-app.innerHTML=`<h1>Чем удивишь себя на этой неделе?</h1>${gnAsk()}${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins&&!i?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}
-<div class="card" id="wz"><div style="display:flex;gap:4px" aria-label="Шаг ${i+1} из ${K.length}">${K.map((k,j)=>`<i style="flex:1;height:4px;border-radius:2px;background:${j<=i?"var(--acc)":"var(--line)"}"></i>`).join("")}</div>
+const fx=focus||i>0;app.innerHTML=`${fx?`<h1 style="font-size:1.25rem">${G&&toGoal!==false?"Шаг к цели":"Новое дело"}</h1>${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}`:`<h1>Чем удивишь себя на этой неделе?</h1>${gnAsk()}${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}`}
+<div class="card wz" id="wz"><div style="display:flex;gap:4px" aria-label="Шаг ${i+1} из ${K.length}">${K.map((k,j)=>`<i style="flex:1;height:4px;border-radius:2px;background:${j<=i?"var(--acc)":"var(--line)"}"></i>`).join("")}</div>
 ${K.slice(0,i).map(k=>`<button class="n" data-go="${k}" style="display:flex;gap:10px;align-items:center;text-align:left;width:100%;justify-content:flex-start"><span class="note" style="margin:0;flex:none;min-width:64px">${TIT[k]}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(SUM[k]())}</span><span aria-hidden="true" style="color:var(--muted)">✎</span></button>`).join("")}
 ${H[cur](G)}<div class="err" id="er"></div>
 <div class="row">${cur==="plan"?`<button class="main-btn" id="pt">Посадить в сад</button>`:cur==="goal"?"":`<button class="main-btn" id="nx">Дальше</button>`}${OPT[cur]?`<button class="n" id="sk">Пропустить</button>`:""}<button class="n" id="pv">${i?"← Назад":"Выйти"}</button></div></div>
 ${cur==="plan"?`<p class="note">${own.sky?"Когда прогноз подойдёт, бот напишет накануне вечером. ":""}${own.due?(own.at?"В этот день в "+own.at+" бот напомнит о деле.":"В этот день утром бот напомнит о деле. Хочешь в своё время — поставь час."):own.at?"Бот напомнит в "+own.at+" — сегодня, а если время уже прошло, завтра.":"Через неделю загляни в сад и отметь: «"+lc(SAME())+"» или «"+lc(DIFF())+"»."} Не вышло — ничего страшного, семя подождёт.</p>`:""}`;
 const redraw=()=>stepWeek(fr,own.what,loc);if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(redraw);if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
-if($("gnext"))$("gnext").onclick=()=>{toGoal=true;cur="what";draw();$("wz").scrollIntoView({behavior:"smooth",block:"start"})};
-app.querySelectorAll("[data-tg]").forEach(b=>b.onclick=()=>{toGoal=b.dataset.tg==="1";step(1)});
+if($("gnext"))$("gnext").onclick=()=>{toGoal=true;cur="what";focus=true;draw();scrollTo(0,0)};
+app.querySelectorAll("[data-tg]").forEach(b=>b.onclick=()=>{toGoal=b.dataset.tg==="1";focus=true;step(1)});
 app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{cur=b.dataset.go;draw()});
 if($("nx"))$("nx").onclick=()=>{const m=need(cur);if(m){$("er").textContent=m;return}step(1)};
 if($("sk"))$("sk").onclick=()=>{if(cur==="when"){own.due="";own.at=""}if(cur==="where"){own.where="";own.sky=false}if(cur==="friend"){tg=false;mateSel=null}step(1)};
