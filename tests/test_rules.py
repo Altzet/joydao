@@ -73,3 +73,11 @@ def test_head():
     for u in ("/sitemap.xml", "/robots.txt", "/", "/uchastok", "/rules"):
         assert c.head(u).status_code == 200, u
     assert c.head("/net-takoy").status_code == 404
+
+
+def test_favicon():
+    c = TestClient(pause.app)
+    r = c.get("/favicon.ico")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/x-icon"
+    assert c.get("/favicon.svg").text.startswith("<svg")
+    assert 'href="/favicon.ico"' in c.get("/").text

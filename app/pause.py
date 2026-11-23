@@ -15,7 +15,7 @@ from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
 from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, MenuButtonWebApp, Message,
                            WebAppInfo)
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 
 from . import config, db, landing, nunu, nunu_admin, obmen, nunu_mood, nunu_reports, nunu_subs, nunu_wx, pages, rules
@@ -192,6 +192,15 @@ async def og_image():
     """Картинка превью ссылки по умолчанию (1200×630); свою можно загрузить в админке → Лендинг."""
     return FileResponse(Path(__file__).resolve().parent.parent / "static" / "og.png", media_type="image/png",
                         headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/favicon.ico")
+@app.get("/favicon.svg")
+async def favicon(request: Request):
+    n = request.url.path.lstrip("/")
+    return FileResponse(Path(__file__).resolve().parent.parent / "static" / n,
+                        media_type="image/svg+xml" if n.endswith("svg") else "image/x-icon",
+                        headers={"Cache-Control": "public, max-age=604800"})
 
 
 @app.get("/img/{name}")
