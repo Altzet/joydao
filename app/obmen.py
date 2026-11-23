@@ -157,6 +157,19 @@ def create(body: OfferIn, x_init_data: str | None = Header(default=None),
         return {"id": cur.lastrowid}
 
 
+class RepIn(BaseModel):
+    why: str = Field(default="", max_length=40)
+
+
+@router.post("/obmen/api/offer/{oid}/report")
+async def report(oid: int, body: RepIn, x_init_data: str | None = Header(default=None),
+                 x_tg_login: str | None = Header(default=None)):
+    """⚑ на предложение: те же жалобы и ступени, что в игре (app/nunu_reports.py)."""
+    from . import nunu_reports
+    u = _who(x_init_data, x_tg_login)
+    return await nunu_reports.submit(u.id, nunu_reports.RepIn(kind="offer", ref=str(oid), why=body.why))
+
+
 @router.post("/obmen/api/offer/{oid}/close")
 def close(oid: int, x_init_data: str | None = Header(default=None),
            x_tg_login: str | None = Header(default=None)):

@@ -29,6 +29,7 @@ h1{font:500 clamp(26px,4vw,38px)/1.2 Unbounded,sans-serif;margin:0}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .row .lbl{font-size:0.875rem;color:var(--muted);margin-right:4px}
+.lnk{background:none;border:0;padding:0;color:var(--muted);font:inherit;font-size:.875rem;cursor:pointer;text-decoration:underline}
 .chip{min-height:40px;padding:0 15px;border:0;border-radius:99px;background:var(--bg);font-weight:500;cursor:pointer}
 .chip[aria-pressed=true]{background:var(--acc);color:var(--acc-fg)}
 .search{flex:1 1 220px;max-width:100%;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
@@ -103,7 +104,7 @@ const API=(p,m="GET",d)=>fetch("/obmen/api"+p,{method:m,headers:{...(TG?{"X-Init
  .then(async r=>{if(r.ok)return r.json();if(r.status===401&&!TG){logout();throw"Войди через Telegram"}let t="Не получилось. Попробуй ещё раз.";try{t=(await r.json()).detail||t}catch(e){}throw typeof t==="string"?t:"Проверь поля формы"});
 const KIND={give:"Отдам",seek:"Ищу",skill:"Умею"},TYPE={food:"Продукты",thing:"Вещь",service:"Услуга"},
  HOW={gift:["Дарю","Просто отдаю, ничего взамен"],swap:["Меняю на…","Напишу, что хотел бы получить"],hours:["Часами","Банк времени: час за час"]},
- CIRC={bridge:"Мостам",fof:"Друзьям друзей",all:"Всем"},
+ CIRC={bridge:"Мостам",fof:"Друзьям друзей",all:"Всем"},REPW=["Продажа за деньги","Запрещённое или опасное","Оскорбление","Спам","Другое"],
  ICON={give:"M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8c-1.5-3-5-3.5-5-1.5S10 8 12 8zM12 8c1.5-3 5-3.5 5-1.5S14 8 12 8z",
   seek:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4",skill:"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"};
 const svg=(d,w=42)=>`<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
@@ -167,7 +168,9 @@ ${mine?`<button class="btn o" id="cl">Закрыть предложение</but
 <span><b>${esc(o.name)}</b><span class="sub">${esc(relText(o))}${o.username?" · @"+esc(o.username):""}</span></span></div>
 ${o.replied?`<div class="ok">Ты уже откликнулся — ${esc(o.name)} получил сообщение от бота.</div>`
 :`<label class="f">Пара слов (можно пусто)<textarea id="rt" rows="2" maxlength="300" placeholder="Например: заберу в субботу, взамен — банка мёда"></textarea></label>
-<button class="btn" id="rp">Откликнуться</button><p class="err" id="er"></p>`}`}`);
+<button class="btn" id="rp">Откликнуться</button><p class="err" id="er"></p>`}<div id="rep"><button class="lnk" id="rpb">⚑ Пожаловаться</button></div>`}`);
+if(!mine)$("rpb").onclick=()=>{$("rep").innerHTML=`<p class="sub" style="margin:0 0 6px">Что не так?</p><div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${REPW.map(w=>`<button class="chip" data-w="${w}">${w}</button>`).join("")}</div>`;
+ $("rep").querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>API("/offer/"+o.id+"/report","POST",{why:b.dataset.w}).then(()=>{$("rep").innerHTML=`<p class="sub" style="margin:0">Спасибо, жалоба принята. Решает доля жалоб разных участников — <a href="/rules#r6">как это работает</a>.</p>`},e=>{$("rep").innerHTML=`<p class="err">${esc(String(e))}</p>`}))};
 if(mine)$("cl").onclick=()=>API("/offer/"+o.id+"/close","POST").then(()=>{closeSheet();load()},e=>alertMsg(e));
 else if(!o.replied)$("rp").onclick=()=>{$("rp").disabled=true;API("/offer/"+o.id+"/reply","POST",{text:$("rt").value})
  .then(()=>{o.replied=true;item(o)},e=>{$("rp").disabled=false;$("er").textContent=e})}}

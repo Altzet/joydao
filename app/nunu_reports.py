@@ -7,6 +7,7 @@
 """
 import json
 import logging
+from types import SimpleNamespace
 from contextlib import closing
 
 from fastapi import APIRouter, Header, HTTPException, Request
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/nunu/api/report")
 admin = APIRouter(prefix="/nunu/admin/api/reports")
 DEF = {"min": 2, "aud": 5, "p1": 20, "p2": 40, "p3": 60, "days": 180}
-KINDS = ("comment", "story", "guess", "bottle", "sub", "plan")
+KINDS = ("comment", "story", "guess", "bottle", "sub", "plan", "offer")
 LEVEL = {1: "убраны нарушения", 2: "нельзя предлагать ситуации и комментировать", 3: "доступ закрыт"}
 
 
@@ -68,6 +69,10 @@ def _target(c, uid: int, kind: str, ref: str) -> tuple[int, str]:
         for s in nunu._owner_state(c, uid).get("nunu-seeds") or []:
             if isinstance(s, dict) and s.get("pid") == ref and isinstance(s.get("by"), int) and s["by"] != uid:
                 return s["by"], str(s.get("r") or "")
+    elif kind == "offer":  # ponytail: не сверяем круг видимости — решает доля разных пожаловавшихся, а не один голос
+        r = c.execute("SELECT owner, title, text FROM offers WHERE id=? AND closed=0", (int(ref) if ref.isdigit() else -1,)).fetchone()
+        if r:
+            return r["owner"], f"{r['title']}: {r['text']}"
     raise HTTPException(404, "Не нашли, на что жалоба")
 
 
@@ -101,6 +106,8 @@ async def _clean(uid: int) -> list[str]:
                 elif k == "guess":
                     gid, _, pid = ref.partition(":")
                     c.execute("UPDATE plays SET guess=NULL WHERE game_id=? AND player=?", (gid, int(pid)))
+                elif k == "offer":
+                    c.execute("UPDATE offers SET closed=1 WHERE id=?", (int(ref),))
                 elif k == "sub":
                     left.append(f"ситуация №{ref} в колоде")
                 c.execute("UPDATE reports SET status='removed' WHERE uid=? AND kind=? AND ref=?", (uid, k, ref))
@@ -129,7 +136,12 @@ class RepIn(BaseModel):
 
 @router.post("")
 async def report(body: RepIn, x_init_data: str | None = Header(default=None)):
-    u = nunu._user(x_init_data)
+    return await submit(nunu._user(x_init_data).id, body)
+
+
+async def submit(by: int, body: RepIn) -> dict:
+    """Общая для игры и обмена на сайте (там свой вход через Telegram)."""
+    u = SimpleNamespace(id=by)
     if body.kind not in KINDS:
         raise HTTPException(422, "Неизвестно, на что жалоба")
     with closing(nunu._db()) as c:

@@ -55,3 +55,21 @@ def test_reports(tmp_path, monkeypatch):
         old, new, pct = nunu_reports._judge(db, 9)  # 3 из 5 = 60 % → доступ закрыт
     assert (old, new, pct) == (2, 3, 60.0)
     assert c.get("/nunu/api/state", headers=bad).status_code == 403
+
+
+def test_offer_report(tmp_path, monkeypatch):
+    """⚑ на предложение в обмене: жалоба записана; на ступени 1 предложение закрывается."""
+    import asyncio
+    from contextlib import closing
+    from app import nunu, nunu_reports, obmen  # noqa: F401 — obmen создаёт таблицу offers
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    with closing(obmen._db()) as c, c:
+        c.execute("INSERT INTO offers(owner, kind, type, title, text, how, circle) VALUES(7,'give','food','Кабачки','продам за 100','gift','all')")
+        oid = c.execute("SELECT id FROM offers").fetchone()[0]
+    with closing(nunu._db()) as c:
+        assert nunu_reports._target(c, 8, "offer", str(oid))[0] == 7
+        c.execute("INSERT INTO reports(by, uid, kind, ref, why, text) VALUES(8, 7, 'offer', ?, 'Продажа', 'x')", (str(oid),))
+        c.commit()
+    asyncio.run(nunu_reports._clean(7))
+    with closing(nunu._db()) as c:
+        assert c.execute("SELECT closed FROM offers WHERE id=?", (oid,)).fetchone()[0] == 1
