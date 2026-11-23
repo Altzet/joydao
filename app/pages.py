@@ -15,12 +15,12 @@ from . import landing, nunu
 
 IMG = Path(__file__).resolve().parent.parent / "static" / "img"
 CSS = """main.r{max-width:760px;margin:0 auto;padding:40px 20px 80px}main.r h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .4em}
-main.r h2{font-size:1.4rem;margin:2em 0 .6em}main.r p,main.r li{font-size:17px;line-height:1.6}main.r .lead{font-size:19px;color:#333}
-main.r figure{margin:1.6em 0}main.r figure img{width:100%;height:auto;border-radius:14px;border:1px solid #e6e6e6}
-main.r figcaption{color:#666;font-size:14px;margin-top:6px}main.r .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+main.r h2{font-size:1.4rem;margin:2em 0 .6em}main.r p,main.r li{font-size:17px;line-height:1.6}main.r .lead{font-size:19px;color:var(--muted)}
+main.r figure{margin:1.6em 0}main.r figure img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line)}
+main.r figcaption{color:var(--muted);font-size:14px;margin-top:6px}main.r .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:640px){main.r .two{grid-template-columns:1fr}}main.r table{border-collapse:collapse;width:100%;font-size:15px}
-main.r td,main.r th{border-bottom:1px solid #e6e6e6;padding:8px 10px 8px 0;text-align:left;vertical-align:top}
-main.r .go{display:inline-block;margin:1.4em 0 .4em}main.r .src{color:#666;font-size:14px}main.r .src li{font-size:14px}"""
+main.r td,main.r th{border-bottom:1px solid var(--line);padding:8px 10px 8px 0;text-align:left;vertical-align:top}
+main.r .go{display:inline-block;margin:1.4em 0 .4em}main.r .src{color:var(--muted);font-size:14px}main.r .src li{font-size:14px}"""
 
 PAGES = {
     "uchastok": {

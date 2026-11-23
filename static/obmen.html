@@ -9,13 +9,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500&display=swap" rel="stylesheet">
 <style>
-/* токены JoyDAO (дизайн-система): светлая и тёмная */
-:root{--bg:#EDF2EE;--card:#FFFFFF;--ink:#1D2A25;--muted:#5D6B65;--line:#D4DDD8;--acc:#1D7A5C;--acc-fg:#FFFFFF;
+/* токены JoyDAO, брендбук v2 «Цветущий сад»: на сайте всегда светлая; тёмная — только внутри Telegram по настройкам игры */
+:root{--bg:#FBF7EE;--card:#FFFDF8;--ink:#1F2A24;--muted:#5E655C;--line:#E8DEC8;--acc:#1D7A5C;--acc-fg:#FFFFFF;--acc-soft:#E3F1EA;
  --sand:#F3E8CF;--sand-fg:#6B4A12;--sea:#CFE6EE;--sea-fg:#1D2A25;--leaf:#DCEFE6;--leaf-fg:#145A43;--bridge:#BA7517;--err:#C0392B}
-[data-theme=dark]{--bg:#121A17;--card:#1B2521;--ink:#E6EEEA;--muted:#9DADA6;--line:#2E3B36;--acc:#5DCAA5;--acc-fg:#04342C;
+[data-theme=dark]{--bg:#121A17;--card:#1B2521;--ink:#E6EEEA;--muted:#9DADA6;--line:#2E3B36;--acc:#5DCAA5;--acc-fg:#04342C;--acc-soft:#16352B;
  --sand:#3A2F1A;--sand-fg:#F2D9A6;--sea:#0F2A35;--sea-fg:#CFE6EE;--leaf:#16352B;--leaf-fg:#9FE1CB;--bridge:#EF9F27;--err:#F09595}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.5 "Golos Text",system-ui,sans-serif}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:1rem/1.5 "Golos Text",system-ui,sans-serif}
 button,input,textarea{font:inherit;color:inherit}
 a{color:var(--acc)}
 .w{max-width:1200px;margin:0 auto;padding:0 16px}
@@ -70,7 +70,7 @@ label.f input,label.f textarea{min-height:44px;padding:10px 14px;border:1px soli
 .opt small{display:block;color:var(--muted);font-size:0.8125rem}
 .err{color:var(--err);font-size:0.875rem;margin:0}
 .ok{background:var(--leaf);color:var(--leaf-fg);border-radius:12px;padding:12px 14px;font-size:0.9375rem}
-footer{border-top:1px solid var(--line);background:var(--card);font-size:0.875rem;color:var(--muted)}
+footer{position:sticky;top:100vh;border-top:1px solid var(--line);background:var(--card);font-size:0.875rem;color:var(--muted)}
 footer .w{padding:18px 16px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 {{HEADER_CSS}}</style>
@@ -88,8 +88,9 @@ const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,
 /* тема, цвет и размер текста — те же, что выбраны в настройках игры (localStorage "nunu-prefs", один сайт) */
 const ACC={teal:["#1D7A5C","#fff","#5DCAA5","#04342C"],coral:["#B5482A","#fff","#F0997B","#4A1B0C"],blue:["#1F6FB8","#fff","#85B7EB","#042C53"],
  violet:["#5A4FC4","#fff","#AFA9EC","#26215C"],amber:["#8F530C","#fff","#EF9F27","#412402"]};
-function theme(P){P=P||{};const R=document.documentElement,A=ACC[P.acc]||ACC.teal,
- dark=P.theme==="dark"||P.theme!=="light"&&(TG&&TG.colorScheme?TG.colorScheme==="dark":matchMedia("(prefers-color-scheme: dark)").matches);
+function theme(P){P=P||{};if(!TG)P={fs:P.fs};  /* сайт — по брендбуку: светлая тема и бирюза; настройки игры — только в Telegram */
+ const R=document.documentElement,A=ACC[P.acc]||ACC.teal,
+ dark=!!TG&&(P.theme==="dark"||P.theme!=="light"&&TG.colorScheme==="dark");
 R.dataset.theme=dark?"dark":"light";R.style.setProperty("--acc",dark?A[2]:A[0]);R.style.setProperty("--acc-fg",dark?A[3]:A[1]);R.style.fontSize=16*(P.fs||1)+"px";
 try{const bg=getComputedStyle(R).getPropertyValue("--bg").trim();TG.setHeaderColor(bg);TG.setBackgroundColor(bg)}catch(e){}}
 try{theme(JSON.parse(localStorage.getItem("nunu-prefs")))}catch(e){theme()}  /* сразу — из памяти этого устройства, потом — с сервера */
