@@ -415,6 +415,25 @@ myAct=()=>{const d=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);ret
 function markMood(q){moods=[...moods.filter(m=>Date.now()-Date.parse(m.t)<14*864e5),{id:"m"+Date.now(),t:new Date().toISOString(),q,src:"app"}].slice(-60);ls.set("nunu-mood",moods)}
 function moodPick(){const m=moods[moods.length-1],cur=m&&(Date.now()-Date.parse(m.t))/36e5<72?m.q:-1;
 return`<div class="mgrid" id="md">${MOOD.map(([l,c],q)=>`<button class="n" data-q="${q}"${q===cur?' aria-pressed="true"':""} style="--mc:${c}">${mfig(q)}<span>${l}</span></button>`).join("")}</div>`}
+/* Сад: полоска долей + столбики по неделям (23.11). Видимый прогресс помогает дойти до цели (Harkin и др. 2016, метаанализ 138 исследований);
+маленькие шаги по неделям — «принцип прогресса» (Amabile & Kramer 2011); длину глаз сравнивает точнее угла — полоска, а не круг (Cleveland & McGill 1984).
+Цвета проверены на различимость, в том числе при дальтонизме, в светлой и тёмной теме: розовый — так и сделал, синий — иначе, янтарный — ждут */
+const GC=["#D4537E","#378ADD","#BA7517"];
+function gardenChart(up,other){const all=seeds.length;if(!all)return"";const wait=all-up-other,pc=n=>Math.round(n*100/all),
+seg=[[up,GC[0],lc(SAME())],[other,GC[1],"иначе"],[wait,GC[2],"ждут"]].filter(x=>x[0]);
+let h=`<div style="display:flex;gap:2px;height:14px;border-radius:5px;overflow:hidden" role="img" aria-label="${seg.map(([n,,l])=>l+" "+pc(n)+"%").join(", ")}">${seg.map(([n,c,l])=>`<div title="${l}: ${n} (${pc(n)}%)" style="flex:${n};background:${c}"></div>`).join("")}</div>
+<div class="note" style="display:flex;gap:12px;flex-wrap:wrap;margin:0">${seg.map(([n,c,l])=>`<span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${c};margin-right:5px;vertical-align:-1px"></i>${l} ${pc(n)}%</span>`).join("")}</div>`;
+const mon=d=>{const x=new Date(d+"T12:00");x.setDate(x.getDate()-(x.getDay()+6)%7);return x.toISOString().slice(0,10)},W8=[],t=mon(today());
+for(let i=7;i>=0;i--){const x=new Date(t+"T12:00");x.setDate(x.getDate()-7*i);W8.push({k:x.toISOString().slice(0,10),s:0,o:0})}
+seeds.forEach(x=>{if(!x.life||!x.life.d)return;const w=W8.find(w=>w.k===mon(x.life.d));if(w)x.life.same?w.s++:w.o++});
+if(!W8.some(w=>w.s+w.o))return h;const mx=Math.max(...W8.map(w=>w.s+w.o)),H=86,bw=24,gap=10,y0=100,fd=k=>k.slice(8,10)+"."+k.slice(5,7);
+h+=`<div style="font-weight:600;margin-top:6px">Распустилось по неделям</div><svg viewBox="0 0 ${8*(bw+gap)} 124" width="100%" role="img" aria-label="Распустилось по неделям: ${W8.map(w=>w.s+w.o).join(", ")}">
+<line x1="0" y1="${y0}" x2="${8*(bw+gap)}" y2="${y0}" stroke="var(--line)"/>${W8.map((w,i)=>{const x=i*(bw+gap)+gap/2,hs=w.s/mx*H,ho=w.o/mx*H;
+return`<g><title>Неделя с ${fd(w.k)}: ${lc(SAME())} — ${w.s}, иначе — ${w.o}</title>${hs?`<rect x="${x}" y="${y0-hs}" width="${bw}" height="${hs}" rx="4" fill="${GC[0]}"/>`:""}${ho?`<rect x="${x}" y="${y0-hs-ho-(hs?2:0)}" width="${bw}" height="${ho}" rx="4" fill="${GC[1]}"/>`:""}
+<rect x="${x-gap/2}" y="0" width="${bw+gap}" height="${y0}" fill="transparent"/></g>`}).join("")}
+${(()=>{const w=W8[7],n=w.s+w.o;return n?`<text x="${7*(bw+gap)+gap/2+bw/2}" y="${y0-(w.s+w.o)/mx*H-6}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--fg)">${n}</text>`:""})()}
+<text x="${gap/2}" y="118" font-size="11" fill="var(--muted)">с ${fd(W8[0].k)}</text><text x="${8*(bw+gap)-gap/2}" y="118" text-anchor="end" font-size="11" fill="var(--muted)">эта неделя</text></svg>`;
+return h}
 function moodCur(){const m=moods[moods.length-1];return m&&(Date.now()-Date.parse(m.t))/36e5<72?m.q:-1}
 /* на карте — одна крупная кнопка; сам выбор — на весь экран, чтобы всё внимание было на нём */
 function moodRow(){const q=moodCur();return`<button class="mrow" id="mopen"${q>=0?` style="--mc:${MOOD[q][1]}"`:""}>${q>=0?mfig(q):`<span class="mq" aria-hidden="true">?</span>`}<span><b>Как ты себя чувствуешь?</b><br><span class="note">${q>=0?MOOD[q][0]+" · нажми, чтобы изменить":"Нажми и выбери"}</span></span></button>`}
@@ -472,9 +491,9 @@ if(x.with&&same&&!x.bridged){const b=x.fid?"id:"+x.fid:x.with;bridges[b]=(bridge
 function garden(){setNav("garden");const mineN=seeds.filter(x=>x.mine&&inView(x)).length,inN=seeds.filter(inView).length;
 const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length,tile=v=>`data-v="${v}" role="button" tabindex="0" aria-pressed="${gview===v}"`;
 let h=`<h1>Сад добрых дел</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя взойдёт.</p>
-<div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit">Распустилось</span><b>${up}</b>${lc(SAME())}</div>
-<div ${tile("other")} style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit">Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
-<div ${tile("wait")} style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit">Ждут в земле</span><b>${seeds.length-up-other}</b>${pl(seeds.length-up-other,["семя","семени","семян"])}</div></div>
+<div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${GC[0]};margin-right:5px;vertical-align:-1px"></i>Распустилось</span><b>${up}</b>${lc(SAME())}</div>
+<div ${tile("other")} style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${GC[1]};margin-right:5px;vertical-align:-1px"></i>Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
+<div ${tile("wait")} style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${GC[2]};margin-right:5px;vertical-align:-1px"></i>Ждут в земле</span><b>${seeds.length-up-other}</b>${pl(seeds.length-up-other,["семя","семени","семян"])}</div></div>${gardenChart(up,other)}
 <p class="note" style="margin:0">По исследованиям, задуманное чаще сбывается, если заранее решить: «когда случится X, я сделаю Y» (Голльвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
 h+=`<h2 id="gv" style="scroll-margin-top:12px">${{wait:"Ждут в земле",bloom:"Распустилось",other:"Проросло иначе"}[gview]}</h2><div class="row" id="gf">${GF.map(([k,l])=>[k,l,seeds.filter(x=>inView(x)&&gfOk[k](x)).length]).filter(([k,,n])=>n||k==="all"||k===gf).map(([k,l,n])=>`<button class="${gf===k?"p":"n"}" data-f="${k}">${l}: ${n}</button>`).join("")}</div>`;
 if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пуст. Сыграй партию, и твои ответы станут семенами.</p></div>`;
