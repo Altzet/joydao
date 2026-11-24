@@ -103,11 +103,14 @@ if(TG){TG.ready();TG.expand();try{theme(JSON.parse(localStorage.getItem("nunu-pr
 const LOGIN=()=>{try{return localStorage.getItem("obmen-login")||""}catch(e){return""}};
 const API=(p,m="GET",d)=>fetch("/obmen/api"+p,{method:m,headers:{...(TG?{"X-Init-Data":TG.initData}:{"X-Tg-Login":LOGIN()}),"Content-Type":"application/json"},body:d&&JSON.stringify(d)})
  .then(async r=>{if(r.ok)return r.json();if(r.status===401&&!TG){logout();throw"Войди через Telegram"}let t="Не получилось. Попробуй ещё раз.";try{t=(await r.json()).detail||t}catch(e){}throw typeof t==="string"?t:"Проверь поля формы"});
+const CFG={{CFG}};  /* что включено в админке: способы обмена, виды, заголовок */
 const KIND={give:"Отдам",seek:"Ищу",skill:"Умею"},TYPE={food:"Продукты",thing:"Вещь",service:"Услуга"},
  HOW={gift:["Дарю","Просто отдаю, ничего взамен"],swap:["Меняю на…","Напишу, что хотел бы получить"],hours:["Часами","Банк времени: час за час"]},
  CIRC={bridge:"Мостам",fof:"Друзьям друзей",all:"Всем"},REPW=["Продажа за деньги","Запрещённое или опасное","Оскорбление","Спам","Другое"],
  ICON={give:"M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8c-1.5-3-5-3.5-5-1.5S10 8 12 8zM12 8c1.5-3 5-3.5 5-1.5S14 8 12 8z",
   seek:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4",skill:"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"};
+/* в форме и фильтре — только включённое; у старых предложений подписи остаются */
+const HOWF=Object.fromEntries(Object.entries(HOW).filter(([k])=>CFG.hows.includes(k))),TYPEF=Object.fromEntries(Object.entries(TYPE).filter(([k])=>CFG.types.includes(k)));
 const svg=(d,w=42)=>`<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 let D={me:null,offers:[]},F={kind:"all",type:"all",circle:"all",q:""};
 /* Примеры (23.11): пока предложений мало, показываем, как они выглядят — с пометкой «Пример», нажать нельзя.
@@ -119,7 +122,7 @@ const EX=[{kind:"give",type:"food",title:"Кабачки, 10 кг",text:"Све�
 const howText=o=>o.how==="gift"?"Дарю":o.how==="swap"?"Меняю"+(o.how_note?" на "+o.how_note:""):"Часами"+(o.how_note?" · "+o.how_note:"");
 const relText=o=>o.rel==="me"?"Твоё предложение":o.rel==="bridge"?"Мост: ты и "+o.name:o.rel==="fof"?o.name+" · друг друга":o.name+" · новый человек";
 
-function outside(){$("me").textContent="";$("app").innerHTML=`<div class="hero"><div><h1>Обмен излишками</h1>
+function outside(){$("me").textContent="";$("app").innerHTML=`<div class="hero"><div><h1>${esc(CFG.h1)}</h1>
 <p>То, что у тебя в избытке — урожай, вещи, умения, — кому-то рядом как раз нужно. Войди через Telegram — увидишь, что предлагают друзья по мостам, их друзья и все участники «Ну-ну».</p></div></div>
 <div class="panel" style="align-items:flex-start;padding:20px"><div id="tgw"></div>
 <p class="sub" style="font-size:.875rem;margin:0">Или <a href="${esc(PLAY)}">открой обмен в приложении «Ну-ну»</a> в Telegram.</p></div>`;
@@ -133,12 +136,12 @@ function load(){API("/list").then(r=>{D=r;if(r.prefs&&r.prefs.theme)theme(r.pref
 
 function chips(key,opts){return opts.map(([v,l])=>`<button class="chip" data-k="${key}" data-v="${v}" aria-pressed="${F[key]===v}">${l}</button>`).join("")}
 function list(){
-$("app").innerHTML=`<div class="hero"><div><h1>Обмен излишками</h1>
-<p>То, что у тебя в избытке — урожай, вещи, умения, — кому-то рядом как раз нужно. Сначала видят друзья по мостам, потом их друзья, потом все.</p></div>
+$("app").innerHTML=`<div class="hero"><div><h1>${esc(CFG.h1)}</h1>
+<p>${esc(CFG.lead)}</p></div>
 <button class="btn" id="add">${svg("M12 5v14M5 12h14",18)}Предложить</button></div>
 <div class="panel">
 <div class="row" role="group" aria-label="Что">${chips("kind",[["all","Всё"],["give","Отдам"],["seek","Ищу"],["skill","Умею"],["mine","Моё"]])}</div>
-<div class="row" role="group" aria-label="Тип">${chips("type",[["all","Все виды"],["food","Продукты"],["thing","Вещи"],["service","Услуги"]])}</div>
+<div class="row" role="group" aria-label="Тип">${chips("type",[["all","Все виды"],["food","Продукты"],["thing","Вещи"],["service","Услуги"]].filter(([k])=>k==="all"||TYPEF[k]))}</div>
 <div class="row"><span class="lbl">Чей круг:</span>${chips("circle",[["bridge","Мосты"],["fof","Друзья друзей"],["all","Все"]])}
 <label class="search">${svg(ICON.seek,18)}<span class="sr">Поиск</span><input id="q" type="search" placeholder="Кабачки, дрель, хлеб…" value="${esc(F.q)}"></label></div>
 </div><p class="count" id="count"></p><div class="grid" id="grid"></div>`;
@@ -188,16 +191,16 @@ else if(!o.replied)$("rp").onclick=()=>{$("rp").disabled=true;API("/offer/"+o.id
  .then(()=>{o.replied=true;item(o)},e=>{$("rp").disabled=false;$("er").textContent=e})}}
 function alertMsg(e){try{TG.showAlert(String(e))}catch(_){}}
 
-function form(){const v={kind:"give",type:"food",how:"gift",circle:"bridge"};
+function form(){const v={kind:"give",type:Object.keys(TYPEF)[0],how:Object.keys(HOWF)[0],circle:"bridge"};
 const seg=(k,o)=>`<div class="seg" role="group">${Object.entries(o).map(([x,l])=>`<button type="button" class="chip" data-f="${k}" data-v="${x}" aria-pressed="${v[k]===x}">${l}</button>`).join("")}</div>`;
 sheet(`${close("Новое предложение")}<h2>Что у тебя?</h2>
 <div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:0.875rem;font-weight:500;color:var(--ink)">Что делаешь</span>${seg("kind",KIND)}</div>
-<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:0.875rem;font-weight:500;color:var(--ink)">Это</span>${seg("type",TYPE)}</div>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:0.875rem;font-weight:500;color:var(--ink)">Это</span>${seg("type",TYPEF)}</div>
 <label class="f">Название<input id="ti" maxlength="80" placeholder="Например: кабачки, 10 кг"></label>
 <label class="f">Пара слов<textarea id="tx" rows="3" maxlength="500" placeholder="Сколько, какое, на сколько времени"></textarea></label>
 <label class="f">Где и когда<input id="pl" maxlength="80" placeholder="Забрать самому, после 17:00"></label>
 <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px"><legend style="font-size:0.875rem;font-weight:500;padding:0;margin-bottom:8px">Как обмен</legend>
-${Object.entries(HOW).map(([k,[l,h]])=>`<label class="opt"><input type="radio" name="how" value="${k}" ${k==="gift"?"checked":""}><span><b>${l}</b><small>${h}</small></span></label>`).join("")}
+${Object.entries(HOWF).map(([k,[l,h]])=>`<label class="opt"><input type="radio" name="how" value="${k}" ${k===v.how?"checked":""}><span><b>${l}</b><small>${h}</small></span></label>`).join("")}
 <label class="f" id="hnw" hidden><span id="hnl"></span><input id="hn" maxlength="80"></label></fieldset>
 <div style="display:flex;flex-direction:column;gap:6px"><span class="sub" style="font-size:0.875rem;font-weight:500;color:var(--ink)">Кому видно</span>${seg("circle",CIRC)}<span class="sub" id="ch"></span></div>
 <button class="btn" id="pub">Опубликовать</button><p class="err" id="er"></p>`);

@@ -21,12 +21,11 @@ from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from . import config, landing, nunu
+from . import admin_more, config, landing, nunu
 
 router = APIRouter()
 PAGE = Path(__file__).resolve().parent.parent / "static" / "obmen.html"
 KINDS, TYPES, HOWS, CIRCLES = ("give", "seek", "skill"), ("food", "thing", "service"), ("gift", "swap", "hours"), ("bridge", "fof", "all")
-MAX_OPEN = 20  # ponytail: открытых предложений на человека; поднять, если упрутся
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS offers (id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL,
@@ -89,11 +88,17 @@ def _visible(o, rel: str) -> bool:
     return rel == "me" or CIRCLES.index(rel) <= CIRCLES.index(o["circle"])
 
 
+def _page_cfg() -> str:
+    c = admin_more.get("obmen")
+    return json.dumps({k: c[k] for k in ("hows", "types", "h1", "lead")}, ensure_ascii=False).replace("</", "<\\/")
+
+
 @router.get("/obmen")
 def page():
     """Вне Telegram — вход виджетом Telegram (домен сайта задан боту в @BotFather → /setdomain)."""
     return HTMLResponse(PAGE.read_text(encoding="utf-8").replace("{{PLAY}}", nunu.link("obmen"))
                         .replace("{{BOT}}", config.BOT_USERNAME)
+                        .replace("{{CFG}}", _page_cfg())
                         .replace("{{HEADER}}", landing.header("/obmen")).replace("{{HEADER_CSS}}", landing.HEADER_CSS)
                         .replace("{{TG_JS}}", landing.tg_js()),
                         headers={"Cache-Control": "no-cache"})
@@ -141,13 +146,14 @@ class OfferIn(BaseModel):
 def create(body: OfferIn, x_init_data: str | None = Header(default=None),
            x_tg_login: str | None = Header(default=None)):
     u = _who(x_init_data, x_tg_login)
-    if body.kind not in KINDS or body.type not in TYPES or body.how not in HOWS or body.circle not in CIRCLES:
+    cfg = admin_more.get("obmen")  # какие виды и способы включены, лимит — из админки
+    if body.kind not in KINDS or body.type not in cfg["types"] or body.how not in cfg["hows"] or body.circle not in CIRCLES:
         raise HTTPException(422, "Неверный выбор")
     with closing(_db()) as c:
         nunu._muted(c, u.id)
         nunu._seen(c, u)
-        if c.execute("SELECT COUNT(*) FROM offers WHERE owner=? AND closed=0", (u.id,)).fetchone()[0] >= MAX_OPEN:
-            raise HTTPException(429, f"Открыто уже {MAX_OPEN} предложений — закрой старые")
+        if c.execute("SELECT COUNT(*) FROM offers WHERE owner=? AND closed=0", (u.id,)).fetchone()[0] >= cfg["max_open"]:
+            raise HTTPException(429, f"Открыто уже {cfg['max_open']} предложений — закрой старые")
         with c:
             cur = c.execute("INSERT INTO offers(owner, kind, type, title, text, place, how, how_note, circle, username) "
                             "VALUES(?,?,?,?,?,?,?,?,?,?)",

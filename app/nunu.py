@@ -873,10 +873,10 @@ def _when(s: dict) -> datetime | None:
         return None
 
 
-def reminders_due(today: date, now: datetime | None = None, daily: bool = True) -> list[tuple[int, str]]:
+def reminders_due(today: date, now: datetime | None = None, daily: bool = True, garden_every: int = GARDEN_EVERY) -> list[tuple[int, str]]:
     """Кому и что напомнить. daily — утренний проход (дела без часа и сад); now — минутный проход для дел с часом.
     Отметки пишутся сразу: одно и то же не придёт дважды."""
-    out, iso, week_ago = [], today.isoformat(), (today - timedelta(days=GARDEN_EVERY)).isoformat()
+    out, iso, week_ago = [], today.isoformat(), (today - timedelta(days=garden_every)).isoformat()
     with closing(_db()) as c, c:
         for r in c.execute("SELECT tg_id, data FROM state").fetchall():
             try:
@@ -917,14 +917,20 @@ def reminders_due(today: date, now: datetime | None = None, daily: bool = True) 
     return out
 
 
-async def remind_loop(hour_utc: int = 6) -> None:
-    """Раз в минуту: дела с часом — в их минуту; дела без часа и сад — после hour_utc (6 UTC = 8 утра в Киеве).
+async def remind_loop() -> None:
+    """Раз в минуту: дела с часом — в их минуту; дела без часа и сад — после часа из админки (по Киеву, по умолчанию 8).
     Перезапуск сервиса не дублирует: отметки в базе."""
     # ponytail: каждую минуту читаем всю таблицу state — хватит на тысячи игроков; дальше — индекс по due
+    from zoneinfo import ZoneInfo
+    from . import admin_more
     while True:
         now = datetime.now(timezone.utc)
         try:
-            for uid, text in reminders_due(now.date(), now.replace(tzinfo=None), daily=now.hour >= hour_utc):
+            cfg = admin_more.get("remind")  # время и частота — из админки («Напоминания»), час — по Киеву
+            # ponytail: час до 2–3 ночи по Киеву попадает на прошлые сутки UTC — утренние напоминания так рано не нужны
+            hour_utc = (cfg["hour"] - int(now.astimezone(ZoneInfo("Europe/Kyiv")).utcoffset().total_seconds() // 3600)) % 24
+            for uid, text in (reminders_due(now.date(), now.replace(tzinfo=None), daily=now.hour >= hour_utc,
+                                            garden_every=cfg["garden_every"]) if cfg["on"] else []):
                 await _notify(uid, text, link())
                 await asyncio.sleep(0.05)
         except Exception as e:

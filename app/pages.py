@@ -87,10 +87,14 @@ PAGES = {
 }
 
 
+BASE = PAGES  # для админки: встроенный текст
+
+
 def render(slug: str) -> HTMLResponse:
-    p = PAGES.get(slug)
-    if not p:
+    if slug not in PAGES:
         raise HTTPException(404)
+    from . import admin_more
+    p = {**PAGES[slug], **admin_more.get("pages").get(slug, {})}  # правки из админки поверх текста из кода
     E, url, play = html.escape, f"{landing.SITE}/{slug}", nunu.link()
     faq = "".join(f"<h3>{E(q)}</h3><p>{E(a)}</p>" for q, a in p["faq"])
     ld = [{"@context": "https://schema.org", "@type": "Article", "headline": p["h1"], "description": p["desc"], "inLanguage": "ru",
