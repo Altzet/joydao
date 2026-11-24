@@ -591,7 +591,12 @@ const chips=(a,id,cur)=>`<select id="${id}" style="width:100%">${a.map((x,k)=>`<
 const fld=(id,lab,ph,v,max)=>`<div class="zone">${lab}</div><input id="${id}" maxlength="${max}" placeholder="${ph}" value="${esc(v)}">`;
 let kind=fr?"friend":loc?"plot":"own",toGoal=false,cur=null,focus=false;if(fr)tg=true;  /* focus: начал заполнять план */
 /* 24.11: наверху — «Посади семена своих намерений» и виды дел; карточка цели и подсказка острова отсюда убраны, всё внимание — плану */
-const KINDS=[["goal","🎯 Шаг к цели"],["own","🌱 Своё дело"],["friend","🤝 С другом"],["plot","📍 На участке"]];
+const KINDS=[["goal","🎯 Большие цели"],["own","🌱 Маленькие цели"],["friend","🤝 С другом"],["plot","📍 На участке"]];
+/* пояснение — после того как человек сам выбрал вид (24.11) */
+let picked=!!(fr||loc);const KIND_WHY={goal:"Большая цель — то, к чему идёшь месяцами. Каждое дело здесь — шаг к ней, и её дерево в саду растёт.",
+own:"Маленькая цель — одно дело на день или неделю, само по себе. Посадишь семя — и отметишь, когда сделаешь.",
+friend:"Дело вдвоём с другом. Когда сделаете — мост между вами получит +3 доски.",
+plot:"Дело в своём месте на участке: отметь точку на карте — семя прорастёт прямо там."};
 /* «Удиви себя» по шагам (23.11): одна карточка за раз, заполнил — следующая; необязательное — «Пропустить».
 Сделанные шаги — строки сверху, нажал — вернулся. Опоры: меньше выбора на экране — меньше отказов (Hick 1952; Iyengar & Lepper 2000);
 видимый прогресс тянет дойти до конца (Kivetz и др. 2006) */
@@ -615,7 +620,7 @@ ${tg?(FR.length?`<select id="cf" style="width:100%"><option value="">— выб�
 plan:()=>`<h2>Твой план</h2><div class="q" id="pl">${esc(plan())}</div>${fr?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}`};
 const draw=()=>{const G=goalNow(),K=keys();if(!K.includes(cur))cur=K[0];const i=K.indexOf(cur);
 const fx=focus||i>0;app.innerHTML=`<h1${fx?' style="font-size:1.25rem"':""}>Посади семена своих намерений</h1>${fx?"":gnAsk()}
-<div class="row" role="group" aria-label="Вид дела" style="gap:6px">${KINDS.map(([k,l])=>`<button class="${kind===k?"t":"n"}" data-kd="${k}" aria-pressed="${kind===k}">${l}</button>`).join("")}</div>
+<div class="row" role="group" aria-label="Вид дела" style="gap:6px">${KINDS.map(([k,l])=>`<button class="${kind===k?"t":"n"}" data-kd="${k}" aria-pressed="${kind===k}">${l}</button>`).join("")}</div>${picked&&!fx?`<p class="note" style="margin:0" aria-live="polite">${KIND_WHY[kind]}</p>`:""}
 ${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}
 <div class="card wz" id="wz"><div style="display:flex;gap:4px" aria-label="Шаг ${i+1} из ${K.length}">${K.map((k,j)=>`<i style="flex:1;height:4px;border-radius:2px;background:${j<=i?"var(--acc)":"var(--line)"}"></i>`).join("")}</div>
 ${K.slice(0,i).map(k=>`<button class="n" data-go="${k}" style="display:flex;gap:10px;align-items:center;text-align:left;width:100%;justify-content:flex-start"><span class="note" style="margin:0;flex:none;min-width:64px">${TIT[k]}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(SUM[k]())}</span><span aria-hidden="true" style="color:var(--muted)">✎</span></button>`).join("")}
@@ -625,7 +630,7 @@ ${cur==="plan"?`<p class="note">${own.sky?"Когда прогноз подой�
 const redraw=()=>stepWeek(fr,own.what,loc);app.querySelectorAll("[data-gs]").forEach(b=>b.onclick=()=>{gSel(b.dataset.gs);draw()});
 const back2=()=>{setNav("week");draw()};if($("gadd"))$("gadd").onclick=()=>goalEdit(back2,false,true);
 app.querySelectorAll("[data-kd]").forEach(b=>b.onclick=()=>{const k=b.dataset.kd;if(k==="plot"&&!loc){guestExit();plotMap();return}
-kind=k;toGoal=k==="goal";tg=k==="friend"||(!!fr&&k!=="own");cur=k==="goal"?"goal":"what";draw()});if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(back2);if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
+kind=k;picked=true;toGoal=k==="goal";tg=k==="friend"||(!!fr&&k!=="own");cur=k==="goal"?"goal":"what";draw()});if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(back2);if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
 app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{cur=b.dataset.go;draw()});
 if($("nx"))$("nx").onclick=()=>{const m=need(cur);if(m){$("er").textContent=m;return}step(1)};
 if($("sk"))$("sk").onclick=()=>{if(cur==="when"){own.due="";own.at=""}if(cur==="where"){own.where="";own.sky=false}if(cur==="friend"){tg=false;mateSel=null}step(1)};
