@@ -9,7 +9,7 @@ import re
 from . import config
 
 # Адрес сайта для canonical, sitemap и превью ссылок (SEO). WEBAPP_URL из .env, иначе боевой домен.
-SITE = re.sub(r"/nunu/?$", "", (config.WEBAPP_URL or "https://joylao.duckdns.org").rstrip("/"))
+SITE = re.sub(r"/nunu/?$", "", (config.WEBAPP_URL or "https://joydao.org").rstrip("/"))
 
 
 # ---------- общее меню всех страниц сайта ----------
