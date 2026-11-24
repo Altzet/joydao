@@ -483,7 +483,7 @@ function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k+
 /* фильтр сада: показываем только фильтры, у которых есть семена в текущем виде */
 let gf="all";const GF=[["all","Все"],["mine","Было со мной"],["deed","🌱 Свои дела"],["goal","🎯 К цели"],["sky","☀ Хорошая погода"],["warn","🔔 Предупредить"],["due","📅 Со сроком"]],
 gfOk={all:()=>true,mine:x=>!!x.mine,deed:x=>!!x.step,goal:x=>!!x.goal,sky:x=>!!x.wx&&!wxWarn(x.wx),warn:x=>!!x.wx&&wxWarn(x.wx),due:x=>!!x.due};
-/* сад: по умолчанию — что ждёт в земле; распустившееся и проросшее иначе — по нажатию на квадрат */
+/* сад: по умолчанию — что ждёт в земле; взошедшее и проросшее иначе — по нажатию на квадрат */
 let gview="wait";const inView=x=>gview==="wait"?!x.life:gview==="bloom"?x.life&&x.life.same:x.life&&!x.life.same;
 /* отметка семени — одна для сада и для карты участка: общее дело «так и сделал» даёт мосту +3 доски один раз */
 function markSeed(k,same,note){const x=seeds[k];x.life={same,note:String(note||"").trim().slice(0,200),d:new Date().toISOString().slice(0,10)};
@@ -491,18 +491,18 @@ if(x.with&&same&&!x.bridged){const b=x.fid?"id:"+x.fid:x.with;bridges[b]=(bridge
 function garden(){setNav("garden");const mineN=seeds.filter(x=>x.mine&&inView(x)).length,inN=seeds.filter(inView).length;
 const up=seeds.filter(x=>x.life&&x.life.same).length,other=seeds.filter(x=>x.life&&!x.life.same).length,tile=v=>`data-v="${v}" role="button" tabindex="0" aria-pressed="${gview===v}"`;
 let h=`<h1>Сад добрых дел</h1><div class="card"><p style="margin:0">Каждый ответ в игре — это семя, то есть намерение. Когда в жизни случится похожее и ты поступишь так же, отметь, и семя взойдёт.</p>
-<div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${GC[0]};margin-right:5px;vertical-align:-1px"></i>Распустилось</span><b>${up}</b>${lc(SAME())}</div>
+<div class="isl"><div ${tile("bloom")} style="background:var(--sad);color:var(--sad-fg)"><span class="note" style="color:inherit"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${GC[0]};margin-right:5px;vertical-align:-1px"></i>Взошло</span><b>${up}</b>${lc(SAME())}</div>
 <div ${tile("other")} style="background:var(--sk);color:var(--sk-fg)"><span class="note" style="color:inherit"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${GC[1]};margin-right:5px;vertical-align:-1px"></i>Проросло иначе</span><b>${other}</b>в жизни по-другому</div>
 <div ${tile("wait")} style="background:var(--sand);color:var(--sand-fg)"><span class="note" style="color:inherit"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${GC[2]};margin-right:5px;vertical-align:-1px"></i>Ждут в земле</span><b>${seeds.length-up-other}</b>${pl(seeds.length-up-other,["семя","семени","семян"])}</div></div>${gardenChart(up,other)}
 <p class="note" style="margin:0">По исследованиям, задуманное чаще сбывается, если заранее решить: «когда случится X, я сделаю Y» (Голльвитцер). А разница между «хотел» и «сделал» показывает, куда расти.</p></div>`;
-h+=`<h2 id="gv" style="scroll-margin-top:12px">${{wait:"Ждут в земле",bloom:"Распустилось",other:"Проросло иначе"}[gview]}</h2><div class="row" id="gf">${GF.map(([k,l])=>[k,l,seeds.filter(x=>inView(x)&&gfOk[k](x)).length]).filter(([k,,n])=>n||k==="all"||k===gf).map(([k,l,n])=>`<button class="${gf===k?"p":"n"}" data-f="${k}">${l}: ${n}</button>`).join("")}</div>`;
+h+=`<h2 id="gv" style="scroll-margin-top:12px">${{wait:"Ждут в земле",bloom:"Взошло",other:"Проросло иначе"}[gview]}</h2><div class="row" id="gf">${GF.map(([k,l])=>[k,l,seeds.filter(x=>inView(x)&&gfOk[k](x)).length]).filter(([k,,n])=>n||k==="all"||k===gf).map(([k,l,n])=>`<button class="${gf===k?"p":"n"}" data-f="${k}">${l}: ${n}</button>`).join("")}</div>`;
 if(!seeds.length)h+=`<div class="card"><p style="margin:0">Сад пока пуст. Сыграй партию, и твои ответы станут семенами.</p></div>`;
-else if(!inN)h+=`<p class="note" style="margin:0">${{wait:"Все семена уже проросли. Сыграй ещё партию — появятся новые.",bloom:"Пока ничего не распустилось. Когда в жизни поступишь так, как ответил в игре, отметь «"+SAME()+"».",other:"Пока ничего. Здесь будет то, что в жизни вышло по-другому."}[gview]}</p>`;
+else if(!inN)h+=`<p class="note" style="margin:0">${{wait:"Все семена уже проросли. Сыграй ещё партию — появятся новые.",bloom:"Пока ничего не взошло. Когда в жизни поступишь так, как ответил в игре, отметь «"+SAME()+"».",other:"Пока ничего. Здесь будет то, что в жизни вышло по-другому."}[gview]}</p>`;
 /* одинаковые семена (тот же вопрос и тот же ответ) растут одной грядкой: повтор — знак, что намерение устойчивое */
 const beds=[],bi={};seeds.map((x,k)=>[x,k]).reverse().filter(([x])=>inView(x)&&gfOk[gf](x)).forEach(([x,k])=>{const key=x.c+"|"+x.q+"|"+x.r+"|"+(x.with||"")+"|"+(x.due||"");
 if(bi[key]===undefined){bi[key]=beds.length;beds.push([x,k,[k]])}else{const g=beds[bi[key]];g[2].push(k);g[1]=k;if(x.mine)g[0]={...g[0],mine:true}}});
 beds.sort((a,b)=>(b[0].mine?1:0)-(a[0].mine?1:0)).forEach(([x,k,ks])=>{const st2=x.life?(x.life.same?"open":"fog"):"",n=ks.length;
-h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${x.place?"📍 "+esc(x.place)+" · ":""}${esc(x.c)} · ${n>1?ks.map(i=>sd(seeds[i].d)).filter((d,i,a)=>a.indexOf(d)===i).slice(0,3).join(", ")+(n>3?"…":""):sd(x.d)}</span><span>${n>1?`<span class="tag p" title="одинаковые семена">грядка ×${n}</span> `:""}${x.life?(x.life.same?"распустилось":"проросло иначе"):"семя"}</span></div>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
+h+=`<div class="card" style="gap:8px"><div class="meta"><span>${x.mine?"Было со мной · ":""}${x.place?"📍 "+esc(x.place)+" · ":""}${esc(x.c)} · ${n>1?ks.map(i=>sd(seeds[i].d)).filter((d,i,a)=>a.indexOf(d)===i).slice(0,3).join(", ")+(n>3?"…":""):sd(x.d)}</span><span>${n>1?`<span class="tag p" title="одинаковые семена">грядка ×${n}</span> `:""}${x.life?(x.life.same?"взошло":"проросло иначе"):"семя"}</span></div>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
 <div class="s note">${esc(x.q)}</div><div>${x.step?"План":"Я бы"}: <b style="font-weight:500">${linky(x.r)}</b>${x.by&&x.pid&&x.by!==myId()?" "+repBtn("plan",x.pid):""}</div>
 ${x.bridged?`<div class="tag open" style="align-self:flex-start">Мост: ты и ${esc(x.with)} — +3 доски</div>`:""}${x.life?`<div class="tag ${st2}" style="align-self:flex-start">${x.life.d}: ${esc(x.life.note||(x.life.same?lc(SAME()):lc(DIFF())))}</div>`:
 `${x.wx?`<button class="tag" data-wx="${k}" style="align-self:flex-start;border:0">${wxSum(x.wx)} · изменить погоду</button>`:`<button class="n" data-wx="${k}" style="align-self:flex-start">☀ Добавить погоду</button>`}<input id="nt${k}" placeholder="Что было в жизни (можно пусто)"><div class="row"><button class="p" data-k="${k}" data-s="1">${SAME()}</button><button class="n" data-k="${k}" data-s="0">${DIFF()}</button></div>`}</div>`});
@@ -799,7 +799,7 @@ if(on==="halo")return`<path d="${B(1.75)}" fill="#86C3D4"/><path d="${B(1.34)}" 
 if(on==="aura")return`<g class="breathe"><path class="aura"${mine?` id="aura-me"`:""} d="${B(1.62)}" style="fill:${bl.c};opacity:${bl.o}"/></g>`;
 let g=`<path d="${B(1.04,4)}" fill="#4F8FA3" opacity=".35"/><path d="${B(1.08)}" fill="none" stroke="#fff" stroke-width="1.6" opacity=".75"/>
 <path d="${B(1)}" fill="${col[0]}"/><path d="${B(.84,-1)}" fill="${col[1]}"/><path d="${blob(cx,cy-R*.1,R,ph,.5)}" fill="${col[2]}"/>`;
-/* первые bl[k] растений каждого вида — распустившиеся в жизни («так и сделал») */
+/* первые bl[k] растений каждого вида — взошедшие в жизни («так и сделал») */
 /* остров растёт с садом: растений помещается больше — площадь растёт как R² */
 const cap=k=>Math.min(z[k],Math.max(1,Math.floor(3*(R/46)**2))),kinds=[0,1,2].flatMap(k=>Array.from({length:cap(k)},(_,j)=>j<Math.min(bl[k]||0,cap(k))?k+4:k)),pts=[];
 if(!kinds.length)for(let i=0;i<3;i++)kinds.push(3);
@@ -1864,7 +1864,7 @@ if(PS.tool==="rect"){h=`<div class="prow"><span style="flex:1">▭ Провед�
 if(PS.tool==="plant"){h=`<div class="prow"><span style="flex:1">🌱 Нажми на место — там вырастет намерение</span><button class="n pi" id="plx" aria-label="Выйти из посадки">✕</button></div>
 <p class="note" style="margin:0">Можно прямо на грядку, печь или дерево — семя будет расти рядом с ними.</p>`;pn.innerHTML=h;$("plx").onclick=()=>pMode("move");return}
 if(PS.seed!=null&&seeds[PS.seed]){const k=PS.seed,x=seeds[k],L=x.life;
-h=`<div class="prow"><span class="who" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${L?L.same?"🌸 Распустилось":"🌿 Проросло иначе":pDue(x)?"💧 Пора":"🌱 Семя в земле"}${x.place?" · 📍 "+esc(x.place):""}</span><button class="n pi" id="sx" aria-label="Закрыть">✕</button></div>
+h=`<div class="prow"><span class="who" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${L?L.same?"🌾 Взошло":"🌿 Проросло иначе":pDue(x)?"💧 Пора":"🌱 Семя в земле"}${x.place?" · 📍 "+esc(x.place):""}</span><button class="n pi" id="sx" aria-label="Закрыть">✕</button></div>
 <p style="margin:0"><b style="font-weight:500">${linky(x.r)}</b></p>${x.due?`<div class="tag" style="align-self:flex-start">📅 ${esc(fmtD(x.due))}${x.at?" · "+esc(x.at):""}</div>`:""}
 ${x.with?`<p class="note" style="margin:0">Вместе: ${esc(x.with)}</p>`:""}
 ${L?`<div class="tag ${L.same?"open":"fog"}" style="align-self:flex-start">${L.d}: ${esc(L.note||(L.same?lc(SAME()):lc(DIFF())))}</div>`:

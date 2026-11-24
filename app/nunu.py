@@ -624,7 +624,7 @@ async def report(gid: str, x_init_data: str | None = Header(default=None)):
 
 
 def _island(c: sqlite3.Connection, uid: int) -> dict:
-    """Сад, лес, скалы: сколько семян в каждой зоне и сколько из них распустилось в жизни («так и сделал»)."""
+    """Сад, лес, скалы: сколько семян в каждой зоне и сколько из них взошло�ь в жизни («так и сделал»)."""
     r = c.execute("SELECT data FROM state WHERE tg_id=?", (uid,)).fetchone()
     d = json.loads(r["data"]) if r else {}
     z, b = [0, 0, 0], [0, 0, 0]
