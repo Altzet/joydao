@@ -619,7 +619,7 @@ ${tg?(FR.length?`<select id="cf" style="width:100%"><option value="">— выб�
 +(!mateSel?`<input id="oc" maxlength="30" placeholder="${FR.length?"Или впиши имя друга":"Впиши имя друга"}" value="${esc(own.who)}">`:"")+`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}`,
 plan:()=>`<h2>Твой план</h2><div class="q" id="pl">${esc(plan())}</div>${fr?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}`};
 const draw=()=>{const G=goalNow(),K=keys();if(!K.includes(cur))cur=K[0];const i=K.indexOf(cur);
-const fx=focus||i>0;app.innerHTML=`<h1${fx?' style="font-size:1.25rem"':""}>Посади семена своих намерений</h1>${fx?"":gnAsk()}
+const fx=focus||i>0;app.innerHTML=`<h1${fx?' style="font-size:1.25rem"':""}>Семена намерений</h1>${fx?"":gnAsk()}
 <div class="row" role="group" aria-label="Вид дела" style="gap:6px">${KINDS.map(([k,l])=>`<button class="${kind===k?"t":"n"}" data-kd="${k}" aria-pressed="${kind===k}">${l}</button>`).join("")}</div>${picked&&!fx?`<p class="note" style="margin:0" aria-live="polite">${KIND_WHY[kind]}</p>`:""}
 ${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}
 <div class="card wz" id="wz"><div style="display:flex;gap:4px" aria-label="Шаг ${i+1} из ${K.length}">${K.map((k,j)=>`<i style="flex:1;height:4px;border-radius:2px;background:${j<=i?"var(--acc)":"var(--line)"}"></i>`).join("")}</div>
