@@ -16,7 +16,7 @@ def test_nunu_page():
 def test_nunu_stage1():
     """Этап 1: лестница уровней, «Проехали», мост вместо счёта, шаг недели."""
     t = TestClient(api.app).get("/nunu").text
-    for marker in ("const C0=[", "const C1=[", "const DEEP=[", "Проехали", "function bridge(", "function stepWeek(", "Чем удивишь себя"):
+    for marker in ("const C0=[", "const C1=[", "const DEEP=[", "Проехали", "function bridge(", "function stepWeek(", "Посади семена своих намерений"):
         assert marker in t
     assert "очков из" not in t
 
