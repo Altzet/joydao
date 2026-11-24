@@ -427,7 +427,7 @@ const mon=d=>{const x=new Date(d+"T12:00");x.setDate(x.getDate()-(x.getDay()+6)%
 for(let i=7;i>=0;i--){const x=new Date(t+"T12:00");x.setDate(x.getDate()-7*i);W8.push({k:x.toISOString().slice(0,10),s:0,o:0})}
 seeds.forEach(x=>{if(!x.life||!x.life.d)return;const w=W8.find(w=>w.k===mon(x.life.d));if(w)x.life.same?w.s++:w.o++});
 if(!W8.some(w=>w.s+w.o))return h;const mx=Math.max(...W8.map(w=>w.s+w.o)),H=86,bw=24,gap=10,y0=100,fd=k=>k.slice(8,10)+"."+k.slice(5,7);
-h+=`<div style="font-weight:600;margin-top:6px">Распустилось по неделям</div><svg viewBox="0 0 ${8*(bw+gap)} 124" width="100%" role="img" aria-label="Распустилось по неделям: ${W8.map(w=>w.s+w.o).join(", ")}">
+h+=`<div style="font-weight:600;margin-top:6px">Проросшие семена ваших намерений по неделям</div><svg viewBox="0 0 ${8*(bw+gap)} 124" width="100%" role="img" aria-label="Проросшие семена ваших намерений по неделям: ${W8.map(w=>w.s+w.o).join(", ")}">
 <line x1="0" y1="${y0}" x2="${8*(bw+gap)}" y2="${y0}" stroke="var(--line)"/>${W8.map((w,i)=>{const x=i*(bw+gap)+gap/2,hs=w.s/mx*H,ho=w.o/mx*H;
 return`<g><title>Неделя с ${fd(w.k)}: ${lc(SAME())} — ${w.s}, иначе — ${w.o}</title>${hs?`<rect x="${x}" y="${y0-hs}" width="${bw}" height="${hs}" rx="4" fill="${GC[0]}"/>`:""}${ho?`<rect x="${x}" y="${y0-hs-ho-(hs?2:0)}" width="${bw}" height="${ho}" rx="4" fill="${GC[1]}"/>`:""}
 <rect x="${x-gap/2}" y="0" width="${bw+gap}" height="${y0}" fill="transparent"/></g>`}).join("")}
