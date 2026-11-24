@@ -294,8 +294,8 @@ app.innerHTML=`<h1>Настройки</h1>
 <div class="zone">Пускать друзей в гости</div><div class="row">${b("go-on","Да",!prefs.visitClosed)}${b("go-off","Нет, участок закрыт",!!prefs.visitClosed)}</div>
 ${prefs.visitClosed?`<p class="note" style="margin:0">Участок закрыт: друзья увидят, что ты пока не пускаешь гостей.</p>`:`<div class="zone">Сообщать, когда друг зашёл</div><div class="row">${b("gv-on","Да",!prefs.visitOff)}${b("gv-off","Не надо",!!prefs.visitOff)}</div>
 <div class="zone">Сообщать о комментариях</div><div class="row">${b("gc-on","Да",!prefs.commOff)}${b("gc-off","Не надо",!!prefs.commOff)}</div>`}</div>
-${API?`<div class="card"><h2>Свои ситуации</h2><p style="margin:0">Пройдено ситуаций: ${scenePool().filter(k=>seen.includes(k)).length} из ${scenePool().length}. Когда пройдёшь все, сможешь предложить свою — её опубликуют в канале на голосование.</p><button class="n" id="sbm" style="align-self:flex-start">Мои ситуации</button></div>`:""}`;
-if($("sbm"))$("sbm").onclick=()=>subForm(settings);$("rlset").onclick=openRules;
+${HS.ok()?`<div class="card"><h2>Ярлык на рабочем столе</h2><p style="margin:0" id="hsst">«Ну-ну» открывается в один тап, как обычное приложение.</p><button class="n" id="hsset" style="align-self:flex-start">📌 Добавить ярлык</button></div>`:""}${API?`<div class="card"><h2>Свои ситуации</h2><p style="margin:0">Пройдено ситуаций: ${scenePool().filter(k=>seen.includes(k)).length} из ${scenePool().length}. Когда пройдёшь все, сможешь предложить свою — её опубликуют в канале на голосование.</p><button class="n" id="sbm" style="align-self:flex-start">Мои ситуации</button></div>`:""}`;
+if($("sbm"))$("sbm").onclick=()=>subForm(settings);$("rlset").onclick=openRules;if($("hsset")){$("hsset").onclick=HS.add;HS.st(st=>{if(st==="added"&&$("hsset")){$("hsset").remove();$("hsst").textContent="Ярлык уже на рабочем столе ✓"}})}
 const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
 ["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});GNK.forEach(([k])=>$("gn-"+k).onclick=()=>{prefs.gn=k;save2()});
 [["go","visitClosed"],["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{if(!$(id+"-on"))return;$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
@@ -2174,7 +2174,24 @@ if(v.mine){const p=fid&&v.mode==="duo"&&v.plays.find(p=>p.id===fid);st={name:v.n
 friend:p?fp(p,v.seed):null,story:v.story||null,only:v.story&&v.story.only?1:0,storyAsk:1,bottle:v.bottle};save();return}
 st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,s:v.s,g:v.g,seed:v.seed},story:v.story||null,only:v.story&&v.story.only?1:0,sg:v.my.guess||"",smark:v.my.mark,bottle:v.bottle,wish:v.my.wish}
 :{name:st.name||tgName||"Друг",seed:v.seed,...(v.story&&v.story.only?{s:P10(),g:P10(),only:1}:{s:[],g:[]}),mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,pending:1},story:v.story||null,bottle:v.bottle};save()}
-async function boot(){if(!API)return home();busy("Загружаю твой остров…");
+/* ---------- ярлык на рабочем столе (Telegram Bot API 8.0: addToHomeScreen) ----------
+   Предлагаем сами на 3-й день, когда человек уже возвращается; «Не сейчас» — снова через 14 дней, всего не больше двух раз.
+   Дальше — только кнопка в Настройках. Отметки — на этом устройстве (ярлык у каждого устройства свой), без синхронизации. */
+const HS={ok:()=>!!(TG&&TG.addToHomeScreen&&TG.isVersionAtLeast&&TG.isVersionAtLeast("8.0")),
+ st:cb=>{if(!HS.ok())return cb("unsupported");try{TG.checkHomeScreenStatus(s=>cb(s||"unknown"))}catch(e){cb("unsupported")}},
+ get:()=>{try{return JSON.parse(localStorage.getItem("nunu-hs"))||{}}catch(e){return{}}},
+ put:d=>{try{localStorage.setItem("nunu-hs",JSON.stringify(d))}catch(e){}},
+ add:()=>{const d=HS.get();d.asked=9;HS.put(d);try{TG.addToHomeScreen()}catch(e){}}};
+if(TG&&TG.onEvent)try{TG.onEvent("homeScreenAdded",()=>{const b=$("hsbar");if(b)b.remove();try{TG.showAlert("Готово: «Ну-ну» теперь на рабочем столе 📌")}catch(e){}})}catch(e){}
+function hsMaybe(){const d=HS.get(),t=new Date().toISOString().slice(0,10);d.days=d.days||[];
+if(!d.days.includes(t))d.days=[...d.days.slice(-6),t];HS.put(d);
+if((d.asked||0)>=2||d.days.length<3||(d.next&&t<d.next)||$("hsbar"))return;
+HS.st(s=>{if(s!=="missed")return;const b=document.createElement("div");b.id="hsbar";b.className="card";b.setAttribute("role","dialog");b.setAttribute("aria-label","Ярлык на рабочем столе");
+b.style.cssText="position:fixed;left:8px;right:8px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:30;max-width:520px;margin:0 auto;box-shadow:0 6px 24px rgba(0,0,0,.18)";
+b.innerHTML=`<p style="margin:0"><b style="font-weight:600">📌 Ярлык на рабочем столе</b><br>«Ну-ну» будет открываться в один тап — без поиска бота в чатах.</p><div class="row"><button class="main-btn" id="hsadd">Добавить</button><button class="n" id="hsno">Не сейчас</button></div>`;
+document.body.appendChild(b);$("hsadd").onclick=()=>{b.remove();HS.add()};
+$("hsno").onclick=()=>{b.remove();const x=HS.get();x.asked=(x.asked||0)+1;x.next=new Date(Date.now()+14*864e5).toISOString().slice(0,10);HS.put(x)}})}
+async function boot(){if(!API)return home();setTimeout(hsMaybe,6000);busy("Загружаю твой остров…");
 try{const r=await API("/state"),d=r.data;tgName=r.name||"";
 /* на этом устройстве остались несохранённые действия — сливаем их с сервером, иначе берём серверное */
 if(d){adopt(dirty&&sync.base?mergeAll(sync.base,mine(),d):dirty?mergeAll({},mine(),d):d);setSync(r.rev,d)}else{setSync(r.rev||0,null);setDirty(true)}
