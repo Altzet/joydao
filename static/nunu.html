@@ -444,7 +444,9 @@ if(h>=72)return`Нажми на человечка — и вода вокруг 
 return`Отмечено: ${MOOD[m.q][0].toLowerCase()}, ${h<1?"только что":h<24?Math.round(h)+" ч назад":"вчера или раньше"}. Это цвет воды вокруг твоего острова: он тает за три дня, а сделанные дела делают его ярче. ${who}`}
 let auraPrev=null;
 let seen=ls.get("nunu-seen")||[];const markSeen=id=>{if(id&&!seen.includes(id)){seen.push(id);ls.set("nunu-seen",seen)}};
-let goals=ls.get("nunu-goals")||[];const saveGoals=()=>ls.set("nunu-goals",goals),goalNow=()=>goals.find(g=>!g.done&&!g.gone)||null,
+/* целей может быть несколько; какая выбрана — помнит устройство (24.11: кнопки выбора целей наверху «Удиви себя») */
+const gSel=(v)=>{try{if(v!==undefined)localStorage.setItem("nunu-gsel",v);return localStorage.getItem("nunu-gsel")}catch(e){return null}};
+let goals=ls.get("nunu-goals")||[];const saveGoals=()=>ls.set("nunu-goals",goals),gAct=()=>goals.filter(g=>!g.done&&!g.gone),goalNow=()=>gAct().find(g=>g.id===gSel())||gAct()[0]||null,
 gSteps=g=>{const a=seeds.filter(x=>x.goal===g.id);return{all:a.length,done:a.filter(x=>x.life).length}},
 GST=[[0,"Семя"],[1,"Росток"],[3,"Саженец"],[6,"Молодое дерево"],[10,"Дерево"]],gStage=(n,done)=>done?"Урожай":GST.filter(x=>n>=x[0]).pop()[1];
 function goalTree(n,done){const lv=done?5:GST.filter(x=>n>=x[0]).length-1,h=[6,22,40,56,70,74][lv],tr=lv>=3?4:2.5,lf=[0,2,4,7,11,13][lv],L=[];
@@ -456,6 +458,8 @@ function dPlus(n){const d=new Date(today()+"T12:00");if(n<0)n=(6-d.getDay()+7)%7
 /* тропинка: сделанные шаги — залитые кружки, начатые — пунктир, следующий — пустой «+» (Bandura & Schunk 1981: близкие подцели; Kivetz и др. 2006: видимый путь) */
 function gPath(n){const k=Math.min(n.done,7),w=Math.min(n.all-n.done,3),c="width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;font-weight:600;flex:none";
 return`<div aria-label="Сделано шагов: ${n.done}" style="display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 0">${n.done>7?`<span style="${c};color:var(--muted)">…</span>`:""}${Array.from({length:k},(_,i)=>`<span style="${c};background:var(--acc);color:var(--acc-fg)">${n.done-k+i+1}</span>`).join("")}${`<span style="${c};border:1.5px dashed var(--acc);color:var(--acc)">·</span>`.repeat(w)}<span style="${c};border:1.5px dashed var(--muted);color:var(--muted)">+</span></div>`}
+function goalChips(){const A=gAct();if(!A.length)return"";const c=goalNow();
+return`<div class="row" role="group" aria-label="Мои цели" style="gap:6px">${A.map(g=>`<button class="${g===c?"t":"n"}" data-gs="${g.id}" aria-pressed="${g===c}" style="max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🎯 ${esc(g.t.length>28?g.t.slice(0,27)+"…":g.t)}</button>`).join("")}<button class="n" id="gadd">＋ Ещё цель</button></div>`}
 function goalCard(){const g=goalNow(),past=goals.filter(x=>x.done).length;if(!g)return`<div class="card goal"><span class="who">Большая цель</span><div class="gwrap">${goalTree(0)}<div>
 <p style="margin:0">То, к чему идёшь месяцами. Большая цель растёт маленькими шагами — с каждым сделанным шагом растёт и дерево.</p><p class="note" style="margin:6px 0 0">Например: «Построить печь» → выбрать место · купить кирпич · залить основание.</p>
 <button class="main-btn" id="gnew" style="margin-top:10px">Поставить цель</button></div></div>${past?`<p class="note" style="margin:0">Достигнуто целей: ${past} 🍎</p>`:""}</div>`;
@@ -464,7 +468,7 @@ return`<div class="card goal"><span class="who">Большая цель · ${gSt
 <div class="q" style="margin:0">${esc(g.t)}</div>${g.why?`<p class="note" style="margin:4px 0 0">Зачем: ${esc(g.why)}</p>`:""}
 ${gPath(n)}<p class="note" style="margin:6px 0 0">Большая цель растёт маленькими шагами. Сделано: <b>${n.done}</b>${n.all>n.done?` · в пути: ${n.all-n.done}`:""}${left!=null?` · ${left>0?"до срока "+left+" "+pl(left,["день","дня","дней"]):left===0?"срок сегодня":"срок прошёл — можно продлить"}`:""}</p>
 ${g.wx?`<p class="note" style="margin:6px 0 0">${wxSum(g.wx)} · бот напишет, когда погода подойдёт</p>`:""}<div class="row" style="margin-top:8px"><button class="main-btn" id="gnext">Наметить шаг</button><button class="n" id="ged">Изменить цель</button>${g.wx?"":`<button class="n" id="gwx">☀ Добавить погоду</button>`}</div></div></div>${past?`<p class="note" style="margin:0">Достигнуто целей: ${past} 🍎</p>`:""}</div>`}
-function goalEdit(back,sky0){const g=goalNow(),v=g?{...g}:{t:"",why:"",by:""},o=wxNew(g&&g.wx);let sky=!!(g&&g.wx)||!!sky0;
+function goalEdit(back,sky0,fresh){const g=fresh?null:goalNow(),v=g?{...g}:{t:"",why:"",by:""},o=wxNew(g&&g.wx);let sky=!!(g&&g.wx)||!!sky0;
 const draw=()=>{app.innerHTML=`<h1>${g?"Большая цель":"Новая большая цель"}</h1><div class="card"><div class="zone">К чему иду (одной фразой)</div><input id="gt" maxlength="80" placeholder="Напиши свою большую цель" value="${esc(v.t)}">
 <div class="zone">Зачем мне это</div><textarea id="gw" maxlength="200" rows="3" placeholder="Напиши, зачем тебе это">${esc(v.why||"")}</textarea>
 <div class="zone">К какому сроку (по желанию)</div><input type="date" id="gb" min="${today()}" value="${esc(v.by||"")}" style="align-self:flex-start">
@@ -477,7 +481,7 @@ $("gt").oninput=()=>{v.t=$("gt").value;$("ge").textContent=""};$("gw").oninput=(
 $("sky").onchange=()=>{sky=$("sky").checked;draw()};wxBind(o,draw,()=>{$("ge").textContent=""});
 $("gs").onclick=()=>{const t=$("gt").value.trim();if(!t){$("ge").textContent="Напиши цель";return}const m=sky?wxMiss(o):"";if(m){$("ge").textContent=m;return}
 const by=$("gb").value&&$("gb").value>=today()?$("gb").value:(g&&g.by&&$("gb").value===g.by?g.by:null),wx=sky?wxOut(o,t,""):undefined;
-if(g){Object.assign(g,{t,why:$("gw").value.trim(),by});if(wx)g.wx=wx;else delete g.wx}else goals.push({id:"g"+Math.random().toString(36).slice(2,9),t,why:$("gw").value.trim(),by,d:today(),...(wx?{wx}:{})});done()};
+if(g){Object.assign(g,{t,why:$("gw").value.trim(),by});if(wx)g.wx=wx;else delete g.wx}else{const id="g"+Math.random().toString(36).slice(2,9);goals.push({id,t,why:$("gw").value.trim(),by,d:today(),...(wx?{wx}:{})});gSel(id)}done()};
 if(g){$("gd").onclick=()=>{g.done=today();done()};$("gg").onclick=()=>{if(confirm("Отпустить цель «"+g.t+"»?")){g.gone=today();done()}}}};draw()}
 function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS||t.lv===0)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
 /* фильтр сада: показываем только фильтры, у которых есть семена в текущем виде */
@@ -614,13 +618,13 @@ ${tg?(FR.length?`<select id="cf" style="width:100%"><option value="">— выб�
 +(!mateSel?`<input id="oc" maxlength="30" placeholder="${FR.length?"Или впиши имя друга":"Впиши имя друга"}" value="${esc(own.who)}">`:"")+`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}`,
 plan:()=>`<h2>Твой план</h2><div class="q" id="pl">${esc(plan())}</div>${fr?`<p class="note" style="margin:0" id="bn">${esc(bonus())}</p>`:""}`};
 const draw=()=>{const G=goalNow(),K=keys();if(!K.includes(cur))cur=K[0];const i=K.indexOf(cur);
-const fx=focus||i>0;app.innerHTML=`${fx?`<h1 style="font-size:1.25rem">${G&&toGoal!==false?"Шаг к цели":"Новое дело"}</h1>${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}`:`<h1>Чем удивишь себя на этой неделе?</h1>${gnAsk()}${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}`}
+const fx=focus||i>0;app.innerHTML=`${fx?`<h1 style="font-size:1.25rem">${G&&toGoal!==false?"Шаг к цели":"Новое дело"}</h1>${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}`:`<h1>Чем удивишь себя на этой неделе?</h1>${gnAsk()}${goalChips()}${goalCard()}${loc?`<span class="tag open" style="align-self:flex-start">📍 На участке${loc.name?": "+esc(loc.name):""}</span>`:""}${ins?`<div class="card"><span class="who">Что показал твой остров</span><p style="margin:0">${ins}</p></div>`:""}`}
 <div class="card wz" id="wz"><div style="display:flex;gap:4px" aria-label="Шаг ${i+1} из ${K.length}">${K.map((k,j)=>`<i style="flex:1;height:4px;border-radius:2px;background:${j<=i?"var(--acc)":"var(--line)"}"></i>`).join("")}</div>
 ${K.slice(0,i).map(k=>`<button class="n" data-go="${k}" style="display:flex;gap:10px;align-items:center;text-align:left;width:100%;justify-content:flex-start"><span class="note" style="margin:0;flex:none;min-width:64px">${TIT[k]}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(SUM[k]())}</span><span aria-hidden="true" style="color:var(--muted)">✎</span></button>`).join("")}
 ${H[cur](G)}<div class="err" id="er"></div>
 <div class="row">${cur==="plan"?`<button class="main-btn" id="pt">Посадить в сад</button>`:cur==="goal"?"":`<button class="main-btn" id="nx">Дальше</button>`}${OPT[cur]?`<button class="n" id="sk">Пропустить</button>`:""}<button class="n" id="pv">${i?"← Назад":"Выйти"}</button></div></div>
 ${cur==="plan"?`<p class="note">${own.sky?"Когда прогноз подойдёт, бот напишет накануне вечером. ":""}${own.due?(own.at?"В этот день в "+own.at+" бот напомнит о деле.":"В этот день утром бот напомнит о деле. Хочешь в своё время — поставь час."):own.at?"Бот напомнит в "+own.at+" — сегодня, а если время уже прошло, завтра.":"Через неделю загляни в сад и отметь: «"+lc(SAME())+"» или «"+lc(DIFF())+"»."} Не вышло — ничего страшного, семя подождёт.</p>`:""}`;
-const redraw=()=>stepWeek(fr,own.what,loc);if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(redraw);if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
+const redraw=()=>stepWeek(fr,own.what,loc);app.querySelectorAll("[data-gs]").forEach(b=>b.onclick=()=>{gSel(b.dataset.gs);redraw()});if($("gadd"))$("gadd").onclick=()=>goalEdit(redraw,false,true);if($("gnew"))$("gnew").onclick=()=>goalEdit(redraw);if($("ged"))$("ged").onclick=()=>goalEdit(redraw);if($("gwx"))$("gwx").onclick=()=>goalEdit(redraw,true);
 if($("gnext"))$("gnext").onclick=()=>{toGoal=true;cur="what";focus=true;draw();scrollTo(0,0)};
 app.querySelectorAll("[data-tg]").forEach(b=>b.onclick=()=>{toGoal=b.dataset.tg==="1";focus=true;step(1)});
 app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{cur=b.dataset.go;draw()});
