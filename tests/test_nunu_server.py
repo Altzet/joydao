@@ -221,12 +221,14 @@ def test_reminders(tmp_path, monkeypatch):
                   (json.dumps({"nunu-seeds": seeds, "nunu-prefs": {"remind": False}}),))
         c.execute("INSERT INTO state(tg_id,data) VALUES(3,?)",
                   (json.dumps({"nunu-seeds": [{"r": "y", "d": "2026-10-01", "life": {"same": 1}}]}),))
+        c.execute("INSERT INTO state(tg_id,data) VALUES(4,?)",  # ответ партии без «Это было со мной» — не в саду, поливать нечего
+                  (json.dumps({"nunu-seeds": [{"r": "z", "z": 0, "d": "2026-10-01", "life": None}]}),))
     r = nunu.reminders_due(date(2026, 11, 11))
-    assert [u for u, _ in r] == [1, 1, 3]
-    assert "Сегодня" in r[0][1] and "полить" in r[1][1] and "новые" in r[2][1]
+    assert [u for u, _ in r] == [1, 1, 3, 4]
+    assert "Сегодня" in r[0][1] and "полить" in r[1][1] and "новые" in r[2][1] and "полить" not in r[3][1]
     assert nunu.reminders_due(date(2026, 11, 11)) == []
     assert nunu.reminders_due(date(2026, 11, 15)) == []
-    assert len(nunu.reminders_due(date(2026, 11, 18))) == 2
+    assert len(nunu.reminders_due(date(2026, 11, 18))) == 3
 
 
 def test_meet_friends(tmp_path, monkeypatch):

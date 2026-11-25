@@ -1018,7 +1018,8 @@ def reminders_due(today: date, now: datetime | None = None, daily: bool = True, 
                 continue
             if (d.get("nunu-prefs") or {}).get("remind") is False or not seeds:
                 continue
-            uid, wait = r["tg_id"], [s for s in seeds if not s.get("life")]
+            # в саду — только семена намерений и «Это было со мной»; прочие ответы партий — для портрета острова (как inGarden в nunu.html)
+            uid, wait = r["tg_id"], [s for s in seeds if not s.get("life") and any(s.get(k) for k in ("step", "mine", "pid", "loc"))]
             for s in wait:
                 w = _when(s) if s.get("due") and s.get("at") else None
                 if w:  # дело с часом: в его минуту (и не позже суток — если сервер лежал)
@@ -1041,7 +1042,7 @@ def reminders_due(today: date, now: datetime | None = None, daily: bool = True, 
                 text = (f"Пора полить семена 🌱 Неделю ждут отметки: {len(old)}. "
                         "Загляни в сад: что из этого случилось в жизни?")
             elif max(str(s.get("d") or iso) for s in seeds) <= week_ago:
-                text = "Сад неделю без новых семян 🌱 Сыграй партию или придумай, чем удивишь себя, — посадим новые."
+                text = "Сад неделю без новых семян 🌱 Загляни в «Удиви себя» — посадим новые."
             else:
                 continue
             c.execute("INSERT INTO reminders VALUES(?, 'garden', ?) ON CONFLICT(tg_id, kind) DO UPDATE SET at=excluded.at",
