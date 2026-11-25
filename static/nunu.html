@@ -352,19 +352,42 @@ if(!(st.seed>=0))st.s=st.g=[],st.friend=null;
 /* набор из 10 по номеру: у друга тот же номер, значит те же карточки. Лестница 3 разминки → 2 → 3 → 2 (Aron 1997);
 номера до V0 — партии, сыгранные до разминки: у них прежняя лестница 3 → 4 → 3 */
 const V0=1679616,warm=(a,i)=>({c:TX.lv0||"Разминка",q:a[0],o:a[1],e:a[2],lv:0,id:"w"+i});
-const picked={};
-const AU=CFG.AU||{},scene=(k,lv)=>({c:S[k][0]+(AU[k]?" · от "+AU[k]:""),q:S[k][1],o:[...S[k][2],...S[k][3],...S[k][4]],z:1,lv,id:"s"+k});
+/* 25.11: иконки к ответам — все ответы картинками, как в разминке. Порядок — как варианты в C1, S (2+2+2), C3 */
+const E1=[["🎤","💃","🔧","🎁"],["🔥","🍖","🌊","😴"],["🗣️","💬","🎧","😴"],["🎉","🍲","🚗","😤"],["👋","🙂","🙂‍↕️","🐕"],
+["📞","🤨","✉️","🐢"],["🏪","📻","🏔️","📝"],["🧭","💡","🔁","🛋️"],["🍲","🧑‍🍳","🍝","🍴"],["🎨","🖌️","🎁","🐦"],
+["🌍","⛰️","🏙️","🏠"],["🌌","⚙️","👥","🍕"],["🧹","🔥","🎣","📝"],["🩹","🗺️","🎸","🏕️"],["📅","🐢","🌙","⚡"],
+["📐","🎨","🗄️","☕"],["🧰","⏰","🍕","📱"],["✅","✨","🚧","🛠️"],["🤝","🧾","✍️","🥧"],["⚖️","🧱","🤐","😄"],
+["💸","🗓️","🤲","😳"],["🙏","🗣️","📣","🤝"],["🪙","👀","🍀","😣"],["🎯","➕","🤫","🚀"],["🛠️","🧘","😂","📇"],
+["😂","🔨","👂","🔭"],["🔧","⚖️","🧭","🍽️"],["😊","💡","👂","🪵"],["😄","🔨","🗣️","😴"],["🎭","🗺️","🎬","🫖"]];
+const ES=[["🐮","🥂","😳","🥗","🎤","👉"],["👋","🎶","😌","🎧","📯","🚪"],["🤗","📸","😮‍💨","🌙","🧹","🙅"],["🎸","📖","🤲","🪵","😄","🚫"],["🙏","💬","🙅","😴","🍽️","😎"],
+["📱","🏪","↩️","🚶","👮","👛"],["🥳","🥂","🍰","🌬️","🤫","😏"],["🎣","👏","🪑","🏃","🚣","🐟"],["😂","🧥","😳","🧻","📸","🍵"],["🌅","🤝","📵","🤷","🎫","💰"],
+["🎤","👯","🎙️","🥤","🔁","💃"],["🚪","🔨","🛏️","🚶","👊","🔊"],["🐕","💬","⏳","🚪","🙅","🐶"],["😄","☀️","🤷","🤔","💰","⏳"],["🎶","😊","🎭","🚪","👍","📢"],
+["☀️","🤗","🗑️","🎁","😠","🖍️"],["😄","⛰️","🤐","🚶","😲","🍲"],["👵","💬","🍽️","🌦️","🙅","🧓"],["👂","🧭","🎧","💺","😩","😏"],["👋","🙂","🏃","🚗","🔇","🔊"],
+["🎉","🙌","🤐","🙊","✋","🗣️"],["📞","🔧","🤐","🔄","💸","😠"],["🗣️","🚪","🔍","😮‍💨","✋","📷"],["🤲","🤝","🚗","📞","🚪","🍕"],["🍞","😄","🗑️","🙈","😤","🎥"],
+["🥪","🌙","🏃","🥛","🙅","😏"],["🗺️","🛒","🔍","⏳","🚶","☕"],["😂","😲","🤷","🤐","✋","🎙️"],["🤗","🍄","🚶","🔍","🏃","🚫"],["🔥","❓","🤷","😅","👑","📸"],
+["👨‍👩‍👧","🎉","🏦","🤫","✈️","🏗️"],["🏠","💬","🤐","🌦️","😒","😌"],["👯","🚶","🎭","👂","🙋","😄"],["📁","⚡","🤔","🔕","☕","💰"],["🔧","😄","🚪","📞","🛠️","🏆"],
+["🤝","🧻","🙈","🚶","💳","📢"],["📦","👥","🚗","📦","😏","🍕"],["💨","👥","🔧","🙊","🌅","🕳️"],["🪵","😊","🤐","🚫","↩️","🖐️"],["💳","🍱","💸","⏰","🍽️","📒"],
+["🚗","📞","📵","⏳","🏖️","📅"],["🕯️","🍿","🧽","📱","🍝","🍕"],["🐈","🍞","🗑️","🤐","😾","🥖"],["🌸","😄","🪴","🤐","🚗","🪧"],["🧒","🤪","🙂","👩","❄️","🤔"],
+["👍","🖼️","🤐","✉️","🗑️","📸"],["🔥","🍢","🌱","📅","🏡","🌅"],["😊","🤔","🤐","🙅","☝️","🎙️"],["🦷","➗","🤔","🙈","🔍","🤝"],["🧳","📞","⏸️","🚪","🌱","🗺️"],
+["📖","😂","🪟","🚪","📚","🏠"],["🍴","🥧","🥟","🛵","👨‍🍳","🫖"],["🙏","🎓","🤷","🏃","😊","🙅"]];
+const E3=[["😴","🌀","🧹","⏰"],["😞","🚧","🔊","🛡️"]];
+const picked={},eOf=(id,o)=>{const e=id[0]==="a"?E1[+id.slice(1)]:id[0]==="c"?E3[+id.slice(1)]:id[0]==="s"?ES[+id.slice(1)]:null;return e&&e.length===o.length?e:undefined};
+const AU=CFG.AU||{},scene=(k,lv)=>{const o=[...S[k][2],...S[k][3],...S[k][4]];return{c:S[k][0]+(AU[k]?" · от "+AU[k]:""),q:S[k][1],o,e:eOf("s"+k,o),z:1,lv,id:"s"+k}};
 /* в «Кто я, по-твоему?» можно два образа: человек бывает и тем, и другим; в сценах — один поступок */
-const crd=(a,lv,b,id)=>({c:lv===1?TX.lv1||"Кто я, по-твоему?":a[0],q:b&&a[4]?a[4]:a[1],o:a[2],gift:!!a[3],lv,multi:lv===1,id});
-function pick(seed){if(picked[seed])return picked[seed];let a=seed>>>0||1;const r=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const crd=(a,lv,b,id)=>({c:lv===1?TX.lv1||"Кто я, по-твоему?":a[0],q:b&&a[4]?a[4]:a[1],o:a[2],e:eOf(id,a[2]),gift:!!a[3],lv,multi:lv===1,id});
+function pick(seed,lv,n){const key=lv==null?seed:seed+":"+lv+":"+n;if(picked[key])return picked[key];let a=seed>>>0||1;const r=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const sh=n=>{const ix=[...Array(n).keys()];for(let k=n-1;k>0;k--){const j=Math.floor(r()*(k+1));[ix[k],ix[j]]=[ix[j],ix[k]]}return ix};
 /* ponytail: A/B формулировок (образ или прямо) по чётности номера; замер ждёт этапа 2 с сервером */
 const ab=seed%2,D=seed<V0?DECK1:DECKS[Math.floor(seed/V0)]||DECK1,p3=k=>k[0]==="c"?crd(C3[+k.slice(1)],3,0,k):scene(+k.slice(1),3),P2=D.P2;
-if(seed<V0)return picked[seed]=[...sh(D.C1.length).slice(0,3).map(k=>crd(C1[D.C1[k]],1,ab,"a"+D.C1[k])),...sh(P2.length).slice(0,4).map(k=>scene(P2[k],2)),...sh(D.P3.length).slice(0,3).map(k=>p3(D.P3[k]))];
+/* 25.11: короткие партии. lv — ступень лесенки по мосту (Aron и др. 1997: близость растёт постепенно), 9 — бутылка: только разминка, n — сколько вопросов */
+if(lv!=null){const W0=k=>sh(D.C0.length).slice(0,k).map(j=>warm(C0[D.C0[j]],D.C0[j])),A=()=>{const j=sh(D.C1.length)[0];return crd(C1[D.C1[j]],1,ab,"a"+D.C1[j])},
+Sc=()=>scene(P2[sh(P2.length)[0]],2),Pp=()=>p3(D.P3[sh(D.P3.length)[0]]);
+return picked[key]=(lv===9?W0(n):lv>=3?[A(),Sc(),Pp()]:lv===2?[...W0(1),A(),Sc()]:lv===1?[...W0(2),A()]:W0(3)).slice(0,n)}
+if(seed<V0)return picked[key]=[...sh(D.C1.length).slice(0,3).map(k=>crd(C1[D.C1[k]],1,ab,"a"+D.C1[k])),...sh(P2.length).slice(0,4).map(k=>scene(P2[k],2)),...sh(D.P3.length).slice(0,3).map(k=>p3(D.P3[k]))];
 const o1=sh(D.C1.length),a1=o1.find(k=>!C1[D.C1[k]][3]);
-return picked[seed]=[...sh(D.C0.length).slice(0,3).map(k=>warm(C0[D.C0[k]],D.C0[k])),...[a1,o1.find(k=>k!==a1)].map(k=>crd(C1[D.C1[k]],1,ab,"a"+D.C1[k])),...sh(P2.length).slice(0,3).map(k=>scene(P2[k],2)),...sh(D.P3.length).slice(0,2).map(k=>p3(D.P3[k]))]}
-const sit=k=>pick(st.seed)[k],newSeed=()=>{const S0=new Set(seen);let best=0,bw=1e9;for(let t=0;t<300;t++){const sd=DLAST*V0+Math.floor(Math.random()*V0),
-w=pick(sd).reduce((a,c)=>a+(S0.has(c.id)?(c.id[0]==="s"?3:1):0),0);delete picked[sd];if(w<bw){bw=w;best=sd}if(!w)break}return best};  /* номер партии в диапазоне последней колоды */
+return picked[key]=[...sh(D.C0.length).slice(0,3).map(k=>warm(C0[D.C0[k]],D.C0[k])),...[a1,o1.find(k=>k!==a1)].map(k=>crd(C1[D.C1[k]],1,ab,"a"+D.C1[k])),...sh(P2.length).slice(0,3).map(k=>scene(P2[k],2)),...sh(D.P3.length).slice(0,2).map(k=>p3(D.P3[k]))]}
+const sit=k=>pick(st.seed,st.lv,st.n)[k],GN=()=>st.n||N,newSeed=(lv,n)=>{const S0=new Set(seen);let best=0,bw=1e9;for(let t=0;t<300;t++){const sd=DLAST*V0+Math.floor(Math.random()*V0),
+w=pick(sd,lv,n).reduce((a,c)=>a+(S0.has(c.id)?(c.id[0]==="s"?3:1):0),0);delete picked[lv==null?sd:sd+":"+lv+":"+n];if(w<bw){bw=w;best=sd}if(!w)break}return best};  /* номер партии в диапазоне последней колоды */
 const save=()=>ls.set("nunu2",st);
 function card(h){app.innerHTML=`<div class="card">${h}</div>`}
 /* ссылки в тексте дела — короткой кнопкой «🔗 открыть», открываются через Telegram */
@@ -382,7 +405,7 @@ card(`<h2>${re?"Правила обновились":"Правила «Ну-ну
 <button class="main-btn" id="rlok" disabled>Принимаю — в игру</button>`);
 $("rlf").onclick=openRules;$("rlc").onchange=()=>{$("rlok").disabled=!$("rlc").checked};
 $("rlok").onclick=()=>{prefs.rules={v:RL.v,at:new Date().toISOString().slice(0,10)};ls.set("nunu-prefs",prefs);push();if(nv)nv.hidden=false;done()}}
-function go(){setNav(null);if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<N||st.g.length<N)return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
+function go(){setNav(null);if(!st.name||!(st.seed>=0)||!st.started)return home();if(st.s.length<GN()||st.g.length<GN())return play(st.g.length);const M=st.mode||(st.solo?"solo":"duo");if(M!=="guess"&&!st.planted){plant();st.planted=1;save()}
 if(st.join&&st.friend&&st.friend.pending)return st.story&&st.sg===undefined?storyGuess():sendPlay();
 if(API&&(M==="hero"||M==="duo"&&!st.friend))return shareTG(M);
 if(M==="solo")soloResult();else if(M==="hero")heroShare();else if(M==="guess")guessResult();else result();tail(M)}
@@ -473,7 +496,7 @@ $("gs").onclick=()=>{const t=$("gt").value.trim();if(!t){$("ge").textContent="Н
 const by=$("gb").value&&$("gb").value>=today()?$("gb").value:(g&&g.by&&$("gb").value===g.by?g.by:null),wx=sky?wxOut(o,t,""):undefined;
 if(g){Object.assign(g,{t,why:$("gw").value.trim(),by});if(wx)g.wx=wx;else delete g.wx}else{const id="g"+Math.random().toString(36).slice(2,9);goals.push({id,t,why:$("gw").value.trim(),by,d:today(),...(wx?{wx}:{})});gSel(id)}done()};
 if(g){$("gd").onclick=()=>{g.done=today();done()};$("gg").onclick=()=>{if(confirm("Отпустить цель «"+g.t+"»?")){g.gone=today();done()}}}};draw()}
-function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<N;k++){const t=sit(k);if(st.s[k]===PASS||t.lv===0)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
+function plant(){const d=new Date().toISOString().slice(0,10);for(let k=0;k<GN();k++){const t=sit(k);if(st.s[k]===PASS||t.lv===0)continue;seeds.push({c:t.c,q:t.q,r:opt(t,st.s[k]),z:Z(t,st.s[k]),d,life:null,mine:!!(st.mine&&st.mine[k])})}saveSeeds()}
 /* фильтр сада: показываем только фильтры, у которых есть семена в текущем виде */
 let gf="all";const GF=[["all","Все"],["mine","Было со мной"],["deed","🌱 Свои дела"],["goal","🎯 К цели"],["sky","☀ Хорошая погода"],["warn","🔔 Предупредить"],["due","📅 Со сроком"]],
 gfOk={all:()=>true,mine:x=>!!x.mine,deed:x=>!!x.step,goal:x=>!!x.goal,sky:x=>!!x.wx&&!wxWarn(x.wx),warn:x=>!!x.wx&&wxWarn(x.wx),due:x=>!!x.due};
@@ -674,14 +697,14 @@ if(i===0&&!st.s.length&&!st.g.length&&(st.mode||"")!=="guess"&&!st.friend&&!st.r
 <div class="row"><button class="main-btn" id="sbn">Предложить ситуацию</button><button class="n" id="sbr">Сыграть всё равно</button></div>
 <p class="note" style="margin:0">«Сыграть всё равно» — карточки уже знакомые.</p>`);$("sbn").onclick=()=>subForm(()=>play(0));$("sbr").onclick=()=>{st.rep=1;save();play(0)};return}
 st.started=1;const M=st.mode||(st.solo?"solo":"duo"),one=M!=="duo",s=sit(i),self=draft===null;
-card(`<div class="lad" role="img" aria-label="Карточка ${i+1} из ${N}">${[...Array(N)].map((_,k)=>`<i style="background:${LV[sit(k).lv]}${k<i?"":k===i?";height:8px":";opacity:.3"}"></i>`).join("")}</div><div class="meta"><span>${i+1} из ${N} · ${s.c}${s.id&&s.id[0]==="s"&&AU[s.id.slice(1)]?" "+repBtn("sub",s.id.slice(1)):""}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
+card(`<div class="lad" role="img" aria-label="Карточка ${i+1} из ${GN()}">${[...Array(GN())].map((_,k)=>`<i style="background:${LV[sit(k).lv]}${k<i?"":k===i?";height:8px":";opacity:.3"}"></i>`).join("")}</div><div class="meta"><span>${i+1} из ${GN()} · ${s.c}${s.id&&s.id[0]==="s"&&AU[s.id.slice(1)]?" "+repBtn("sub",s.id.slice(1)):""}</span><span>${one?"":self?"шаг 1 из 2":"шаг 2 из 2"}</span></div>
 ${M==="guess"?ask(0,st.friend.name,0,st.friend.gn):self?ask(1,0,s.lv===0):ask(0,st.friend&&st.friend.name||st.toName,0,st.friend?st.friend.gn:gnOf(st.to))}<div class="q">${s.q}</div><div id="o"></div>`);
 const idx=s.o.map((_,k)=>k);for(let k=idx.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[idx[k],idx[j]]=[idx[j],idx[k]]}
-const r=document.createElement("div");r.className=s.lv===0?"duo":"row col";
+const r=document.createElement("div");r.className=s.e?"duo":"row col";  /* ответы картинками (25.11) */
 const ans=x=>{markSeen(s.id);if(one){st.s[i]=st.g[i]=x;save();return go()}if(self){draft=x;return play(i)}st.s[i]=draft;st.g[i]=x;draft=null;save();go()};
 if(s.multi){let sel=[];const nx=document.createElement("button");nx.className="main-btn";nx.textContent="Дальше";
 const paint=()=>{r.querySelectorAll("button").forEach(b=>{const on=sel.includes(+b.dataset.x);b.className=on?"t":"n";b.setAttribute("aria-pressed",on)});nx.style.display=sel.length?"":"none"};
-idx.forEach(x=>{const b=document.createElement("button");b.dataset.x=x;b.textContent=opt(s,x);b.onclick=()=>{sel=sel.includes(x)?sel.filter(y=>y!==x):[...sel,x].slice(-2);paint()};r.appendChild(b)});
+idx.forEach(x=>{const b=document.createElement("button");b.dataset.x=x;b.textContent=opt(s,x);if(s.e)b.dataset.e=s.e[x];b.onclick=()=>{sel=sel.includes(x)?sel.filter(y=>y!==x):[...sel,x].slice(-2);paint()};r.appendChild(b)});
 nx.onclick=()=>ans(sel.length===1?sel[0]:[...sel].sort());$("o").appendChild(r);$("o").insertAdjacentHTML("beforeend",`<div class="zone">Можно выбрать один или два</div>`);$("o").appendChild(nx);paint()}
 else{idx.forEach(x=>{const b=document.createElement("button");b.className="n";b.textContent=opt(s,x);if(s.e)b.dataset.e=s.e[x];b.onclick=()=>ans(x);r.appendChild(b)});$("o").appendChild(r)}
 /* «Проехали» на уровне «Личное»: глубину выбирает сам игрок, пропуск без штрафа */
@@ -711,9 +734,9 @@ function soloResult(){
 const c=[0,0,0];st.s.forEach((x,k)=>{const z=Z(sit(k),x);if(z>=0)c[z]++});const top=["цветов: ты чаще идёшь к людям","деревьев: ты чаще берёшь паузу и отходишь","скал: ты чаще стоишь за своё"][c.indexOf(Math.max(...c))];
 let h=`<h1>Остров: ${esc(st.name)}</h1><div class="card">${island(st.s,st.s)}<p style="margin:0">Больше всего ты вырастил ${top}.</p>
 <p class="note" style="margin:0">Это ты своими глазами. Сыграй те же карточки с другом — увидишь, видит ли он тебя так же.</p></div><div class="card"><h2>Твои ответы</h2>`;
-for(let k=0;k<N;k++)h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${esc(opt(sit(k),st.s[k]))}</div></div>`;
+for(let k=0;k<GN();k++)h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${esc(opt(sit(k),st.s[k]))}</div></div>`;
 h+=`</div><div class="row"><button class="main-btn" id="nw">Ещё партию</button><button class="n" id="hm">Играть с другом</button></div>`;
-app.innerHTML=h;$("nw").onclick=()=>{st={name:st.name,seed:newSeed(),s:[],g:[],friend:null,started:1,mode:"solo"};save();go()};
+app.innerHTML=h;$("nw").onclick=()=>fresh("solo");
 $("hm").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
 /* все угадывают меня: герой отвечает, собирает коды друзей, видит рейтинг */
 function heroShare(){
@@ -722,9 +745,9 @@ const sc=G.map(f=>({n:f.name,p:f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length
 const ops=G.length?st.s.map((x,k)=>.32+.68*G.filter(f=>Z(sit(k),f.g[k])>=0&&Z(sit(k),f.g[k])===Z(sit(k),x)).length/G.length):null;
 const B=st.bottle;
 let h=B?`<h1>Твоя бутылка в море</h1><div class="card"><p style="margin:0">Бутылка плавает. Когда её выловит незнакомец, бот пришлёт сообщение. Выловить могут до пяти человек.</p></div>
-<div class="card"><h2>Кто выловил</h2>${G.length?G.map(f=>`<div class="res"><div style="display:flex;justify-content:space-between;gap:8px"><span>${esc(f.name)}</span><span class="note">${gF(f.gn,"понял","поняла","понимает")} тебя: ${f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length} из ${N}</span></div>${wishBox(f.wish,f.name,f.id)}</div>`).join(""):`<p class="note" style="margin:0">Пока никто.</p>`}<button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>`
+<div class="card"><h2>Кто выловил</h2>${G.length?G.map(f=>`<div class="res"><div style="display:flex;justify-content:space-between;gap:8px"><span>${esc(f.name)}</span><span class="note">${gF(f.gn,"понял","поняла","понимает")} тебя: ${f.g.filter((x,k)=>hit(sit(k),st.s[k],x)>0).length} из ${GN()}</span></div>${wishBox(f.wish,f.name,f.id)}</div>`).join(""):`<p class="note" style="margin:0">Пока никто.</p>`}<button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>`
 :`<h1>${esc(st.name)}: угадайте меня</h1><div class="card"><h2>Ссылка для компании</h2>${linkBox("Режим компании: одна ссылка на всех. Кинь её в общий чат или покажи QR-код — каждый угадает тебя у себя в телефоне, а их острова появятся на твоей карте.")}</div>
-<div class="card"><h2>Мосты к друзьям</h2>${sc.length?sc.map(r=>`<div class="res" style="flex-direction:row;justify-content:space-between"><span>${esc(r.n)}</span><span class="note">досок: ${r.p} из ${N}</span></div>`).join(""):`<p class="note" style="margin:0">Пока никого.</p>`}
+<div class="card"><h2>Мосты к друзьям</h2>${sc.length?sc.map(r=>`<div class="res" style="flex-direction:row;justify-content:space-between"><span>${esc(r.n)}</span><span class="note">досок: ${r.p} из ${GN()}</span></div>`).join(""):`<p class="note" style="margin:0">Пока никого.</p>`}
 <button class="n" id="rf" style="align-self:flex-start">Обновить</button></div>`;
 h+=`${storyHero(G)}<div class="card"><h2>Твой остров</h2>${island(st.s,st.s,ops)}<p class="note" style="margin:0">${G.length?"Чем ярче растение, тем больше друзей угадали этот ответ.":"Остров проявится, когда придут ответы друзей."}</p></div>
 <button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
@@ -734,11 +757,11 @@ app.querySelectorAll("button[data-p]").forEach(b=>b.onclick=()=>{const f=G.find(
 function guessResult(){
 const H=st.friend,hn=esc(H.name),L=[cap1(MKf(H.gn)[0]),cap1(MKf(H.gn)[1]),"Точно в цель"];
 if(st.only){app.innerHTML=`<h1>Ты и ${hn}</h1>${storyBlock()}<p class="note">${hn} увидит твою догадку: бот уже прислал сообщение.</p><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;wireMark();$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()};return}
-const v=[...Array(N)].map((_,k)=>hit(sit(k),H.s[k],st.g[k]));
+const v=[...Array(GN())].map((_,k)=>hit(sit(k),H.s[k],st.g[k]));
 const B=st.bottle,u=v.filter(x=>x>0).length;
-let h=B?`<h1>Бутылка от: ${hn}</h1><div class="card">${bridge(v,2)}<p style="margin:0">${gMe("Ты понял","Ты поняла","Ты понимаешь")} незнакомца в ${u} ${pl(u,["карточке","карточках","карточках"])} из ${N}.</p>${wishBox(st.wish,H.name,H.id)}</div>${storyBlock()}`
+let h=B?`<h1>Бутылка от: ${hn}</h1><div class="card">${bridge(v,2)}<p style="margin:0">${gMe("Ты понял","Ты поняла","Ты понимаешь")} незнакомца в ${u} ${pl(u,["карточке","карточках","карточках"])} из ${GN()}.</p>${wishBox(st.wish,H.name,H.id)}</div>${storyBlock()}`
 :`<h1>Ты и ${hn}</h1>${bridgeCard(v,2,H.name,"Мост: ты и "+hn)}${storyBlock()}${`<p class="note">${hn} увидит ваш мост у себя: бот уже прислал сообщение.</p>`}<div class="card"><h2>По ситуациям</h2>`;
-for(let k=0;k<N;k++){const a=hit(sit(k),H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[lb(sit(k),a)].toLowerCase()}</span></div></div>`}
+for(let k=0;k<GN();k++){const a=hit(sit(k),H.s[k],st.g[k]);h+=`<div class="res"><div class="s">${k+1}. ${sit(k).q}</div><div>${hn}: ${esc(opt(sit(k),H.s[k]))}</div><div class="note">Ты думал: ${esc(opt(sit(k),st.g[k]))} <span class="tag ${a?"open":"fog"}">${L[lb(sit(k),a)].toLowerCase()}</span></div></div>`}
 h+=`</div><button class="n" id="nw" style="align-self:flex-start">Новая игра</button>`;
 if(B)h+=`<div class="row"><button class="n" id="cb">Выловить ещё</button><button class="g" id="rp">Пожаловаться</button></div>`;
 app.innerHTML=h;if(B){wireWish(st.join,w=>{st.wish=w;save();go()});wireReport(st.join);$("cb").onclick=catchBottle}else bridgeBtns(H.name);wireMark();$("nw").onclick=()=>{st={name:st.name,s:[],g:[],friend:null};save();home()}}
@@ -751,7 +774,7 @@ app.querySelectorAll("button[data-p]").forEach(b=>b.onclick=()=>{const f=G.find(
 function bridge(v,max){let g=`<svg viewBox="0 0 320 76" style="width:100%;max-width:520px;display:block;margin:0 auto" role="img" aria-label="Мост из ${v.filter(x=>x>0).length} досок">
 <rect width="320" height="76" rx="12" fill="var(--sea)"/><ellipse cx="14" cy="44" rx="30" ry="24" fill="var(--grass)"/><ellipse cx="306" cy="44" rx="30" ry="24" fill="var(--grass)"/>
 <line x1="40" y1="30" x2="280" y2="30" stroke="#888780"/><line x1="40" y1="56" x2="280" y2="56" stroke="#888780"/>`;
-v.forEach((x,k)=>{const cx=48+k*(224/(N-1))-7;g+=x?x>=max?`<rect x="${cx}" y="30" width="14" height="26" rx="2" fill="#BA7517"/>`:`<rect x="${cx+5.5}" y="30" width="3" height="26" rx="1.5" fill="#BA7517" opacity=".85"/>`:`<rect x="${cx}" y="35" width="14" height="16" rx="2" fill="none" stroke="#888780" stroke-dasharray="2 2"/>`});
+v.forEach((x,k)=>{const cx=48+k*(224/Math.max(1,v.length-1))-7;g+=x?x>=max?`<rect x="${cx}" y="30" width="14" height="26" rx="2" fill="#BA7517"/>`:`<rect x="${cx+5.5}" y="30" width="3" height="26" rx="1.5" fill="#BA7517" opacity=".85"/>`:`<rect x="${cx}" y="35" width="14" height="16" rx="2" fill="none" stroke="#888780" stroke-dasharray="2 2"/>`});
 return g+`</svg>`}
 /* ponytail: стадии моста по Холлу (канат → два каната → настил → камень); пороги в досках условные, подстроить по данным */
 let bridges=ls.get("nunu-bridges")||{};
@@ -764,7 +787,7 @@ function bridgeState(t){const i=STG.filter(s=>t>=s[0]).length-1,nx=STG[i+1],left
 return`<div class="zone">Ваш мост сейчас — ${STG[i][1]}</div>${nx?`<div style="height:8px;border-radius:99px;background:var(--line)" role="img" aria-label="Прогресс моста"><div style="height:100%;width:${Math.round((t-STG[i][0])/(nx[0]-STG[i][0])*100)}%;background:#BA7517;border-radius:99px"></div></div>
 <p class="note" style="margin:0">Всего ${half(t)} ${pl(Math.floor(t),["доска","доски","досок"])}. До ${nx[1].replace(/[ыо]й$/,"ого")} моста ещё ${half(left)}. Верёвочка — полдоски. Мост копится от игры к игре.</p>`:`<p class="note" style="margin:0">Крепче моста не бывает.</p>`}`}
 function paintBridge(t){const e=$("bst");if(e)e.innerHTML=bridgeState(t)}
-const STG=[[0,"канатный"],[10,"подвесной"],[30,"дощатый"],[60,"каменный"]],pl=(n,f)=>n%10===1&&n%100!==11?f[0]:n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?f[1]:f[2];
+const STG=[[0,"канатный"],[3,"подвесной"],[10,"дощатый"],[20,"каменный"]]  /* 25.11: партии по 3 вопроса — пороги втрое ниже (были 10/30/60) */,pl=(n,f)=>n%10===1&&n%100!==11?f[0]:n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?f[1]:f[2];
 /* карточка моста: что значит, где вы сейчас, сколько до следующей стадии и как укрепить.
 Близость цели подгоняет (goal-gradient, Kivetz et al. 2006); совместные дела сближают сильнее разговоров (Hall 2019) */
 function bridgeCard(v,max,name,title){const b=v.filter(x=>x>=max).length,r=v.filter(x=>x&&x<max).length;addBridge(name,b+r/2);
@@ -776,12 +799,12 @@ return`<div class="card"><h2>${title}</h2>${bridge(v,max)}
 <div class="zone">Как укрепить мост</div>
 <div class="row"><button class="main-btn" id="brd">Сделать дело вместе: +3 доски</button><button class="n" id="brp">Ещё партию</button></div>
 <p class="note" style="margin:0">Общее дело в жизни сближает сильнее разговоров. Выберите его вместе, а когда сделаете — отметь в саду.</p></div>`}
-function bridgeBtns(name){$("brd").onclick=()=>stepWeek(name);$("brp").onclick=()=>{const f=st.friend;st={name:st.name,seed:newSeed(),s:[],g:[],friend:null,started:1,mode:"duo",guessers:[],...(API&&f&&f.id?{to:f.id,toName:f.name}:{})};save();go()}}
+function bridgeBtns(name){$("brd").onclick=()=>stepWeek(name);$("brp").onclick=()=>{const f=st.friend;fresh("duo",API&&f&&f.id?{to:f.id,toName:f.name}:{})}}
 function result(){
 const f=st.friend,fn=esc(f.name),L=[cap1(MKf(f.gn)[0]),cap1(MKf(f.gn)[1]),"Точно в цель"];
-const v=[...Array(N)].map((_,k)=>hit(sit(k),f.s[k],st.g[k])+hit(sit(k),st.s[k],f.g[k]));
+const v=[...Array(GN())].map((_,k)=>hit(sit(k),f.s[k],st.g[k])+hit(sit(k),st.s[k],f.g[k]));
 let h=`<h1>Ну-ну: ${esc(st.name)} и ${fn}</h1>${bridgeCard(v,4,f.name,"Ваш мост")}${storyBlock()}<div class="card"><h2>По ситуациям</h2>`;
-for(let k=0;k<N;k++){const s=sit(k),a=hit(s,st.s[k],f.g[k]),b=hit(s,f.s[k],st.g[k]);
+for(let k=0;k<GN();k++){const s=sit(k),a=hit(s,st.s[k],f.g[k]),b=hit(s,f.s[k],st.g[k]);
 h+=`<div class="res"><div class="s">${k+1}. ${s.q}</div>
 <div>Ты: ${esc(opt(s,st.s[k]))} <span class="tag ${a?"open":"fog"}">${fn}: ${L[lb(s,a)].toLowerCase()}</span></div>
 <div>${fn}: ${esc(opt(s,f.s[k]))} <span class="tag ${b?"open":"fog"}">ты: ${L[lb(s,b)].toLowerCase()}</span></div>${s.gift&&f.g[k]!==PASS?`<div class="tag p" style="align-self:flex-start">${fn} дарит тебе: ${esc(opt(s,f.g[k]))}</div>`:""}</div>`}
@@ -845,8 +868,8 @@ const artBottle=(x,y)=>`<g transform="rotate(-25 ${f1(x)} ${f1(y)})"><ellipse cx
 /* ponytail: размер острова — корень из числа семян (площадь ∝ саду), потолок ×2.2, чтобы карта не разъехалась */
 const isR=(z,b)=>Math.min(b+(b/9)*Math.sqrt((z[0]||0)+(z[1]||0)+(z[2]||0)),b*2.2);
 function artWorld(w,sel){const F=w.friends,n=F.length,slots=n+2,pos=[],me=[200,190,isR(w.me.island,46)];
-F.forEach((f,i)=>{const ring=i<8?0:1,k=ring?i-8:i,m=ring?n-8:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,60)*.9,t=f.island[0]+f.island[1]+f.island[2];
-const R=isR(f.island,28),D=me[2]+R+(ring?110:0)+150-108*Math.sqrt(Math.min(f.boards,60)/60);pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
+F.forEach((f,i)=>{const ring=i<8?0:1,k=ring?i-8:i,m=ring?n-8:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,20)*2.7,t=f.island[0]+f.island[1]+f.island[2];
+const R=isR(f.island,28),D=me[2]+R+(ring?110:0)+150-108*Math.sqrt(Math.min(f.boards,20)/20);pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
 const at=k=>-Math.PI/2+k/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,ai=at(Math.min(n,8)),inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)],bi=at(Math.min(n,8)+1),bot=[200+DI*Math.cos(bi),190+DI*.82*Math.sin(bi)];
 const all=[me,...pos,[...inv,30],[...bot,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
 const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
@@ -2035,7 +2058,13 @@ try{s==="map"?TG.BackButton.hide():TG.BackButton.show()}catch(e){}}
 /* бутылка: случайная чужая, не друга, ещё не выловленная мной */
 function catchBottle(){busy("Закидываю сеть…");API("/bottle").then(r=>{if(r.gid)return join(r.gid).then(go);
 card(`<h2>Море пока пустое</h2><p style="margin:0">Все бутылки уже выловлены. Брось свою — её выловит кто-нибудь, кого ты ещё не знаешь.</p><div class="row"><button class="main-btn" id="bt">Бросить свою</button><button class="n" id="mp">На карту</button></div>`);
-$("bt").onclick=()=>fresh("hero",{bottle:1});$("mp").onclick=world},()=>oops(catchBottle))}
+$("bt").onclick=()=>bottleNew();$("mp").onclick=world},()=>oops(catchBottle))}
+/* бутылка в море (25.11): незнакомцам — только лёгкие вопросы разминки; сколько, 3–9, решает сам игрок */
+function bottleNew(){card(`<span class="who">Бутылка в море</span><h2>Сколько вопросов положить?</h2>
+<p style="margin:0">Незнакомцам — только лёгкие вопросы, как в разминке. Меньше — быстрее ответят, больше — лучше узнают тебя.</p>
+<div class="duo" role="group" aria-label="Сколько вопросов" style="grid-template-columns:repeat(4,1fr)">${[3,4,5,6,7,8,9].map(n=>`<button class="n" data-bn="${n}" style="min-height:64px;padding:10px 4px;font:500 1.25rem var(--disp)">${n}</button>`).join("")}</div>
+<button class="g" id="bx" style="align-self:flex-start">Назад</button>`);
+app.querySelectorAll("[data-bn]").forEach(b=>b.onclick=()=>fresh("hero",{bottle:1,n:+b.dataset.bn}));$("bx").onclick=world}
 /* взаимная бутылка: мост, только если оба захотели (договорённость 07.11) */
 function wishBox(w,name,id){const n=esc(name);if(!w)return"";
 if(w.friends)return`<p style="margin:0"><b style="font-weight:500">Взаимная бутылка!</b> Ваши острова теперь рядом — загляни на карту.</p>`;
@@ -2049,8 +2078,10 @@ API("/bottle/"+gid+"/report","POST").then(()=>card(`<h2>Спасибо</h2><p st
 function invite(){busy("Готовлю приглашение…");API("/invite","POST").then(r=>{const msg="Проверим, насколько хорошо мы знаем друг друга 😉";
 card(`<span class="who">Приглашение</span><h2>Позови друга</h2>${linkBox("Когда друг откроет ссылку, его остров появится рядом с твоим, а бот пришлёт тебе сообщение. Тогда и сыграете. Ссылка подходит для многих: можно кинуть в общий чат.",r.link)}
 <button class="n" id="mp" style="align-self:flex-start">На карту</button>`);wireLink(msg,r.link);$("mp").onclick=world},()=>oops(invite))}
-const P10=()=>Array(N).fill(PASS),onlyStory=(o={})=>fresh("hero",{only:1,s:P10(),g:P10(),...o});
-const fresh=(mode,o={})=>{st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(),s:[],g:[],friend:null,started:1,mode,guessers:[],...o};save();go()};
+const P10=()=>Array(3).fill(PASS),onlyStory=(o={})=>fresh("hero",{only:1,s:P10(),g:P10(),...o});
+/* ступень лесенки: мост с этим другом < 3 досок — разминка; < 10 — +«Кто я»; < 20 — +сцена; дальше — «Кто я», сцена, «Личное» */
+const LADDER=b=>b<3?0:b<10?1:b<20?2:3,lvFor=(mode,o)=>o.bottle?9:o.to?LADDER(((W&&W.friends||[]).find(f=>f.id===o.to)||{}).boards||0):mode==="solo"?2:0;
+const fresh=(mode,o={})=>{const lv=o.lv!=null?o.lv:lvFor(mode,o),n=o.n||3;st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(lv,n),s:[],g:[],friend:null,started:1,mode,guessers:[],lv,n,...o};save();go()};
 const half=x=>String(Math.round(x*2)/2).replace(".",",");
 const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${half(b)} ${pl(Math.floor(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/[ыо]й$/,"ого")} ещё ${half(nx[0]-b)}.`:"")};
 /* ===== карта как карта: тащить, щипок, колесо, двойной тап, кнопки; остров — подлететь и открыть карточку ===== */
@@ -2100,7 +2131,7 @@ $("grab").onclick=()=>$("sh").classList.toggle("min");if(fs)$("fs").onclick=()=>
 const pn=$("pn"),btn=(id,t,main)=>`<button class="${main?"main-btn":"n"}" id="${id}">${t}</button>`,f=sel>0?W.friends[sel-1]:null;
 if(sel==="bottle"){pn.innerHTML=`<h2>Бутылка в море</h2><p style="margin:0">Незнакомцы бросают в море бутылки с ответами о себе. Выловишь — угадаешь, как поступает человек, которого ты никогда не видел.</p>
 <p class="note" style="margin:0">Мост строится, только если вы оба захотите. Поболтать можно в клубе <a href="https://t.me/joydao_club">@joydao_club</a>.</p><div class="row">${btn("bc","Выловить бутылку",1)}${btn("bt","Бросить свою")}</div>`;
-$("bc").onclick=catchBottle;$("bt").onclick=()=>fresh("hero",{bottle:1});return}
+$("bc").onclick=catchBottle;$("bt").onclick=()=>bottleNew();return}
 if(sel==="inv"){pn.innerHTML=`<h2>Позвать друга</h2><p style="margin:0">Telegram предложит выбрать, кому отправить приглашение. Друг откроет ссылку, его остров появится рядом с твоим, и вы сыграете.</p><p class="note" style="margin:0">Режим компании: сначала ты отвечаешь о себе, потом одна ссылка или QR-код на всех, и каждый угадывает тебя.</p><div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}</div>`;
 $("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();return}
 if(!f){pn.innerHTML=`<h2>Твой остров</h2>${moodRow()}
@@ -2141,7 +2172,7 @@ $("sy").onclick=()=>{const q=$("sq").value.trim(),a=$("sa").value.trim();if(!q||
 const o=[0,1,2].map(k=>$("so"+k).value.trim()).filter(Boolean);st.story={q,a,real,o,only:!!O};st.storyAsk=1;seeds.push({c:"Своя ситуация",q,r:a,z:-1,d:new Date().toISOString().slice(0,10),life:null,mine:real});saveSeeds();save();shareTG(M)};
 if(!O)$("sn").onclick=()=>{st.storyAsk=1;save();shareTG(M)}}
 function storyGuess(){const s=st.story,fn=esc(st.friend.name),v=s.real?"поступил":"поступил бы";
-card(`<div class="meta"><span>${st.only?"своя ситуация":`${N+1} из ${N+1} · своя ситуация`}</span></div><span class="who">Ситуация от: ${fn}</span><div class="q">${esc(s.q)}</div>
+card(`<div class="meta"><span>${st.only?"своя ситуация":`${GN()+1} из ${GN()+1} · своя ситуация`}</span></div><span class="who">Ситуация от: ${fn}</span><div class="q">${esc(s.q)}</div>
 <p class="note" style="margin:0">${s.real?"Это было на самом деле.":"Такого пока не было — это о том, как поступил бы."}</p>
 <div class="zone">Как, по-твоему, ${v} ${fn}?${s.c?"":" Своими словами"}</div>${s.c?`<div class="row" id="sc">${s.c.map((x,k)=>`<button class="n" data-c="${k}">${esc(x)}</button>`).join("")}</div><div class="zone">Или своими словами</div>`:""}<textarea id="sg" maxlength="250" rows="3" placeholder="Думаю, …"></textarea><div class="err" id="er"></div>
 <div class="row"><button class="main-btn" id="ok">Ответить</button><button class="g" id="ps">Проехали</button>${st.bottle?`<button class="g" id="rp">Пожаловаться</button>`:""}</div>`);wireReport(st.join);
@@ -2178,12 +2209,12 @@ function wireLink(msg,l=st.glink){$("snd").onclick=()=>sendTG(msg,l);$("qr").onc
 $("cp").onclick=()=>navigator.clipboard.writeText(l).then(()=>$("cpn").textContent="Ссылка скопирована.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил ссылку, скопируй вручную."})}
 /* хозяин: игра ложится на сервер один раз, дальше только ссылка; кто ответил — видно здесь */
 function shareTG(M){if(!st.gid&&!st.storyAsk)return storyWrite(M);busy("Готовлю ссылку…");
-(st.gid?Promise.resolve():API("/game","POST",{name:st.name,seed:st.seed,mode:M,s:st.s,g:M==="hero"?[]:st.g,to:st.to||null,story:st.story||null,bottle:!!st.bottle}).then(r=>{st.gid=r.id;st.glink=r.link;save()}))
+(st.gid?Promise.resolve():API("/game","POST",{name:st.name,seed:st.seed,mode:M,s:st.s,g:M==="hero"?[]:st.g,to:st.to||null,story:st.story||null,bottle:!!st.bottle,lv:st.lv==null?null:st.lv}).then(r=>{st.gid=r.id;st.glink=r.link;save()}))
 .then(()=>API("/game/"+st.gid)).then(v=>{const P=v.plays;
 if(st.to&&!P.length){card(`<span class="who">Отправлено</span><h2>Партия ушла: ${esc(st.toName)}</h2><p style="margin:0">Бот уже прислал сообщение. Когда ${esc(st.toName)} ответит, мост на карте подрастёт.</p><button class="n" id="rf" style="align-self:flex-start">Ответил? Проверить</button>`);$("rf").onclick=go;return tail(M)}
 if(st.to&&P.length===1&&M==="duo"){st.friend=fp(P[0],st.seed);save();return go()}
 if(M==="hero"){st.guessers=P.map(p=>({id:p.id,name:p.name,g:p.g,guess:p.guess,mark:p.mark,wish:p.wish}));save();heroShare();return tail(M)}
-card(`<span class="who">Готово</span><h2>Позови друга</h2><p style="margin:0">Друг откроет ссылку в Telegram, ответит на те же 10 карточек, и вы оба увидите мост.</p>
+card(`<span class="who">Готово</span><h2>Позови друга</h2><p style="margin:0">Друг откроет ссылку в Telegram, ответит на те же карточки, и вы оба увидите мост.</p>
 ${linkBox("Когда друг ответит, бот пришлёт тебе сообщение.")}
 <div class="zone">Уже ответили</div>${P.length?`<div class="row">${P.map((p,k)=>`<button class="t" data-k="${k}">${esc(p.name)}</button>`).join("")}</div>`:`<p class="note" style="margin:0">Пока никто.</p>`}
 <div class="row"><button class="n" id="rf">Обновить</button><button class="n" id="rs">Начать заново</button></div>`);
@@ -2195,9 +2226,9 @@ function sendPlay(){busy("Отправляю ответы…");API("/game/"+st.j
 const fp=(p,seed)=>({id:p.id,name:p.name,gn:p.gn,s:p.s,g:p.g,seed,guess:p.guess,mark:p.mark});
 async function join(sp,fid){const v=await API("/game/"+sp),md=v.mode==="hero"?"guess":"duo";
 if(v.mine){const p=fid&&v.mode==="duo"&&v.plays.find(p=>p.id===fid);st={name:v.name,seed:v.seed,s:v.s,g:v.mode==="hero"?v.s:v.g,mode:v.mode,started:1,planted:1,gid:v.id,glink:v.link,guessers:[],
-friend:p?fp(p,v.seed):null,story:v.story||null,only:v.story&&v.story.only?1:0,storyAsk:1,bottle:v.bottle};save();return}
-st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,s:v.s,g:v.g,seed:v.seed},story:v.story||null,only:v.story&&v.story.only?1:0,sg:v.my.guess||"",smark:v.my.mark,bottle:v.bottle,wish:v.my.wish}
-:{name:st.name||tgName||"Друг",seed:v.seed,...(v.story&&v.story.only?{s:P10(),g:P10(),only:1}:{s:[],g:[]}),mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,pending:1},story:v.story||null,bottle:v.bottle};save()}
+friend:p?fp(p,v.seed):null,story:v.story||null,only:v.story&&v.story.only?1:0,storyAsk:1,bottle:v.bottle,lv:v.lv,n:v.n};save();return}
+st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,s:v.s,g:v.g,seed:v.seed},story:v.story||null,only:v.story&&v.story.only?1:0,sg:v.my.guess||"",smark:v.my.mark,bottle:v.bottle,wish:v.my.wish,lv:v.lv,n:v.n}
+:{name:st.name||tgName||"Друг",seed:v.seed,lv:v.lv,n:v.n,...(v.story&&v.story.only?{s:Array(v.n||3).fill(PASS),g:Array(v.n||3).fill(PASS),only:1}:{s:[],g:[]}),mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,pending:1},story:v.story||null,bottle:v.bottle};save()}
 /* ---------- ярлык на рабочем столе (Telegram Bot API 8.0: addToHomeScreen) ----------
    Предлагаем сами на 3-й день, когда человек уже возвращается; «Не сейчас» — снова через 14 дней, всего не больше двух раз.
    Дальше — только кнопка в Настройках. Отметки — на этом устройстве (ярлык у каждого устройства свой), без синхронизации. */
@@ -2230,7 +2261,7 @@ if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.frien
 /* открыли по ссылке на партию — сразу в неё (даже если это текущая); иначе дом — карта,
 а недоигранная партия продолжается с того же места */
 if(sp){if(sp!==st.gid&&sp!==st.join)await join(sp)}
-else if(!(st.started&&st.g&&st.g.length>0&&st.g.length<N))return world()}catch(e){}
+else if(!(st.started&&st.g&&st.g.length>0&&st.g.length<GN()))return world()}catch(e){}
 go()}
 boot();
 </script>

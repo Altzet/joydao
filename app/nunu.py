@@ -29,7 +29,8 @@ from . import config
 
 log = logging.getLogger("nunu")
 DB = Path(__file__).parent.parent / "nunu.db"
-N, PASS = 10, 6  # 10 карточек; ответ 0–5, 6 = «Проехали» (как в static/nunu.html)
+N, PASS = 10, 6  # до 10 карточек; ответ 0–5, 6 = «Проехали» (как в static/nunu.html)
+MIN_N = 3  # короткие партии (25.11): с другом — 3, бутылка — 3–9
 router = APIRouter(prefix="/nunu/api")
 _tasks: set = set()  # фоновые уведомления (держим ссылку, чтобы задачу не собрал GC)
 
@@ -71,7 +72,8 @@ MIGRATE = ("ALTER TABLE games ADD COLUMN to_id INTEGER",  # партия кон�
            "ALTER TABLE plays ADD COLUMN mark INTEGER",   # автор отметил: 2 угадал, 1 почти, 0 нет
            "ALTER TABLE games ADD COLUMN bottle INTEGER",  # бутылка в море: угадывают незнакомцы
            "ALTER TABLE games ADD COLUMN reported INTEGER",  # жалоба: бутылка больше не ловится
-           "ALTER TABLE state ADD COLUMN rev INTEGER NOT NULL DEFAULT 0")  # версия состояния: устройства не затирают друг друга  # жалоба: бутылка больше не ловится
+           "ALTER TABLE games ADD COLUMN lv INTEGER",  # короткие партии (25.11): ступень лесенки, 9 — бутылка
+           "ALTER TABLE state ADD COLUMN rev INTEGER NOT NULL DEFAULT 0")  # версия состояния: устройства не затирают друг друга
 BOTTLE_CATCHES = 5  # ponytail: столько незнакомцев могут выловить одну бутылку; подстроить по данным
 STORY_BOARDS = {2: 1.0, 1: 0.5}  # своя ситуация: угадал — доска, почти — верёвочка
 
@@ -127,10 +129,11 @@ def _one(x) -> bool:
     return isinstance(x, int) and 0 <= x <= PASS
 
 
-def _answers(a: list, empty_ok: bool = False) -> str:
-    if (empty_ok and not a) or (len(a) == N and all(_one(x) for x in a)):
+def _answers(a: list, empty_ok: bool = False, n: int | None = None) -> str:
+    """Ответы партии: старые партии — 10, короткие (с 25.11) — 3–9; n — сколько должно быть (как у хозяина)."""
+    if (empty_ok and not a) or (MIN_N <= len(a) <= N and (n is None or len(a) == n) and all(_one(x) for x in a)):
         return json.dumps(a)
-    raise HTTPException(422, "Нужно 10 ответов")
+    raise HTTPException(422, "Неверное число ответов")
 
 
 def link(gid: str = "") -> str:
@@ -160,6 +163,7 @@ class GameIn(BaseModel):
     to: int | None = None  # tg id друга: партия с карты, ему сразу сообщение от бота
     story: Story | None = None  # своя ситуация: друг угадывает своими словами
     bottle: bool = False  # бутылка в море (только hero): ловят незнакомцы
+    lv: int | None = None  # ступень лесенки (0–3) или 9 — бутылка; None — старая партия из 10
 
 
 
@@ -223,7 +227,10 @@ async def new_game(body: GameIn, x_init_data: str | None = Header(default=None))
     u = _user(x_init_data)
     if body.mode not in ("duo", "hero") or not 0 <= body.seed < 2 * 36 ** 4 or (body.bottle and body.mode != "hero"):
         raise HTTPException(422, "Неизвестная игра")
-    s, g = _answers(body.s), _answers(body.g, empty_ok=body.mode == "hero")
+    if body.lv is not None and body.lv not in (0, 1, 2, 3, 9):
+        raise HTTPException(422, "Неизвестная ступень")
+    s = _answers(body.s)
+    g = _answers(body.g, empty_ok=body.mode == "hero", n=len(body.s))
     gid = secrets.token_hex(4)
     name = body.name.strip()[:30] or u.first_name
     story = None
@@ -235,8 +242,8 @@ async def new_game(body: GameIn, x_init_data: str | None = Header(default=None))
         story = json.dumps({"q": body.story.q.strip()[:400], "a": a, "real": body.story.real, "o": o,
                             "only": body.story.only}, ensure_ascii=False)
     with closing(_db()) as c, c:
-        c.execute("INSERT INTO games(id, owner, name, seed, mode, s, g, to_id, story, bottle) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                  (gid, u.id, name, body.seed, body.mode, s, g, body.to, story, 1 if body.bottle else None))
+        c.execute("INSERT INTO games(id, owner, name, seed, mode, s, g, to_id, story, bottle, lv) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                  (gid, u.id, name, body.seed, body.mode, s, g, body.to, story, 1 if body.bottle else None, body.lv))
         _seen(c, u)
         ga = _gn(c, u.id)
     if body.to:
@@ -254,7 +261,8 @@ def _view(c: sqlite3.Connection, gid: str, uid: int) -> dict:
                       (gid,)).fetchall()
     played = any(p["player"] == uid for p in plays)
     out = {"id": gid, "link": link(gid), "mode": r["mode"], "seed": r["seed"], "name": r["name"], "owner": r["owner"], "gn": _gn(c, r["owner"]),
-           "mine": mine, "played": played, "plays": [], "bottle": bool(r["bottle"])}
+           "mine": mine, "played": played, "plays": [], "bottle": bool(r["bottle"]),
+           "lv": r["lv"], "n": len(json.loads(r["s"]))}
     if mine or played:
         out |= {"s": json.loads(r["s"]), "g": json.loads(r["g"])}
     if r["story"]:  # как поступил автор — только тем, кто уже угадал
@@ -287,7 +295,7 @@ def get_game(gid: str, x_init_data: str | None = Header(default=None)):
 async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=None)):
     u = _user(x_init_data)
     with closing(_db()) as c:
-        r = c.execute("SELECT owner, mode, story, bottle FROM games WHERE id=?", (gid,)).fetchone()
+        r = c.execute("SELECT owner, mode, story, bottle, s FROM games WHERE id=?", (gid,)).fetchone()
         if not r:
             raise HTTPException(404, "Игра не найдена")
         if r["owner"] == u.id:
@@ -298,7 +306,8 @@ async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=
         name = body.name.strip()[:30] or u.first_name
         with c:
             c.execute("INSERT OR REPLACE INTO plays(game_id, player, name, s, g, guess, mark) VALUES(?,?,?,?,?,?,?)",
-                      (gid, u.id, name, _answers(body.s, empty_ok=r["mode"] == "hero"), _answers(body.g),
+                      (gid, u.id, name, _answers(body.s, empty_ok=r["mode"] == "hero", n=len(json.loads(r["s"]))),
+                       _answers(body.g, n=len(json.loads(r["s"]))),
                        guess or None, auto))
         view = _view(c, gid, u.id)
         _seen(c, u)

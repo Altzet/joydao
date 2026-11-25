@@ -431,3 +431,25 @@ def test_seed_pictures(tmp_path, monkeypatch):
     with closing(nunu._db()) as db, db:
         db.execute("UPDATE state SET data=? WHERE tg_id=1", (json.dumps({"nunu-seeds": [seeds[0] | {"life": {"same": 1}}]}),))
     assert nunu.pic_gc() == 1 and nunu.seed_pic(1, "p1abcd") is None
+
+
+def test_short_games(tmp_path, monkeypatch):
+    """Короткие партии (25.11): с другом 3 ответа, бутылка 3–9, старые по 10 работают; играющий отвечает столько же, сколько хозяин."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+
+    async def quiet(*a, **kw):
+        pass
+    monkeypatch.setattr(nunu, "_notify", quiet)
+    c = TestClient(pause.app)
+    a, b = init_data(1, "Антон"), init_data(2, "Боря")
+    g3 = c.post("/nunu/api/game", json={"name": "А", "seed": 5, "mode": "duo", "s": [0, 1, 0], "g": [1, 1, 0], "lv": 0}, headers=a).json()
+    v = c.get(f"/nunu/api/game/{g3['id']}", headers=b).json()
+    assert v["lv"] == 0 and v["n"] == 3
+    bad = {"name": "Б", "s": [0, 1], "g": [0, 1]}
+    assert c.post(f"/nunu/api/game/{g3['id']}/play", json=bad, headers=b).status_code == 422
+    assert c.post(f"/nunu/api/game/{g3['id']}/play", json={"name": "Б", "s": [0, 1, 1], "g": [0, 1, 0]}, headers=b).status_code == 200
+    assert c.post("/nunu/api/game", json={"name": "А", "seed": 6, "mode": "hero", "s": [0] * 9, "bottle": True, "lv": 9}, headers=a).status_code == 200
+    assert c.post("/nunu/api/game", json={"name": "А", "seed": 7, "mode": "duo", "s": [0, 1], "g": [0, 1], "lv": 0}, headers=a).status_code == 422
+    assert c.post("/nunu/api/game", json={"name": "А", "seed": 8, "mode": "duo", "s": [0] * 3, "g": [0] * 3, "lv": 5}, headers=a).status_code == 422
+    old = c.post("/nunu/api/game", json={"name": "А", "seed": 9, "mode": "duo", "s": [0] * 10, "g": [0] * 10}, headers=a).json()
+    assert c.get(f"/nunu/api/game/{old['id']}", headers=b).json()["lv"] is None
