@@ -845,6 +845,38 @@ def world(x_init_data: str | None = Header(default=None)):
                 "friends": sorted(fr.values(), key=lambda f: -f["boards"])}
 
 
+class ShareIn(BaseModel):
+    text: str
+    url: str
+
+
+@router.post("/share")
+async def share(body: ShareIn, x_init_data: str | None = Header(default=None)):
+    """«Отправить в Telegram» (Bot API 8.0 shareMessage): бот готовит сообщение со ссылкой, Telegram сам
+    открывает выбор чата — работает и на компьютере, где t.me/share/url из мини-приложения молчит (25.11).
+    Ссылка — только на наш бот (t.me/<бот>/…), чтобы через нас нельзя было рассылать чужие ссылки."""
+    u = _user(x_init_data)
+    if not body.url.startswith(f"https://t.me/{config.BOT_USERNAME}/") or len(body.url) > 300:
+        raise HTTPException(422, "Не та ссылка")
+    from aiogram import Bot
+    from aiogram.types import (InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle,
+                               InputTextMessageContent)
+    bot = Bot(token=config.BOT_TOKEN)
+    try:
+        m = await bot.save_prepared_inline_message(
+            user_id=u.id, allow_user_chats=True, allow_group_chats=True, allow_channel_chats=True,
+            result=InlineQueryResultArticle(
+                id=secrets.token_hex(8), title="«Ну-ну»", description=body.text[:120],
+                input_message_content=InputTextMessageContent(message_text=f"{body.text[:900]}\n{body.url}"),
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Открыть «Ну-ну»", url=body.url)]])))
+    except Exception as e:  # старый Telegram у бота/библиотеки — клиент откроет t.me/share как раньше
+        log.info("shareMessage: %s", e)
+        raise HTTPException(503, "Не получилось подготовить")
+    finally:
+        await bot.session.close()
+    return {"id": m.id}
+
+
 async def _notify(tg_id: int, text: str, url: str, html: bool = False) -> None:
     """Сообщение хозяину игры. Не написал боту /start — Telegram не пустит, это не ошибка игры."""
     from aiogram import Bot

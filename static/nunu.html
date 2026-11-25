@@ -2158,7 +2158,13 @@ function qrShow(l){const box=$("qrb");if(box.innerHTML){box.innerHTML="";return}
 const draw=()=>{const q=qrcode(0,"M");q.addData(l);q.make();box.innerHTML=`<div style="background:#fff;padding:8px;border-radius:12px;align-self:center;width:min(100%,280px)">${q.createSvgTag({cellSize:6,margin:3,scalable:true})}</div><p class="note" style="margin:0;text-align:center">Наведи камеру телефона — откроется игра в Telegram</p>`};
 if(window.qrcode)return draw();box.innerHTML=`<p class="note" style="margin:0">Рисую QR-код…</p>`;
 const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";s.onload=()=>{box.innerHTML="";draw()};s.onerror=()=>box.innerHTML=`<p class="err" style="margin:0">QR-код не загрузился. Проверь интернет.</p>`;document.head.appendChild(s)}
-function wireLink(msg,l=st.glink){$("snd").onclick=()=>TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(l)+"&text="+encodeURIComponent(msg));$("qr").onclick=()=>qrShow(l);
+/* «Отправить в Telegram» (25.11): сначала shareMessage (Bot API 8.0 — окно выбора чата везде, и на компьютере),
+   не вышло — старый t.me/share; совсем никак — подсказка скопировать ссылку */
+function sendTG(msg,l){const old=()=>{try{TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(l)+"&text="+encodeURIComponent(msg))}catch(e){}
+if($("cpn"))$("cpn").textContent="Если окно выбора чата не открылось — нажми «Скопировать» и вставь ссылку другу."};
+if(!(API&&TG&&TG.shareMessage&&TG.isVersionAtLeast&&TG.isVersionAtLeast("8.0")))return old();
+API("/share","POST",{text:msg,url:l}).then(r=>{try{TG.shareMessage(r.id)}catch(e){old()}},old)}
+function wireLink(msg,l=st.glink){$("snd").onclick=()=>sendTG(msg,l);$("qr").onclick=()=>qrShow(l);
 $("cp").onclick=()=>navigator.clipboard.writeText(l).then(()=>$("cpn").textContent="Ссылка скопирована.",()=>{getSelection().selectAllChildren($("cd"));$("cpn").textContent="Выделил ссылку, скопируй вручную."})}
 /* хозяин: игра ложится на сервер один раз, дальше только ссылка; кто ответил — видно здесь */
 function shareTG(M){if(!st.gid&&!st.storyAsk)return storyWrite(M);busy("Готовлю ссылку…");

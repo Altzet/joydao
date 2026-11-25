@@ -383,3 +383,21 @@ def test_gender_reaches_friend(tmp_path, monkeypatch):
                                        "to": 2}, headers=anton).json()
     assert "прислала" in quiet.sent[1]
     assert c.get(f"/nunu/api/game/{g['id']}", headers=evgen).json()["gn"] == "f"
+
+
+def test_share_prepared(tmp_path, monkeypatch):
+    """«Отправить в Telegram»: бот готовит сообщение только со ссылкой на наш бот."""
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    from aiogram import Bot
+
+    class M:
+        id = "pm1"
+
+    async def fake(self, **kw):
+        assert kw["result"].reply_markup.inline_keyboard[0][0].url.startswith("https://t.me/")
+        return M()
+    monkeypatch.setattr(Bot, "save_prepared_inline_message", fake)
+    c = TestClient(pause.app)
+    h = init_data(1, "Антон")
+    assert c.post("/nunu/api/share", json={"text": "Сыграй", "url": "https://evil.example/x"}, headers=h).status_code == 422
+    assert c.post("/nunu/api/share", json={"text": "Сыграй", "url": nunu.link("g1")}, headers=h).json() == {"id": "pm1"}
