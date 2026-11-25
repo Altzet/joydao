@@ -153,6 +153,16 @@ def headline(wx: dict, f: dict) -> str:
     return f"Завтра {'+' if t > 0 else ''}{t}{sep + tail if tail else ''} {e}"
 
 
+def wx_pic(wx: dict, f: dict, uid: int, pid: str):
+    """Картинка к погодному сообщению: своё фото игрока к делу, иначе по прогнозу (холст «Картинки бота»)."""
+    own = nunu.seed_pic(uid, pid)
+    if own:
+        return own
+    if warn(wx):
+        return "frost"
+    return "snow" if f.get("snow") else "rain" if f.get("wet") else "sun"
+
+
 def message(seed: dict, f: dict, day: date, last: list[str], rnd=random) -> tuple[str, str]:
     wx = seed["wx"]
     a = warn(wx)
@@ -219,18 +229,23 @@ def due(today: date, get=forecast) -> list[tuple[int, str, str]]:
                     continue  # то же окно: вчера уже писали про сегодня
                 text, line = message(s, f, tomorrow, last)
                 last = (last + [line])[-LAST:]
-                out.append((uid, text, s["pid"]))
+                out.append((uid, text, s["pid"], wx_pic(s["wx"], f, uid, s["pid"])))
             c.execute("INSERT INTO reminders VALUES(?, 'wxlast', ?) ON CONFLICT(tg_id, kind) DO UPDATE SET at=excluded.at",
                       (uid, json.dumps(last, ensure_ascii=False)))
     return out
 
 
-async def send(bot, uid: int, text: str, pid: str) -> None:
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+async def send(bot, uid: int, text: str, pid: str, pic="sun") -> None:
+    from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="Сделаю", callback_data=f"wx:y:{pid}"),
+        InlineKeyboardButton(text="Не сейчас", callback_data=f"wx:n:{pid}")]])
+    f = pic if isinstance(pic, nunu.Path) else nunu.PICS / f"{pic}.png"
     try:
-        await bot.send_message(uid, text, reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="Сделаю", callback_data=f"wx:y:{pid}"),
-            InlineKeyboardButton(text="Не сейчас", callback_data=f"wx:n:{pid}")]]))
+        if f.exists() and len(text) <= 1024:
+            await bot.send_photo(uid, FSInputFile(f), caption=text, reply_markup=kb)
+        else:
+            await bot.send_message(uid, text, reply_markup=kb)
     except Exception as e:
         log.info("Не отправил погоду %s: %s", uid, e)
 
@@ -249,8 +264,8 @@ async def loop(bot) -> None:
             target += timedelta(days=1)
         await asyncio.sleep((target - now).total_seconds())
         try:
-            for uid, text, pid in await asyncio.to_thread(due, datetime.now(timezone.utc).date()):
-                await send(bot, uid, text, pid)
+            for uid, text, pid, pic in await asyncio.to_thread(due, datetime.now(timezone.utc).date()):
+                await send(bot, uid, text, pid, pic)
                 await asyncio.sleep(0.05)
         except Exception as e:
             log.warning("Погода: %s", e)

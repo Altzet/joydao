@@ -209,5 +209,5 @@ def reply(oid: int, body: ReplyIn, x_init_data: str | None = Header(default=None
     who = f'<a href="tg://user?id={u.id}">{html.escape(u.first_name)}</a>' + (f" (@{u.username})" if u.username else "")
     note = f"\n«{html.escape(body.text.strip())}»" if body.text.strip() else ""
     nunu._bg(nunu._notify(o["owner"], f"🌱 {who} откликается на твоё «{html.escape(o['title'])}»{note}\n\n"
-                                      "Напиши в ответ — договоритесь напрямую.", nunu.link("obmen"), html=True))
+                                      "Напиши в ответ — договоритесь напрямую.", nunu.link("obmen"), html=True, pic="exchange"))
     return {"ok": True}

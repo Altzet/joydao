@@ -18,7 +18,7 @@ def test_visit(tmp_path, monkeypatch):
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
     sent = []
 
-    def note(uid, text, url):  # пишем сразу, сама отправка не нужна
+    def note(uid, text, url, **kw):  # пишем сразу, сама отправка не нужна
         sent.append((uid, text))
         return __import__("asyncio").sleep(0)
     monkeypatch.setattr(nunu, "_notify", note)

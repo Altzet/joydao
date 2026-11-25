@@ -15,7 +15,7 @@ def test_reports(tmp_path, monkeypatch):
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
     sent = []
 
-    async def note(uid, text, url):
+    async def note(uid, text, url, **kw):
         sent.append((uid, text))
     monkeypatch.setattr(nunu, "_notify", note)
     bg = []

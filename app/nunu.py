@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import hashlib
 import json
 import logging
@@ -239,7 +240,7 @@ async def new_game(body: GameIn, x_init_data: str | None = Header(default=None))
         _seen(c, u)
         ga = _gn(c, u.id)
     if body.to:
-        _bg(_notify(body.to, f"{name} {gw(ga, 'прислал', 'прислала', 'шлёт')} тебе партию в «Ну-ну». Твой ход 🏝", link(gid)))
+        _bg(_notify(body.to, f"{name} {gw(ga, 'прислал', 'прислала', 'шлёт')} тебе партию в «Ну-ну». Твой ход 🏝", link(gid), pic="party"))
     return {"id": gid, "link": link(gid)}
 
 
@@ -312,7 +313,7 @@ async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=
             else f"{name} {V('ответил', 'ответила', 'отвечает')} в «Ну-ну» и {V('угадывал', 'угадывала', 'угадывает')} твою ситуацию. "
                  f"Отметь, {V('угадал ли', 'угадала ли', 'угадано ли')} ✍️" if guess
             else f"{name} {V('ответил', 'ответила', 'отвечает')} в «Ну-ну». Посмотри ваш мост 🌉")
-    _bg(_notify(r["owner"], text, link(gid)))
+    _bg(_notify(r["owner"], text, link(gid), pic="bottle" if r["bottle"] else "party"))
     return view
 
 
@@ -334,7 +335,7 @@ async def mark(gid: str, body: MarkIn, x_init_data: str | None = Header(default=
         m_, f_, n_ = [("не совсем угадал", "не совсем угадала", "не совсем угадано"), ("почти угадал", "почти угадала", "почти угадано"),
                       ("угадал", "угадала", "угадано")][body.mark]
         word = gw(gp, "ты " + m_, "ты " + f_, n_)
-        _bg(_notify(body.player, f"{u.first_name} {gw(ga, 'отметил', 'отметила', 'отмечает')} твою догадку: {word} 🌉", link(gid)))
+        _bg(_notify(body.player, f"{u.first_name} {gw(ga, 'отметил', 'отметила', 'отмечает')} твою догадку: {word} 🌉", link(gid), pic="guess"))
     return {"ok": bool(n)}
 
 
@@ -440,7 +441,7 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
         gf = _gn(c, fid)
     at = f" — на твоём участке у «{here.get('n', '')}»" if here else ""
     _bg(_notify(fid, f"{u.first_name} зовёт тебя на общее дело 🤝{at}\n\n{text}\n\nОно уже в твоём саду. "
-                     f"Когда сделаете, отметьте «{gw(gf, 'Так и сделал', 'Так и сделала', 'Получилось')}» — ваш мост получит +3 доски", link()))
+                     f"Когда сделаете, отметьте «{gw(gf, 'Так и сделал', 'Так и сделала', 'Получилось')}» — ваш мост получит +3 доски", link(), pic="joint"))
     return {"ok": True}
 
 
@@ -486,7 +487,7 @@ async def accept(iid: str, x_init_data: str | None = Header(default=None)):
         gr, ga = _gn(c, r["owner"]), _gn(c, u.id)
     if new:
         _bg(_notify(r["owner"], f"{u.first_name} {gw(ga, 'пришёл на твою карту', 'пришла на твою карту', 'теперь на твоей карте')} в «Ну-ну». Между вами канатный мост — "
-                                "начните партию 🏝", f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"))
+                                "начните партию 🏝", f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}", pic="friend"))
     return {"friend": {"id": r["owner"], "name": n["name"] if n else "Друг", "gn": gr}}
 
 
@@ -514,7 +515,7 @@ async def meet(fid: int, body: MeetIn, x_init_data: str | None = Header(default=
         for me, other in ((a, b), (b, a)):
             n = names.get(other, "Друг")
             _bg(_notify(me, f"{u.first_name} зовёт вас друг к другу в «Ну-ну»: ты и {n}. Открой приглашение — "
-                            f"когда {n} тоже откроет, между вашими островами появится канатный мост 🏝", link(mid)))
+                            f"когда {n} тоже откроет, между вашими островами появится канатный мост 🏝", link(mid), pic="meet"))
     return {"ok": True}
 
 
@@ -536,7 +537,7 @@ async def meet_accept(mid: str, x_init_data: str | None = Header(default=None)):
         go, ga = _gn(c, other), _gn(c, u.id)
     if new:
         _bg(_notify(other, f"{u.first_name} {gw(ga, 'тоже открыл', 'тоже открыла', 'тоже открывает')} приглашение. Между вашими островами канатный мост — "
-                           "начните партию 🏝", link()))
+                           "начните партию 🏝", link(), pic="friend"))
     return {"friend": {"id": other, "name": n["name"] if n else "Друг", "gn": go}, "bridge": both}
 
 
@@ -593,10 +594,10 @@ async def wish(gid: str, body: WishIn, x_init_data: str | None = Header(default=
         _seen(c, u)
     if w["friends"]:
         _bg(_notify(body.other, f"Взаимная бутылка 🍾 {u.first_name} тоже захотел мост. Ваши острова теперь рядом",
-                    f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"))
+                    f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}", pic="bottle"))
     else:
         _bg(_notify(body.other, f"{u.first_name} хочет построить с тобой мост 🍾 Захочешь тоже — острова окажутся рядом",
-                    link(gid)))
+                    link(gid), pic="bottle"))
     return w
 
 
@@ -619,7 +620,7 @@ async def report(gid: str, x_init_data: str | None = Header(default=None)):
     if config.ADMIN_CHAT_ID:
         story = json.loads(r["story"])["q"] if r["story"] else "—"
         _bg(_notify(int(config.ADMIN_CHAT_ID), f"Жалоба на бутылку {gid} от {u.id}. Автор: {r['name']} ({r['owner']}).\n"
-                                               f"Ситуация: {story}", link(gid)))
+                                               f"Ситуация: {story}", link(gid), pic=None))
     return {"ok": True}
 
 
@@ -845,6 +846,61 @@ def world(x_init_data: str | None = Header(default=None)):
                 "friends": sorted(fr.values(), key=lambda f: -f["boards"])}
 
 
+class PicIn(BaseModel):
+    data: str  # JPEG в base64 (телефон уже сжал до ~1000 px)
+
+
+@router.put("/seedpic/{pid}")
+def seedpic_put(pid: str, body: PicIn, x_init_data: str | None = Header(default=None)):
+    """Своё фото к делу: бот пришлёт его в напоминании вместо картинки по умолчанию.
+    Видят только хозяин и друг в общем деле; удаляется через месяц после «Так и сделал» (pic_gc)."""
+    u = _user(x_init_data)
+    if not PID_RE.fullmatch(pid):
+        raise HTTPException(422, "Неверное семя")
+    with closing(_db()) as c:
+        _muted(c, u.id)
+    try:
+        raw = base64.b64decode(body.data.split(",")[-1], validate=True)
+    except ValueError:
+        raise HTTPException(422, "Не картинка")
+    if not raw.startswith(b"\xff\xd8") or len(raw) > 800_000:
+        raise HTTPException(422, "Нужна фотография JPEG до 800 КБ")
+    d = _media(u.id)
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{pid}.jpg").write_bytes(raw)
+    return {"ok": True}
+
+
+@router.delete("/seedpic/{pid}")
+def seedpic_del(pid: str, x_init_data: str | None = Header(default=None)):
+    u = _user(x_init_data)
+    f = seed_pic(u.id, pid)
+    if f:
+        f.unlink()
+    return {"ok": True}
+
+
+def pic_gc(days: int = 30) -> int:
+    """Убрать фото, чьё дело уже отмечено (или удалено), если фото старше месяца. Возвращает, сколько удалено."""
+    root, n, old = Path(DB).parent / "media", 0, datetime.now().timestamp() - days * 86400
+    if not root.exists():
+        return 0
+    with closing(_db()) as c:
+        for d in root.iterdir():
+            if not d.name.isdigit():
+                continue
+            r = c.execute("SELECT data FROM state WHERE tg_id=?", (int(d.name),)).fetchone()
+            try:
+                wait = {str(x.get("pid")) for x in json.loads(r["data"]).get("nunu-seeds") or [] if isinstance(x, dict) and not x.get("life")} if r else set()
+            except ValueError:
+                wait = set()
+            for f in d.glob("*.jpg"):
+                if f.stem not in wait and f.stat().st_mtime < old:
+                    f.unlink()
+                    n += 1
+    return n
+
+
 class ShareIn(BaseModel):
     text: str
     url: str
@@ -877,14 +933,49 @@ async def share(body: ShareIn, x_init_data: str | None = Header(default=None)):
     return {"id": m.id}
 
 
-async def _notify(tg_id: int, text: str, url: str, html: bool = False) -> None:
-    """Сообщение хозяину игры. Не написал боту /start — Telegram не пустит, это не ошибка игры."""
+# ---------- картинки к сообщениям бота (25.11) ----------
+# Свои — у каждого вида сообщения (static/img/bot/<вид>.png, холст «Картинки бота»); своё фото игрока — у его дела.
+PICS = Path(__file__).resolve().parent.parent / "static" / "img" / "bot"
+_pic_ids: dict[str, str] = {}  # картинка уже в Telegram — дальше шлём по file_id, без повторной загрузки
+PID_RE = re.compile(r"[A-Za-z0-9_-]{4,16}")
+
+
+def _media(uid: int) -> Path:
+    return Path(DB).parent / "media" / str(int(uid))
+
+
+def seed_pic(uid: int, pid) -> Path | None:
+    """Фото игрока к делу (pid — id семени), если он его добавил."""
+    if not pid or not PID_RE.fullmatch(str(pid)):
+        return None
+    f = _media(uid) / f"{pid}.jpg"
+    return f if f.exists() else None
+
+
+class Rem(tuple):
+    """(uid, text) как раньше, плюс .pic — какая картинка к напоминанию."""
+    def __new__(cls, uid: int, text: str, pic):
+        t = super().__new__(cls, (uid, text))
+        t.pic = pic
+        return t
+
+
+async def _notify(tg_id: int, text: str, url: str, html: bool = False, pic: "str | Path | None" = "note") -> None:
+    """Сообщение игроку от бота, с картинкой: pic — вид (имя файла в static/img/bot), путь к фото игрока или None.
+    Не написал боту /start — Telegram не пустит, это не ошибка игры."""
     from aiogram import Bot
-    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+    from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
     bot = Bot(token=config.BOT_TOKEN)
+    kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Открыть «Ну-ну»", url=url)]])
+    f = pic if isinstance(pic, Path) else PICS / f"{pic}.png" if pic else None
     try:
-        await bot.send_message(tg_id, text, parse_mode="HTML" if html else None, reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton(text="Открыть «Ну-ну»", url=url)]]))
+        if f and f.exists() and len(text) <= 1024:  # подпись к фото — до 1024 знаков
+            m = await bot.send_photo(tg_id, _pic_ids.get(str(f)) or FSInputFile(f), caption=text,
+                                     parse_mode="HTML" if html else None, reply_markup=kb)
+            if isinstance(pic, str) and m.photo:
+                _pic_ids[str(f)] = m.photo[-1].file_id
+        else:
+            await bot.send_message(tg_id, text, parse_mode="HTML" if html else None, reply_markup=kb)
     except Exception as e:
         log.info("Не отправил уведомление %s: %s", tg_id, e)
     finally:
@@ -928,8 +1019,9 @@ def reminders_due(today: date, now: datetime | None = None, daily: bool = True, 
                     continue
                 kind = "due:" + str(s.get("pid") or s.get("r", ""))[:60]
                 if c.execute("INSERT OR IGNORE INTO reminders VALUES(?,?,?)", (uid, kind, iso)).rowcount:
-                    out.append((uid, f"{'Пора: твоё дело ⏰' if w else 'Сегодня твоё дело 📅'}\n\n{s.get('r', '')}\n\n"
-                                     f"Когда сделаешь, отметь в саду «{gw((d.get('nunu-prefs') or {}).get('gn') or '', 'Так и сделал', 'Так и сделала', 'Получилось')}»."))
+                    own = seed_pic(uid, s.get("pid")) or (s.get("by") and seed_pic(s["by"], s.get("pid")))  # общее дело — фото автора
+                    out.append(Rem(uid, f"{'Пора: твоё дело ⏰' if w else 'Сегодня твоё дело 📅'}\n\n{s.get('r', '')}\n\n"
+                                     f"Когда сделаешь, отметь в саду «{gw((d.get('nunu-prefs') or {}).get('gn') or '', 'Так и сделал', 'Так и сделала', 'Получилось')}».", own or "deed"))
             if not daily:
                 continue
             last = c.execute("SELECT at FROM reminders WHERE tg_id=? AND kind='garden'", (uid,)).fetchone()
@@ -945,7 +1037,7 @@ def reminders_due(today: date, now: datetime | None = None, daily: bool = True, 
                 continue
             c.execute("INSERT INTO reminders VALUES(?, 'garden', ?) ON CONFLICT(tg_id, kind) DO UPDATE SET at=excluded.at",
                       (uid, iso))
-            out.append((uid, text))
+            out.append(Rem(uid, text, "garden"))
     return out
 
 
@@ -961,9 +1053,11 @@ async def remind_loop() -> None:
             cfg = admin_more.get("remind")  # время и частота — из админки («Напоминания»), час — по Киеву
             # ponytail: час до 2–3 ночи по Киеву попадает на прошлые сутки UTC — утренние напоминания так рано не нужны
             hour_utc = (cfg["hour"] - int(now.astimezone(ZoneInfo("Europe/Kyiv")).utcoffset().total_seconds() // 3600)) % 24
-            for uid, text in (reminders_due(now.date(), now.replace(tzinfo=None), daily=now.hour >= hour_utc,
-                                            garden_every=cfg["garden_every"]) if cfg["on"] else []):
-                await _notify(uid, text, link())
+            for r in (reminders_due(now.date(), now.replace(tzinfo=None), daily=now.hour >= hour_utc,
+                                    garden_every=cfg["garden_every"]) if cfg["on"] else []):
+                await _notify(r[0], r[1], link(), pic=getattr(r, "pic", "deed"))
+            if now.hour == 1 and now.minute == 0:
+                await asyncio.to_thread(pic_gc)
                 await asyncio.sleep(0.05)
         except Exception as e:
             log.warning("Напоминания: %s", e)
@@ -1020,7 +1114,7 @@ async def visit(fid: int, x_init_data: str | None = Header(default=None)):
         _seen(c, u)
         out = {"name": r["name"] if r else None, "plot": plot, "comments": _comments(c, fid)}
     if fresh and not prefs.get("visitOff"):  # не чаще раза в 12 ч от одного друга; хозяин может выключить
-        _bg(_notify(fid, f"👋 {u.first_name} заглянул к тебе на участок", link()))
+        _bg(_notify(fid, f"👋 {u.first_name} заглянул к тебе на участок", link(), pic="visit"))
     return out
 
 
@@ -1060,7 +1154,7 @@ async def comment(fid: int, body: CommentIn, x_init_data: str | None = Header(de
         prefs = _owner_state(c, fid).get("nunu-prefs") or {}
         out = _comments(c, fid)
     if not prefs.get("commOff"):
-        _bg(_notify(fid, f"💬 {u.first_name} у «{str(o.get('n', ''))[:40]}»: {text}", link()))
+        _bg(_notify(fid, f"💬 {u.first_name} у «{str(o.get('n', ''))[:40]}»: {text}", link(), pic="visit"))
     return out
 
 

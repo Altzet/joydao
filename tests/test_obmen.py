@@ -13,7 +13,7 @@ def test_obmen(tmp_path, monkeypatch):
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
     sent = []
 
-    async def note(uid, text, url, html=False):
+    async def note(uid, text, url, **kw):
         sent.append((uid, text))
     monkeypatch.setattr(nunu, "_notify", note)
     monkeypatch.setattr(nunu, "_bg", lambda coro: coro.close() or sent.append("bg"))

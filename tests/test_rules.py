@@ -14,7 +14,7 @@ def test_rules(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "NUNU_ADMIN_KEY", "k" * 24)
     sent = []
 
-    async def note(uid, text, url):
+    async def note(uid, text, url, **kw):
         sent.append(uid)
     monkeypatch.setattr(nunu, "_notify", note)
     monkeypatch.setattr(rules.asyncio, "sleep", lambda s: __import__("asyncio").sleep(0))

@@ -43,10 +43,10 @@ def test_one_message_per_window(tmp_path, monkeypatch):
     put(2, [SEED], {"remind": False})  # напоминания выключены
     days = {date(2026, 11, 18): GOOD, date(2026, 11, 19): GOOD, date(2026, 11, 20): BAD, date(2026, 11, 21): GOOD}
     sent = {d: nunu_wx.due(d, get=lambda ll, f=f: f) for d, f in days.items()}
-    assert [u for u, _, _ in sent[date(2026, 11, 18)]] == [1]
+    assert [u for u, _, _, _ in sent[date(2026, 11, 18)]] == [1]
     assert sent[date(2026, 11, 19)] == []  # то же окно: завтра снова хорошо — второй раз не пишем
     assert sent[date(2026, 11, 20)] == []  # не подходит
-    assert [p for _, _, p in sent[date(2026, 11, 21)]] == ["p1"]  # новое окно — новое сообщение
+    assert [p for _, _, p, _ in sent[date(2026, 11, 21)]] == ["p1"]  # новое окно — новое сообщение
     assert nunu_wx.answer("wx:n:p1") in nunu_wx.NO and nunu_wx.answer("wx:y:p1") in nunu_wx.YES
 
 
@@ -57,7 +57,7 @@ def test_goal_weather(tmp_path, monkeypatch):
             {"id": "g1", "t": "Построить печь", "wx": SEED["wx"] | {"what": "Построить печь"}},
             {"id": "g2", "t": "Старая", "done": "2026-11-01", "wx": SEED["wx"]}]}),))
     out = nunu_wx.due(date(2026, 11, 18), get=lambda ll: GOOD)
-    assert [(u, p) for u, _, p in out] == [(3, "g1")] and "«Построить печь»" in out[0][1]
+    assert [(u, p) for u, _, p, _pic in out] == [(3, "g1")] and out[0][3] == "sun" and "«Построить печь»" in out[0][1]
 
 
 def test_alert_boiler(tmp_path, monkeypatch):

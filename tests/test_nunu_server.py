@@ -23,7 +23,7 @@ def init_data(uid, name):
 def test_game_by_link(tmp_path, monkeypatch):
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         quiet.sent = a
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
@@ -53,7 +53,7 @@ def test_world_map(tmp_path, monkeypatch):
     """Карта: партия другу с карты → у него «твой ход», после ответа мост копится по аккаунтам."""
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         quiet.sent = a
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
@@ -92,7 +92,7 @@ def test_invite_first(tmp_path, monkeypatch):
     """Позвать: друг сначала приходит на карту (мост без досок), позвавшему — сообщение."""
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         quiet.sent = a
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
@@ -110,7 +110,7 @@ def test_own_story(tmp_path, monkeypatch):
     отметка «угадал» — доска мосту, отметить можно один раз."""
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         quiet.sent = a
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
@@ -138,7 +138,7 @@ def test_bottle(tmp_path, monkeypatch):
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
     sent = []
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         sent.append(a)
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, olya, boris = TestClient(pause.app), init_data(1, "Антон"), init_data(5, "Оля"), init_data(6, "Боря")
@@ -166,7 +166,7 @@ def test_story_only_with_options(tmp_path, monkeypatch):
     """Только своя ситуация с вариантами: верный не виден до ответа, выбор варианта отмечается сам."""
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         quiet.sent = a
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, evgen, boris = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген"), init_data(3, "Боря")
@@ -191,7 +191,7 @@ def test_joint_deed(tmp_path, monkeypatch):
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
     sent = []
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         sent.append(a)
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, evgen, boris = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген"), init_data(3, "Боря")
@@ -234,7 +234,7 @@ def test_meet_friends(tmp_path, monkeypatch):
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
     sent = []
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         sent.append(a)
     monkeypatch.setattr(nunu, "_notify", quiet)
     c = TestClient(pause.app)
@@ -344,7 +344,7 @@ def test_mood_aura_private_by_default(tmp_path, monkeypatch):
     from datetime import datetime, timedelta, timezone
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         pass
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, evgen = TestClient(pause.app), init_data(1, "Антон"), init_data(2, "Евген")
@@ -374,7 +374,7 @@ def test_gender_reaches_friend(tmp_path, monkeypatch):
     """Выбор «Как к тебе обращаться» виден другу и меняет слова в сообщении бота."""
     monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
 
-    async def quiet(*a):
+    async def quiet(*a, **kw):
         quiet.sent = a
     monkeypatch.setattr(nunu, "_notify", quiet)
     c, anton, evgen = TestClient(pause.app), init_data(1, "Аня"), init_data(2, "Евген")
@@ -401,3 +401,33 @@ def test_share_prepared(tmp_path, monkeypatch):
     h = init_data(1, "Антон")
     assert c.post("/nunu/api/share", json={"text": "Сыграй", "url": "https://evil.example/x"}, headers=h).status_code == 422
     assert c.post("/nunu/api/share", json={"text": "Сыграй", "url": nunu.link("g1")}, headers=h).json() == {"id": "pm1"}
+
+
+def test_seed_pictures(tmp_path, monkeypatch):
+    """Картинки бота: своё фото к делу (JPEG), напоминание берёт его, без фото — картинка по умолчанию; уборка через месяц."""
+    import base64
+    import os as _os
+    from contextlib import closing
+    from datetime import date
+    monkeypatch.setattr(nunu, "DB", tmp_path / "n.db")
+    c = TestClient(pause.app)
+    h = init_data(1, "Антон")
+    jpg = "data:image/jpeg;base64," + base64.b64encode(b"\xff\xd8\xff\xe0" + b"0" * 100).decode()
+    assert c.put("/nunu/api/seedpic/a.b-c", json={"data": jpg}, headers=h).status_code == 422
+    assert c.put("/nunu/api/seedpic/p1abcd", json={"data": base64.b64encode(b"GIF89a").decode()}, headers=h).status_code == 422
+    assert c.put("/nunu/api/seedpic/p1abcd", json={"data": jpg}, headers=h).json() == {"ok": True}
+    assert nunu.seed_pic(1, "p1abcd") and nunu.seed_pic(1, "nope") is None
+    with closing(nunu._db()) as db, db:
+        seeds = [{"r": "с фото", "d": "2026-11-01", "due": "2026-11-11", "pid": "p1abcd", "life": None},
+                 {"r": "без фото", "d": "2026-11-01", "due": "2026-11-11", "pid": "p2abcd", "life": None}]
+        db.execute("INSERT INTO state(tg_id,data) VALUES(1,?)", (json.dumps({"nunu-seeds": seeds}),))
+    r = {x[1].split("\n\n")[1]: x.pic for x in nunu.reminders_due(date(2026, 11, 11)) if "дело" in x[1]}
+    assert str(r["с фото"]).endswith("p1abcd.jpg") and r["без фото"] == "deed"
+    assert all((nunu.PICS / f"{k}.png").exists() for k in ("deed", "garden", "party", "guess", "joint", "friend", "meet",
+                                                          "bottle", "visit", "exchange", "mood", "note", "sun", "rain", "snow", "frost"))
+    f = nunu.seed_pic(1, "p1abcd")
+    _os.utime(f, (0, 0))
+    assert nunu.pic_gc() == 0  # дело ещё ждёт — фото живёт
+    with closing(nunu._db()) as db, db:
+        db.execute("UPDATE state SET data=? WHERE tg_id=1", (json.dumps({"nunu-seeds": [seeds[0] | {"life": {"same": 1}}]}),))
+    assert nunu.pic_gc() == 1 and nunu.seed_pic(1, "p1abcd") is None

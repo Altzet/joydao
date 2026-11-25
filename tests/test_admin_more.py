@@ -17,7 +17,7 @@ def test_admin_more(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "NUNU_ADMIN_KEY", "k" * 20)
     sent = []
 
-    async def note(uid, text, url, html=False):
+    async def note(uid, text, url, **kw):
         sent.append(uid)
     monkeypatch.setattr(nunu, "_notify", note)
     c = TestClient(pause.app)

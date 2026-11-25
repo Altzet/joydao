@@ -125,7 +125,7 @@ async def _apply(uid: int, old: int, new: int, pct: float) -> None:
         with closing(nunu._db()) as c:
             r = c.execute("SELECT name FROM users WHERE tg_id=?", (uid,)).fetchone()
         await nunu._notify(int(config.ADMIN_CHAT_ID), f"⚑ Жалобы: {r['name'] if r else uid} ({uid}) — ступень {old} → {new}, "
-                           f"доля {pct}%: {LEVEL[new]}." + (f" Убрать вручную: {', '.join(left)}." if left else ""), nunu.link())
+                           f"доля {pct}%: {LEVEL[new]}." + (f" Убрать вручную: {', '.join(left)}." if left else ""), nunu.link(), pic=None)
 
 
 class RepIn(BaseModel):

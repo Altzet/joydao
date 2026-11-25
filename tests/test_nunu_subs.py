@@ -50,7 +50,7 @@ def test_flow(tmp_path, monkeypatch):
     nunu_admin._cache.pop("cfg", None)
     notes = []
 
-    async def note(uid, text, url):
+    async def note(uid, text, url, **kw):
         notes.append(text)
     monkeypatch.setattr(nunu, "_notify", note)
     monkeypatch.setattr(nunu, "_bg", lambda coro: coro.close())
