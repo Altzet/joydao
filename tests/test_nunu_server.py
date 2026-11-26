@@ -41,6 +41,7 @@ def test_game_by_link(tmp_path, monkeypatch):
     v = c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Евген", "s": [2] * 10, "g": [0] * 10},
                headers=evgen).json()
     assert v["s"] == [0] * 10 and quiet.sent[0] == 1  # Евген видит Антона, Антону ушло сообщение
+    assert quiet.sent[2].endswith(f"startapp={g['id']}_2")  # ссылка сразу на мост с Евгеном
     own = c.get(f"/nunu/api/game/{g['id']}", headers=anton).json()
     assert own["plays"] == [{"id": 2, "name": "Евген", "s": [2] * 10, "g": [0] * 10, "guess": None, "mark": None, "gn": ""}]
     assert c.post(f"/nunu/api/game/{g['id']}/play", json={"name": "Я", "s": [0] * 10, "g": [0] * 10},

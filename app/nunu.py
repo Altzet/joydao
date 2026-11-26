@@ -322,7 +322,7 @@ async def play(gid: str, body: PlayIn, x_init_data: str | None = Header(default=
             else f"{name} {V('ответил', 'ответила', 'отвечает')} в «Ну-ну» и {V('угадывал', 'угадывала', 'угадывает')} твою ситуацию. "
                  f"Отметь, {V('угадал ли', 'угадала ли', 'угадано ли')} ✍️" if guess
             else f"{name} {V('ответил', 'ответила', 'отвечает')} в «Ну-ну». Посмотри ваш мост 🌉")
-    _bg(_notify(r["owner"], text, link(gid), pic="bottle" if r["bottle"] else "party"))
+    _bg(_notify(r["owner"], text, link(f"{gid}_{u.id}"), pic="bottle" if r["bottle"] else "party"))  # сразу мост с ответившим
     return view
 
 

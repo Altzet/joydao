@@ -2227,7 +2227,7 @@ function sendPlay(){busy("Отправляю ответы…");API("/game/"+st.j
 .then(v=>{st.friend={id:v.owner,name:v.name,gn:v.gn,s:v.s,g:v.g,seed:v.seed};st.story=v.story||null;st.smark=v.my?v.my.mark:null;st.wish=v.my&&v.my.wish;save();go()},()=>oops(sendPlay))}
 const fp=(p,seed)=>({id:p.id,name:p.name,gn:p.gn,s:p.s,g:p.g,seed,guess:p.guess,mark:p.mark});
 async function join(sp,fid){const v=await API("/game/"+sp),md=v.mode==="hero"?"guess":"duo";
-if(v.mine){const p=fid&&v.mode==="duo"&&v.plays.find(p=>p.id===fid);st={name:v.name,seed:v.seed,s:v.s,g:v.mode==="hero"?v.s:v.g,mode:v.mode,started:1,planted:1,gid:v.id,glink:v.link,guessers:[],
+if(v.mine){const p=v.mode==="duo"&&(fid?v.plays.find(p=>p.id===fid):v.plays[v.plays.length-1]);st={name:v.name,seed:v.seed,s:v.s,g:v.mode==="hero"?v.s:v.g,mode:v.mode,started:1,planted:1,gid:v.id,glink:v.link,guessers:[],
 friend:p?fp(p,v.seed):null,story:v.story||null,only:v.story&&v.story.only?1:0,storyAsk:1,bottle:v.bottle,lv:v.lv,n:v.n};save();return}
 st=v.played?{name:v.my.name,seed:v.seed,s:md==="guess"?v.my.g:v.my.s,g:v.my.g,mode:md,started:1,planted:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,s:v.s,g:v.g,seed:v.seed},story:v.story||null,only:v.story&&v.story.only?1:0,sg:v.my.guess||"",smark:v.my.mark,bottle:v.bottle,wish:v.my.wish,lv:v.lv,n:v.n}
 :{name:st.name||tgName||"Друг",seed:v.seed,lv:v.lv,n:v.n,...(v.story&&v.story.only?{s:Array(v.n||3).fill(PASS),g:Array(v.n||3).fill(PASS),only:1}:{s:[],g:[]}),mode:md,started:1,join:sp,friend:{id:v.owner,name:v.name,gn:v.gn,pending:1},story:v.story||null,bottle:v.bottle};save()}
@@ -2262,7 +2262,8 @@ card(`<h2>Приглашение принято</h2><p style="margin:0">Мост
 if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.friend)focus=r.friend.id;return world()}
 /* открыли по ссылке на партию — сразу в неё (даже если это текущая); иначе дом — карта,
 а недоигранная партия продолжается с того же места */
-if(sp){if(sp!==st.gid&&sp!==st.join)await join(sp)}
+/* 26.11: бот пишет хозяину ссылку «партия_игрок» — сразу открываем мост с тем, кто ответил (старые ссылки — с последним ответившим) */
+if(sp){const[g,f]=sp.split("_");if(f||g===st.gid||g!==st.join)await join(g,+f||0)}
 else if(!(st.started&&st.g&&st.g.length>0&&st.g.length<GN()))return world()}catch(e){}
 go()}
 boot();
