@@ -2257,6 +2257,7 @@ takeInbox(r.inbox);if(dirty)flush();
 if(!rulesOk())await new Promise(res=>rulesGate(res));
 const sp=(TG.initDataUnsafe||{}).start_param;
 if(sp==="obmen"){location.href="/obmen";return}
+if(sp==="garden")return garden();if(sp==="plot")return plotMap();  /* ссылки бота: напоминания — в сад, гости и общее дело на участке — на участок */
 if(sp&&sp[0]==="m"){const r=await API("/meet/"+sp+"/accept","POST");if(r.bridge){focus=r.friend.id;return world()}
 card(`<h2>Приглашение принято</h2><p style="margin:0">Мост появится, когда ${esc(r.friend.name)} тоже откроет приглашение. Бот напишет тебе.</p><button class="main-btn" id="mp">На карту</button>`);$("mp").onclick=world;return}
 if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.friend)focus=r.friend.id;return world()}

@@ -450,7 +450,7 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
         gf = _gn(c, fid)
     at = f" — на твоём участке у «{here.get('n', '')}»" if here else ""
     _bg(_notify(fid, f"{u.first_name} зовёт тебя на общее дело 🤝{at}\n\n{text}\n\nОно уже в твоём саду. "
-                     f"Когда сделаете, отметьте «{gw(gf, 'Так и сделал', 'Так и сделала', 'Получилось')}» — ваш мост получит +3 доски", link(), pic="joint"))
+                     f"Когда сделаете, отметьте «{gw(gf, 'Так и сделал', 'Так и сделала', 'Получилось')}» — ваш мост получит +3 доски", link("plot" if here else "garden"), pic="joint"))
     return {"ok": True}
 
 
@@ -1065,7 +1065,7 @@ async def remind_loop() -> None:
             hour_utc = (cfg["hour"] - int(now.astimezone(ZoneInfo("Europe/Kyiv")).utcoffset().total_seconds() // 3600)) % 24
             for r in (reminders_due(now.date(), now.replace(tzinfo=None), daily=now.hour >= hour_utc,
                                     garden_every=cfg["garden_every"]) if cfg["on"] else []):
-                await _notify(r[0], r[1], link(), pic=getattr(r, "pic", "deed"))
+                await _notify(r[0], r[1], link("garden"), pic=getattr(r, "pic", "deed"))  # про дела и сад — сразу в сад
             if now.hour == 1 and now.minute == 0:
                 await asyncio.to_thread(pic_gc)
                 await asyncio.sleep(0.05)
@@ -1124,7 +1124,7 @@ async def visit(fid: int, x_init_data: str | None = Header(default=None)):
         _seen(c, u)
         out = {"name": r["name"] if r else None, "plot": plot, "comments": _comments(c, fid)}
     if fresh and not prefs.get("visitOff"):  # не чаще раза в 12 ч от одного друга; хозяин может выключить
-        _bg(_notify(fid, f"👋 {u.first_name} заглянул к тебе на участок", link(), pic="visit"))
+        _bg(_notify(fid, f"👋 {u.first_name} заглянул к тебе на участок", link("plot"), pic="visit"))
     return out
 
 
@@ -1164,7 +1164,7 @@ async def comment(fid: int, body: CommentIn, x_init_data: str | None = Header(de
         prefs = _owner_state(c, fid).get("nunu-prefs") or {}
         out = _comments(c, fid)
     if not prefs.get("commOff"):
-        _bg(_notify(fid, f"💬 {u.first_name} у «{str(o.get('n', ''))[:40]}»: {text}", link(), pic="visit"))
+        _bg(_notify(fid, f"💬 {u.first_name} у «{str(o.get('n', ''))[:40]}»: {text}", link("plot"), pic="visit"))
     return out
 
 
