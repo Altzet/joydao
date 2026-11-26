@@ -789,7 +789,7 @@ function bridgeState(t){const i=STG.filter(s=>t>=s[0]).length-1,nx=STG[i+1],left
 return`<div class="zone">Ваш мост сейчас — ${STG[i][1]}</div>${nx?`<div style="height:8px;border-radius:99px;background:var(--line)" role="img" aria-label="Прогресс моста"><div style="height:100%;width:${Math.round((t-STG[i][0])/(nx[0]-STG[i][0])*100)}%;background:#BA7517;border-radius:99px"></div></div>
 <p class="note" style="margin:0">Всего ${half(t)} ${pl(Math.floor(t),["доска","доски","досок"])}. До ${nx[1].replace(/[ыо]й$/,"ого")} моста ещё ${half(left)}. Верёвочка — полдоски. Мост копится от игры к игре.</p>`:`<p class="note" style="margin:0">Крепче моста не бывает.</p>`}`}
 function paintBridge(t){const e=$("bst");if(e)e.innerHTML=bridgeState(t)}
-const STG=[[0,"канатный"],[3,"подвесной"],[10,"дощатый"],[20,"каменный"]]  /* 25.11: партии по 3 вопроса — пороги втрое ниже (были 10/30/60) */,pl=(n,f)=>n%10===1&&n%100!==11?f[0]:n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?f[1]:f[2];
+const STG=[[0,"канатный"],[10,"подвесной"],[30,"дощатый"],[60,"каменный"]]  /* 27.11: вернули 10/30/60 — с 3/10/20 мосты росли слишком быстро */,pl=(n,f)=>n%10===1&&n%100!==11?f[0]:n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?f[1]:f[2];
 /* карточка моста: что значит, где вы сейчас, сколько до следующей стадии и как укрепить.
 Близость цели подгоняет (goal-gradient, Kivetz et al. 2006); совместные дела сближают сильнее разговоров (Hall 2019) */
 function bridgeCard(v,max,name,title){const b=v.filter(x=>x>=max).length,r=v.filter(x=>x&&x<max).length;addBridge(name,b+r/2);
@@ -870,8 +870,8 @@ const artBottle=(x,y)=>`<g transform="rotate(-25 ${f1(x)} ${f1(y)})"><ellipse cx
 /* ponytail: размер острова — корень из числа семян (площадь ∝ саду), потолок ×2.2, чтобы карта не разъехалась */
 const isR=(z,b)=>Math.min(b+(b/9)*Math.sqrt((z[0]||0)+(z[1]||0)+(z[2]||0)),b*2.2);
 function artWorld(w,sel){const F=w.friends,n=F.length,slots=n+2,pos=[],me=[200,190,isR(w.me.island,46)];
-F.forEach((f,i)=>{const ring=i<8?0:1,k=ring?i-8:i,m=ring?n-8:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,20)*2.7,t=f.island[0]+f.island[1]+f.island[2];
-const R=isR(f.island,28),D=me[2]+R+(ring?110:0)+150-108*Math.sqrt(Math.min(f.boards,20)/20);pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
+F.forEach((f,i)=>{const ring=i<8?0:1,k=ring?i-8:i,m=ring?n-8:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,60)*.9,t=f.island[0]+f.island[1]+f.island[2];
+const R=isR(f.island,28),D=me[2]+R+(ring?110:0)+150-108*Math.sqrt(Math.min(f.boards,60)/60);pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
 const at=k=>-Math.PI/2+k/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,ai=at(Math.min(n,8)),inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)],bi=at(Math.min(n,8)+1),bot=[200+DI*Math.cos(bi),190+DI*.82*Math.sin(bi)];
 const all=[me,...pos,[...inv,30],[...bot,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
 const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
@@ -2082,7 +2082,7 @@ card(`<span class="who">Приглашение</span><h2>Позови друга
 <button class="n" id="mp" style="align-self:flex-start">На карту</button>`);wireLink(msg,r.link);$("mp").onclick=world},()=>oops(invite))}
 const P10=()=>Array(3).fill(PASS),onlyStory=(o={})=>fresh("hero",{only:1,s:P10(),g:P10(),...o});
 /* ступень лесенки: мост с этим другом < 3 досок — разминка; < 10 — +«Кто я»; < 20 — +сцена; дальше — «Кто я», сцена, «Личное» */
-const LADDER=b=>b<3?0:b<10?1:b<20?2:3,lvFor=(mode,o)=>o.bottle?9:o.to?LADDER(((W&&W.friends||[]).find(f=>f.id===o.to)||{}).boards||0):mode==="solo"?2:0;
+const LADDER=b=>b<10?0:b<30?1:b<60?2:3,lvFor=(mode,o)=>o.bottle?9:o.to?LADDER(((W&&W.friends||[]).find(f=>f.id===o.to)||{}).boards||0):mode==="solo"?2:0;
 const fresh=(mode,o={})=>{const lv=o.lv!=null?o.lv:lvFor(mode,o),n=o.n||3;st={name:st.name||(W&&W.me.name)||tgName||"Я",seed:newSeed(lv,n),s:[],g:[],friend:null,started:1,mode,guessers:[],lv,n,...o};save();go()};
 const half=x=>String(Math.round(x*2)/2).replace(".",",");
 const stage=b=>{const i=STG.filter(s=>b>=s[0]).length-1,nx=STG[i+1];return`Мост ${STG[i][1]}: ${half(b)} ${pl(Math.floor(b),["доска","доски","досок"])}.`+(nx?` До ${nx[1].replace(/[ыо]й$/,"ого")} ещё ${half(nx[0]-b)}.`:"")};
