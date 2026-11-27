@@ -881,11 +881,16 @@ function artWorld(w,sel){const F=w.friends,n=F.length,slots=n+2,pos=[],me=[200,1
 F.forEach((f,i)=>{const ring=i<8?0:1,k=ring?i-8:i,m=ring?n-8:Math.min(slots,10),a=-Math.PI/2+(k+(ring?.5:0))/m*2*Math.PI,d=(ring?215:150)-Math.min(f.boards,60)*.9,t=f.island[0]+f.island[1]+f.island[2];
 const R=isR(f.island,28),D=me[2]+R+(ring?110:0)+150-108*Math.sqrt(Math.min(f.boards,60)/60);pos.push([200+D*Math.cos(a),190+D*.82*Math.sin(a),R])});
 const at=k=>-Math.PI/2+k/Math.min(slots,10)*2*Math.PI,DI=me[2]+125,ai=at(Math.min(n,8)),inv=[200+DI*Math.cos(ai),190+DI*.82*Math.sin(ai)],bi=at(Math.min(n,8)+1),bot=[200+DI*Math.cos(bi),190+DI*.82*Math.sin(bi)];
-const all=[me,...pos,[...inv,30],[...bot,30]];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
+/* туман: чужие острова — бледные силуэты по краю моря, без имён; ponytail: рисуем до 40, число в подписи — настоящее */
+const nf=Math.min(w.fog||0,40),fr0=Math.max(...[...pos,inv,bot].map(p=>Math.hypot(p[0]-200,(p[1]-190)/.82)),DI)+70,fogP=Array.from({length:nf},(_,i)=>{const r=rnd(i*104729+7),a=i*2.39996+r()*.5,d=fr0+(i%3)*34+r()*20;return[200+d*Math.cos(a),190+d*.82*Math.sin(a),14+r()*10,i]});
+const all=[me,...pos,[...inv,30],[...bot,30],...fogP];let x0=Math.min(...all.map(p=>p[0]-p[2]*1.4))-6,x1=Math.max(...all.map(p=>p[0]+p[2]*1.4))+6,y0=Math.min(...all.map(p=>p[1]-p[2]))-14,y1=Math.max(...all.map(p=>p[1]+p[2]*.72+30));
+const fy=y1+6;if(w.fog)y1+=26;  /* подпись тумана — под всей картой */
 const pw=Math.max(0,400-(x1-x0))/2,ph=Math.max(0,320-(y1-y0))/2;x0-=pw;x1+=pw;y0-=ph;y1+=ph;
 let g=`<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(x1-x0)} ${f1(y1-y0)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Карта: твой остров и острова друзей. Двигай пальцем, щипком приближай">
 <defs><pattern id="wv" width="92" height="58" patternUnits="userSpaceOnUse"><path d="M8 18q5-4 10 0t10 0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".2"/><path d="M58 44q4-3 8 0" stroke="#fff" stroke-width="1" fill="none" opacity=".14"/></pattern></defs>
 <rect x="${f1(x0-1500)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3000)}" height="${f1(y1-y0+3000)}" fill="#6DB2C9"/><rect class="wv" x="${f1(x0-1592)}" y="${f1(y0-1500)}" width="${f1(x1-x0+3092)}" height="${f1(y1-y0+3000)}" fill="url(#wv)"/>`;
+fogP.forEach(([x,y,R,i])=>{const r=rnd(i*31+5),ph=[r()*6,r()*6,r()*6];g+=`<path d="${blob(x,y,R,ph,1.5)}" fill="#fff" opacity=".18"/><path d="${blob(x,y,R,ph,1)}" fill="#E8EEF0" opacity=".5"/>`});
+if(w.fog){const t=`в тумане ещё ${w.fog} ${pl(w.fog,["остров","острова","островов"])}`,tw=t.length*6.4+20;g+=`<rect x="${f1(200-tw/2)}" y="${f1(fy)}" width="${f1(tw)}" height="20" rx="10" fill="#fff" opacity=".35"/><text x="200" y="${f1(fy+14)}" text-anchor="middle" font-size="12" fill="#fff" font-family="Golos Text,system-ui">${t}</text>`}
 [me,...pos].forEach((p,i)=>g+=artIsland(p[0],p[1],p[2],i?F[i-1].id:w.me.id,[0,0,0],"",null,"halo"));
 {const am=aura(myMood(),myAct());if(am)g+=artIsland(me[0],me[1],me[2],w.me.id,0,"",null,"aura",am,1);
 F.forEach((f,i)=>{const a=f.mood&&aura(f.mood,f.act||[0,0]);if(a)g+=artIsland(pos[i][0],pos[i][1],pos[i][2],f.id,0,"",null,"aura",a)})}

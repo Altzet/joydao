@@ -153,12 +153,14 @@ def test_bottle(tmp_path, monkeypatch):
     assert v["bottle"] and v["my"]["wish"] == {"me": False, "them": False, "friends": False}
     assert "бутылку выловил Оля" in sent[-1][1]
     assert c.get("/nunu/api/bottle", headers=olya).json() == {"gid": None}  # второй раз ту же — нет
-    assert c.get("/nunu/api/world", headers=anton).json()["friends"] == []  # незнакомка не на карте
+    w = c.get("/nunu/api/world", headers=anton).json()
+    assert w["friends"] == [] and w["fog"] == 1  # незнакомка не на карте, только в тумане — числом
     assert c.post(f"/nunu/api/bottle/{g['id']}/wish", json={"other": 1}, headers=olya).json()["friends"] is False
     assert c.get(f"/nunu/api/game/{g['id']}", headers=anton).json()["plays"][0]["wish"]["them"] is True
     assert c.post(f"/nunu/api/bottle/{g['id']}/wish", json={"other": 6}, headers=anton).status_code == 404
     assert c.post(f"/nunu/api/bottle/{g['id']}/wish", json={"other": 5}, headers=anton).json()["friends"] is True
-    assert [f["name"] for f in c.get("/nunu/api/world", headers=olya).json()["friends"]] == ["Антон"]
+    w = c.get("/nunu/api/world", headers=olya).json()
+    assert [f["name"] for f in w["friends"]] == ["Антон"] and w["fog"] == 0
     c.post(f"/nunu/api/bottle/{g['id']}/report", headers=boris)
     assert c.get("/nunu/api/bottle", headers=boris).json() == {"gid": None}
 

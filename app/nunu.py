@@ -909,8 +909,10 @@ def world(x_init_data: str | None = Header(default=None)):
             f["name"] = n["name"] if n else "Друг"
             f |= _island(c, f["id"])
             del f["t"]
+        # в тумане: сколько ещё игроков в море — только число, без имён и id
+        fog = c.execute("SELECT COUNT(*) FROM users WHERE tg_id != ?", (u.id,)).fetchone()[0] - len(fr)
         return {"me": {"id": u.id, "name": u.first_name, **_island(c, u.id)},
-                "friends": sorted(fr.values(), key=lambda f: -f["boards"])}
+                "friends": sorted(fr.values(), key=lambda f: -f["boards"]), "fog": max(0, fog)}
 
 
 class PicIn(BaseModel):
