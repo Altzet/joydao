@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import landing, nunu
+from . import landing
 
 IMG = Path(__file__).resolve().parent.parent / "static" / "img"
 CSS = """main.r{max-width:760px;margin:0 auto;padding:40px 20px 80px}main.r h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .4em}
@@ -95,7 +95,7 @@ def render(slug: str) -> HTMLResponse:
         raise HTTPException(404)
     from . import admin_more
     p = {**PAGES[slug], **admin_more.get("pages").get(slug, {})}  # правки из админки поверх текста из кода
-    E, url, play = html.escape, f"{landing.SITE}/{slug}", nunu.link()
+    E, url, play = html.escape, f"{landing.SITE}/{slug}", "/nunu"
     faq = "".join(f"<h3>{E(q)}</h3><p>{E(a)}</p>" for q, a in p["faq"])
     ld = [{"@context": "https://schema.org", "@type": "Article", "headline": p["h1"], "description": p["desc"], "inLanguage": "ru",
            "image": landing.absu(p["img"]), "mainEntityOfPage": url,
@@ -111,9 +111,9 @@ def render(slug: str) -> HTMLResponse:
 <script type="application/ld+json">{ldj}</script>
 {landing.ICON}<style>{landing.CSS}{landing.HEADER_CSS}{CSS}</style></head><body>
 {landing.header("/" + slug)}
-<main class="r"><h1>{E(p["h1"])}</h1>{p["body"]}<p><a class="btn go" href="{play}">Открыть «Ну-ну» в Telegram</a></p>
+<main class="r"><h1>{E(p["h1"])}</h1>{p["body"]}<p><a class="btn go" href="{play}">Играть в «Ну-ну»</a></p>
 <h2>Вопросы</h2>{faq}<h2>Ещё</h2><p>{other}<a href="/rules">Правила «Ну-ну»</a></p></main>
-<footer><div class="w"><span>JoyDAO · Ну-ну</span><a class="sp" href="{play}">Играть в Telegram →</a></div></footer>{landing.tg_js()}</body></html>""")
+<footer><div class="w"><span>JoyDAO · Ну-ну</span><a class="sp" href="{play}">Играть →</a></div></footer>{landing.tg_js()}</body></html>""")
 
 
 def img(name: str) -> FileResponse:
