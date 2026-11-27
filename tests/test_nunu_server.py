@@ -258,11 +258,14 @@ def test_meet_friends(tmp_path, monkeypatch):
     mid = sent[0][2].split("startapp=")[1]
     assert c.post("/nunu/api/friend/3/meet", json={"other": 2}, headers=anton).json() == {"ok": True}
     assert len(sent) == 2  # повтор никому не пишет
+    assert c.get("/nunu/api/state", headers=olya).json()["meets"] == [{"id": mid, "by": "Антон", "other": "Евген"}]  # открыла игру из меню — спросим
     assert c.post(f"/nunu/api/meet/{mid}/accept", headers=max_).status_code == 404
     assert c.post(f"/nunu/api/meet/{mid}/accept", headers=evgen).json() == {"friend": {"id": 3, "name": "Оля", "gn": ""}, "bridge": False}
     assert [f["id"] for f in c.get("/nunu/api/world", headers=evgen).json()["friends"]] == [1]
     assert c.post(f"/nunu/api/meet/{mid}/accept", headers=olya).json() == {"friend": {"id": 2, "name": "Евген", "gn": ""}, "bridge": True}
     assert sorted(f["id"] for f in c.get("/nunu/api/world", headers=evgen).json()["friends"]) == [1, 3]
+    assert any(a[0] == 1 and "на одном мосту" in a[1] for a in sent)  # знакомившему — весть
+    assert "meets" not in c.get("/nunu/api/state", headers=olya).json()
 
 
 def test_timed_reminder(tmp_path, monkeypatch):

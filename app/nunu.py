@@ -214,13 +214,18 @@ def get_state(since: int | None = None, x_init_data: str | None = Header(default
     with closing(_db()) as c:
         r = c.execute("SELECT data, rev FROM state WHERE tg_id=?", (u.id,)).fetchone()
         inbox = [json.loads(x["seed"]) for x in c.execute("SELECT seed FROM inbox WHERE tg_id=? ORDER BY id", (u.id,))]
+        meets = [{"id": m["id"], "by": m["byn"] or "Друг", "other": m["oname"] or "Друг"} for m in c.execute(
+            """SELECT m.id, ub.name AS byn, uo.name AS oname FROM meets m LEFT JOIN users ub ON ub.tg_id = m.by
+               LEFT JOIN users uo ON uo.tg_id = CASE WHEN m.a = :me THEN m.b ELSE m.a END
+               WHERE ((m.a = :me AND m.ok_a = 0) OR (m.b = :me AND m.ok_b = 0))
+                 AND NOT EXISTS (SELECT 1 FROM friends f WHERE f.a = m.a AND f.b = m.b)""", {"me": u.id})]
         with c:
             c.execute("DELETE FROM inbox WHERE tg_id=?", (u.id,))
         _seen(c, u)
     rev = r["rev"] if r else 0
     if since is not None and since == rev:
-        return {"same": True, "rev": rev, "name": u.first_name, "inbox": inbox}
-    return {"data": json.loads(r["data"]) if r else None, "rev": rev, "name": u.first_name, "inbox": inbox}
+        return {"same": True, "rev": rev, "name": u.first_name, "inbox": inbox, **({"meets": meets} if meets else {})}
+    return {"data": json.loads(r["data"]) if r else None, "rev": rev, "name": u.first_name, "inbox": inbox, **({"meets": meets} if meets else {})}
 
 
 @router.put("/state")
@@ -591,7 +596,7 @@ async def meet_accept(mid: str, x_init_data: str | None = Header(default=None)):
     """Мост между двумя друзьями общего друга — только когда приглашение открыли оба."""
     u = _user(x_init_data)
     with closing(_db()) as c:
-        r = c.execute("SELECT a, b, ok_a, ok_b FROM meets WHERE id=?", (mid,)).fetchone()
+        r = c.execute("SELECT by, a, b, ok_a, ok_b FROM meets WHERE id=?", (mid,)).fetchone()
         if not r or u.id not in (r["a"], r["b"]):
             raise HTTPException(404, "Приглашение не найдено")
         col, other = ("ok_a", r["b"]) if u.id == r["a"] else ("ok_b", r["a"])
@@ -601,8 +606,11 @@ async def meet_accept(mid: str, x_init_data: str | None = Header(default=None)):
             new = c.execute("INSERT OR IGNORE INTO friends(a, b) VALUES(?, ?)", (r["a"], r["b"])).rowcount if both else 0
         _seen(c, u)
         n = c.execute("SELECT name FROM users WHERE tg_id=?", (other,)).fetchone()
-        go, ga = _gn(c, other), _gn(c, u.id)
-    if new:
+        go, ga, gb = _gn(c, other), _gn(c, u.id), _gn(c, r["by"])
+    if new:  # и тому, кто знакомил: иначе он не узнает — чужой мост на его карте не виден
+        _bg(_notify(r["by"], f"{u.first_name} и {n['name'] if n else 'Друг'} теперь на одном мосту 🌉 "
+                                 f"Ты их {gw(gb, 'познакомил', 'познакомила', 'знакомишь')}.",
+                    link(), pic="friend"))
         _bg(_notify(other, f"{u.first_name} {gw(ga, 'тоже открыл', 'тоже открыла', 'тоже открывает')} приглашение. Между вашими островами канатный мост — "
                            "начните партию 🏝", link(), pic="friend"))
     return {"friend": {"id": other, "name": n["name"] if n else "Друг", "gn": go}, "bridge": both}
