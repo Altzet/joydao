@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import html
 import json
+from datetime import date
 from contextlib import closing
 from pathlib import Path
 
@@ -118,7 +119,7 @@ class OfferIn(BaseModel):
 
 
 @router.post("/obmen/api/offer")
-def create(body: OfferIn, x_init_data: str | None = Header(default=None),
+async def create(body: OfferIn, x_init_data: str | None = Header(default=None),
            x_tg_login: str | None = Header(default=None)):
     u = _who(x_init_data, x_tg_login)
     cfg = admin_more.get("obmen")  # какие виды и способы включены, лимит — из админки
@@ -135,7 +136,27 @@ def create(body: OfferIn, x_init_data: str | None = Header(default=None),
                             (u.id, body.kind, body.type, body.title.strip(), body.text.strip(), body.place.strip(),
                              body.how, body.how_note.strip() if body.how != "gift" else "", body.circle,
                              u.username or ""))
-        return {"id": cur.lastrowid}
+        to = _tell_bridges(c, u, body.kind, body.title.strip())
+    for uid, text in to:
+        nunu._bg(nunu._notify(uid, text, nunu.link("obmen"), pic="exchange"))
+    return {"id": cur.lastrowid}
+
+
+VERB = {"give": "отдаёт", "seek": "ищет", "skill": "предлагает помочь:"}
+
+
+def _tell_bridges(c, u, kind: str, title: str) -> list[tuple[int, str]]:
+    """Новое предложение — друзьям по мостам: обмен начинается с тех, кого знаешь.
+    Не чаще раза в день от одного человека одному другу — иначе это спам, а не повод."""
+    today, out = date.today().isoformat(), []
+    fr, _ = _circles(c, u.id)
+    with c:
+        for f in sorted(fr):
+            if c.execute("INSERT INTO reminders VALUES(?, ?, ?) ON CONFLICT(tg_id, kind) DO UPDATE SET at=excluded.at "
+                         "WHERE at < excluded.at", (f, f"ob:{u.id}", today)).rowcount:
+                out.append((f, f"🌱 {u.first_name} в «Обмене» {VERB[kind]} «{title}»\n\n"
+                               "Вы на одном мосту. Пригодится — откликнись, договоритесь напрямую."))
+    return out
 
 
 class RepIn(BaseModel):
@@ -167,7 +188,7 @@ class ReplyIn(BaseModel):
 
 
 @router.post("/obmen/api/offer/{oid}/reply")
-def reply(oid: int, body: ReplyIn, x_init_data: str | None = Header(default=None),
+async def reply(oid: int, body: ReplyIn, x_init_data: str | None = Header(default=None),
            x_tg_login: str | None = Header(default=None)):
     """Отклик: один на человека и предложение. Автору пишет бот, с упоминанием — ответить можно в один тап."""
     u = _who(x_init_data, x_tg_login)

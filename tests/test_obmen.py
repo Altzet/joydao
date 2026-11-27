@@ -25,6 +25,10 @@ def test_obmen(tmp_path, monkeypatch):
     offer = {"kind": "give", "type": "food", "title": "Кабачки", "how": "gift", "circle": "bridge"}
     ids = {cir: c.post("/obmen/api/offer", json=offer | {"circle": cir}, headers=anton).json()["id"]
            for cir in ("bridge", "fof", "all")}
+    assert sent == ["bg"]  # мост у Антона один (Боря) — и весть ему одна за день, хоть предложений три
+    with nunu._db() as db:
+        assert [r[0] for r in db.execute("SELECT tg_id FROM reminders WHERE kind='ob:1'")] == [2]
+    sent.clear()
     seen = lambda h: {o["circle"] for o in c.get("/obmen/api/list", headers=h).json()["offers"]}  # noqa: E731
     assert seen(boria) == {"bridge", "fof", "all"}
     assert seen(olia) == {"fof", "all"}
