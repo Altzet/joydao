@@ -104,7 +104,7 @@ def page() -> HTMLResponse:
     toc = "".join(f'<a href="#r{i}">{E(t)}</a>' for i, (t, _) in enumerate(SECTIONS))
     main = "".join(f"<li><b>{E(t)}.</b> {E(x)}</li>" for t, x in MAIN)
     body = "".join(f'<h2 id="r{i}">{E(t)}</h2>{h}' for i, (t, h) in enumerate(SECTIONS))
-    play = nunu.link()
+    play = "/nunu"
     return HTMLResponse(f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Правила «Ну-ну»</title><meta name="description" content="Свод правил игры «Ну-ну»: как устроена игра, общение, обмен излишками, гости на участке, приватность, жалобы.">
 <link rel="canonical" href="{landing.SITE}/rules"><meta property="og:title" content="Свод правил «Ну-ну»"><meta property="og:url" content="{landing.SITE}/rules">
@@ -114,7 +114,7 @@ def page() -> HTMLResponse:
 <main class="r"><p class="upd">Обновлено {UPDATED} · версия {RULES_V}</p><h1>Свод правил «Ну-ну»</h1>
 <p>«Ну-ну» — игра для друзей и для себя: угадываете друг друга, строите мосты и сажаете семена намерений, которые прорастают в жизни. Здесь нет правильных и неправильных ответов, оценок и рейтингов — только честность и уважение.</p>
 <h2>Главное</h2><ol class="main">{main}</ol><p class="toc">{toc}</p>{body}</main>
-<footer><div class="w"><span>JoyDAO · Ну-ну</span><a class="sp" href="{play}">Играть в Telegram →</a></div></footer>{landing.tg_js()}</body></html>""")
+<footer><div class="w"><span>JoyDAO · Ну-ну</span><a class="sp" href="{play}">Играть →</a></div></footer>{landing.tg_js()}</body></html>""")
 
 
 def inject() -> str:

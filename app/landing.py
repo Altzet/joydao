@@ -14,7 +14,7 @@ SITE = re.sub(r"/nunu/?$", "", (config.WEBAPP_URL or "https://joydao.org").rstri
 
 # ---------- общее меню всех страниц сайта ----------
 # Сайт и игра — одно целое: что можно сделать на сайте (обмен, правила, статьи), делается на сайте;
-# игра живёт в Telegram, туда ведёт кнопка «Играть». Открыли страницу внутри «Ну-ну» (Mini App) —
+# игра тоже: кнопка «Играть» ведёт на /nunu (вход через Telegram). Открыли страницу внутри «Ну-ну» (Mini App) —
 # кнопка становится «← В игру», ссылки t.me открывает Telegram, чужие сайты — браузер.
 MENU = (("/", "Главная"), ("/obmen", "Обмен"), ("/uchastok", "Участок"), ("/esli-to", "Если — то"), ("/rules", "Правила"))
 HEADER_CSS = """.site{position:sticky;top:0;z-index:9;background:var(--card,#FFFDF8);border-bottom:1px solid var(--line,#E8DEC8);font-family:inherit}
@@ -32,7 +32,7 @@ LOGO = ('<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rec
         '<path d="M18.5 18.5q3.5-2.5 6.5-1" stroke="#BA7517" stroke-width="1.6" fill="none"/><ellipse cx="26" cy="19.5" rx="3" ry="1.6" fill="#F3E8CF"/></svg>')
 TG_JS = """<script>(function(){var d;try{d=JSON.parse(sessionStorage.getItem("__telegram__initParams")||"{}").tgWebAppData}catch(e){}
 if(!d&&!/tgWebAppData/.test(location.hash))return;
-document.querySelectorAll('a[href^="https://t.me/%(bot)s/"]').forEach(function(a){a.href="/nunu";if(a.classList.contains("play"))a.textContent="← В игру"});
+document.querySelectorAll('a[href^="https://t.me/%(bot)s/"],a[href="/nunu"]').forEach(function(a){a.href="/nunu";if(a.classList.contains("play"))a.textContent="← В игру"});
 function go(){if(!window.Telegram)return;var W=Telegram.WebApp;W.ready();if(document.body.dataset.back!=="own")try{W.BackButton.show();W.BackButton.onClick(function(){history.length>1?history.back():location.href="/nunu"})}catch(e){}
 document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[href]");if(!a||a.origin===location.origin)return;e.preventDefault();
 /^https:\/\/t\.me\//.test(a.href)?W.openTelegramLink(a.href):W.openLink(a.href)},true)}
@@ -47,10 +47,9 @@ def _brand(b: str) -> str:
 
 def header(cur: str, brand: str = "JoyDAO · Ну-ну") -> str:
     """Шапка с меню: одна на весь сайт, текущая страница отмечена."""
-    from .nunu import link
     nav = "".join(f'<a href="{u}"{" aria-current=page" if u == cur else ""}>{t}</a>' for u, t in MENU)
     return (f'<header class="site"><div class="sw"><a class="logo" href="/">{LOGO}{_brand(brand)}</a>'
-            f'<nav aria-label="Разделы сайта">{nav}</nav><a class="play" href="{link()}">Играть</a></div></header>')
+            f'<nav aria-label="Разделы сайта">{nav}</nav><a class="play" href="/nunu">Играть</a></div></header>')
 
 
 def tg_js() -> str:
@@ -78,7 +77,7 @@ def default() -> dict:
         "off": [],
         "hero": {"kicker": "Приложение для друзей в Telegram", "title": "Пусть ваш сад\nцветёт",
                  "sub": "Отвечайте на вопросы друг друга, стройте мосты, сажайте семена намерений — пусть ваш сад цветёт и радует вас и ваше окружение.",
-                 "cta": "Играть в Telegram", "cta2": "Как это работает", "img": ""},
+                 "cta": "Играть", "cta2": "Как это работает", "img": ""},
         "how": {"title": "Как намерение вырастает", "items": [
             {"t": "Цель", "d": "Большая цель на месяцы — ствол твоего дерева. Запиши её и ответь себе, зачем она тебе."},
             {"t": "План «если — то»", "d": "Каждую неделю — одно дело. Заранее подумай, что может помешать, и реши, что сделаешь тогда."},
@@ -95,7 +94,7 @@ def default() -> dict:
             {"t": "План «если — то»", "d": "Исследования Петера Гольвитцера: заранее продуманный ответ на помеху заметно повышает шанс довести дело до конца."},
             {"t": "Сначала помеха, потом план", "d": "Метод Габриэле Эттинген: честно посмотреть на то, что мешает, — и мечта превращается в действие."},
             {"t": "От лёгкого к личному", "d": "Вопросы для друзей идут, как в исследованиях Артура Арона: от простого к важному — так люди становятся ближе."}]},
-        "cta": {"title": "Посади своё первое намерение", "sub": "Прямо в Telegram, без установки.", "btn": "Начать"},
+        "cta": {"title": "Посади своё первое намерение", "sub": "На сайте или в Telegram, без установки.", "btn": "Начать"},
         "faq": {"title": "Вопросы", "items": [
             {"q": "Это игра или работа над собой?", "a": "И то и другое. Весёлое помогает не бросить, полезное — дойти до цели."},
             {"q": "Чем это отличается от трекера привычек?", "a": "Трекер считает галочки. Здесь у каждого дела есть план на случай помехи, у цели — смысл, а результат растёт у тебя на глазах."},
@@ -245,7 +244,8 @@ ICON = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="pr
 def render(lp: dict) -> str:
     lp = norm(lp)
     L, off = lp["links"], set(lp.get("off") or [])
-    play = E(L["play"])
+    # игра теперь и на сайте (вход через Telegram): ссылка на игру в Telegram ведёт на /nunu, своя ссылка из админки — как есть
+    play = "/nunu" if L["play"].startswith(f"https://t.me/{config.BOT_USERNAME}/") else E(L["play"])
     parts = []
     for k in lp["order"]:
         if k in off:
@@ -290,7 +290,7 @@ def render(lp: dict) -> str:
     title, desc, img = seo["title"] or lp["brand"], seo["desc"], absu(seo.get("img") or "/og.png")
     ld = [{"@context": "https://schema.org", "@type": "WebSite", "name": lp["brand"], "url": SITE + "/", "inLanguage": "ru"},
           {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": lp["brand"], "description": desc,
-           "applicationCategory": "LifestyleApplication", "operatingSystem": "Telegram", "url": play, "inLanguage": "ru",
+           "applicationCategory": "LifestyleApplication", "operatingSystem": "Web, Telegram", "url": absu(play), "inLanguage": "ru",
            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}]
     if "faq" not in off and lp["faq"].get("items"):
         ld.append({"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
@@ -306,6 +306,6 @@ def render(lp: dict) -> str:
 <meta name="theme-color" content="#FBF7EE">{ICON}<script>document.documentElement.className="js"</script><style>{CSS}{HEADER_CSS}</style></head><body>
 {header("/")}
 <main>{"".join(parts)}</main>
-<footer><div class="w"><span>{E(lp["footer"])}</span>{foot}<a class="sp" href="{play}">Играть в Telegram →</a></div></footer>
+<footer><div class="w"><span>{E(lp["footer"])}</span>{foot}<a class="sp" href="{play}">Играть →</a></div></footer>
 <script>(()=>{{const o=new IntersectionObserver(es=>es.forEach(e=>{{if(e.isIntersecting){{e.target.classList.add("in");o.unobserve(e.target)}}}}),{{rootMargin:"0px 0px -8% 0px"}});
 document.querySelectorAll(".rv").forEach(e=>o.observe(e))}})()</script>{tg_js()}</body></html>"""
