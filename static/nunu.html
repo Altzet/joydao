@@ -1281,6 +1281,25 @@ box.innerHTML=`<span class="note">Спасибо, жалоба принята.${
 if(kind==="comment"){myComm=(myComm||[]).filter(c=>String(c.id)!==ref);setTimeout(()=>{pDraw();pPanel()},1500)}},
 er=>{box.innerHTML=`<span class="note">${er===404?"Это уже убрано или жалоба тут не принимается.":"Не получилось отправить — попробуй позже."}</span>`})}},true);
 const myId=()=>{try{return(TG?TG.initDataUnsafe.user:JSON.parse(decodeURIComponent(SITE))).id||0}catch(e){return 0}};let myComm=null;const commFor=id=>((PS.guest?PS.guest.comm:myComm)||[]).filter(c=>c.obj===id);
+/* проекты участка (27.11): до 3, название придумывает игрок. Открытый проект лежит в plot (его видят гости и сервер),
+   остальные — в plot.alt; семена на карте другого проекта ждут в x.loff (x.lp — чей), не путаются с текущей картой */
+const PMAX=3,plotList=()=>[{id:plot.pid||"p1",name:plot.pname||"Мой участок",cur:1},...(plot.alt||[]).map(x=>({id:x.id,name:x.name}))];
+function plotSwitch(id){const cur=plot.pid||"p1";if(id===cur)return;const alt=(plot.alt||[]).slice(),i=alt.findIndex(x=>x.id===id);if(i<0)return;
+const nx=alt.splice(i,1)[0],{alt:_a,pid:_p,pname:_n,...was}=plot;alt.push({id:cur,name:plot.pname||"Мой участок",data:was});
+seeds.forEach(x=>{if(x.loc){x.loff=x.loc;x.lp=cur;delete x.loc}else if(x.loff&&x.lp===id){x.loc=x.loff;delete x.loff;delete x.lp}});
+plot={...(nx.data||{}),pid:id,pname:nx.name,alt};PS.sel=null;PS.seed=null;PS.hist=[];saveSeeds();savePlot()}
+function plotPick(){if(typeof PS==="object"&&PS.guest)guestExit();setNav("plot");const L=plotList(),nm=n=>String(n||"").trim().slice(0,40);
+app.innerHTML=`<h1>Мой участок</h1><p class="note" style="margin:0">Можно вести до ${PMAX} проектов: свой участок, дачу родителей, участок мечты. Гости видят тот, что открыт сейчас.</p>
+${L.map(x=>`<div class="card"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><input data-pn="${x.id}" value="${esc(x.name)}" maxlength="40" aria-label="Название проекта" style="flex:1;min-width:0">
+${x.cur?`<span class="note">открыт</span>`:L.length>1?`<button class="n pi" data-pd="${x.id}" aria-label="Удалить проект">🗑</button>`:""}</div>
+<button class="${x.cur?"main-btn":"n"}" data-po="${x.id}" style="align-self:flex-start">${x.cur?"Открыть карту":"Перейти к этому проекту"}</button></div>`).join("")}
+${L.length<PMAX?`<div class="card"><h2>Новый проект</h2><div class="row" style="gap:8px"><input id="pnew" maxlength="40" placeholder="Например: Дача у реки" style="flex:1;min-width:0"><button class="n" id="padd">＋ Создать</button></div><span class="err" id="pne"></span></div>`:`<p class="note">Проектов уже ${PMAX}. Чтобы начать новый, удали ненужный.</p>`}`;
+app.querySelectorAll("[data-pn]").forEach(e=>e.onchange=()=>{const v=nm(e.value)||"Мой участок",id=e.dataset.pn;if(id===(plot.pid||"p1"))plot.pname=v;else{const a=(plot.alt||[]).find(x=>x.id===id);if(a)a.name=v}savePlot()});
+app.querySelectorAll("[data-po]").forEach(b=>b.onclick=()=>{plotSwitch(b.dataset.po);plotMap()});
+app.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>{if(!b.dataset.ok){b.dataset.ok=1;b.textContent="Точно удалить?";return}
+const id=b.dataset.pd;plot.alt=(plot.alt||[]).filter(x=>x.id!==id);seeds.forEach(x=>{if(x.lp===id){delete x.loff;delete x.lp}});saveSeeds();savePlot();plotPick()});
+if($("padd"))$("padd").onclick=()=>{const v=nm($("pnew").value);if(!v){$("pne").textContent="Придумай название";return}
+const id=pid();plot.alt=[...(plot.alt||[]),{id,name:v,data:{}}];if(!plot.pid)plot.pid="p1";plotSwitch(id);plotMap()}}
 function plotMap(opt){opt=opt||{};setNav("plot");document.body.classList.add("on-map");document.body.classList.toggle("guest",!!PS.guest);if(!PS.guest){pSync();if(API&&!opt.noComm)API("/plot/comments").then(c=>{myComm=c;if($("pm")&&!PS.guest){pDraw();pPanel()}},()=>{})}if(opt.fresh!=null){PS.fresh=opt.fresh;PS.seed=opt.fresh;PS.sel=null}
 app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="p3b" aria-label="Пройтись в 3D" style="font-size:14px;font-weight:600">3D</button><button id="pu" aria-label="Отменить">↶</button>${fsBtn()}</div>
 <div class="pcomp" aria-hidden="true">${pComp()}</div><button id="pvw" aria-label="Вид карты: спутник или схема" style="position:absolute;right:62px;top:10px;font-size:12px;color:#3B2F1A;background:rgba(255,248,231,.88);border:0;border-radius:10px;padding:6px 9px;line-height:1.1;text-align:right">${pVwTxt()}</button><div class="pslope" id="pslope">${pSlopeChip()}</div><div class="pscale" id="pscale"></div><div class="pmode" id="pmode" role="toolbar" aria-label="Режимы карты"></div>
@@ -1996,8 +2015,8 @@ PS.sel=null;saveSeeds();pSave();pDraw();pPanel()};
 $("osd").onclick=()=>{const b=o.pts?o.pts[0]:[o.x+o.w/2,o.y+o.h/2];pPlantAt(b,o)};if($("oshp"))$("oshp").onclick=()=>{PS.shp=o.id;PS.shv=null;$("sh").classList.add("min");pDraw();pPanel()};pD3Bind(pn,o);return}
 /* дом карточки: зачем открывать — что пора, что взошло, и одна большая кнопка «посадить» */
 const{real}=pDim(),here=seeds.map((x,k)=>[x,k]).filter(([x])=>x.loc),wait=here.filter(([x])=>!x.life),bloom=here.filter(([x])=>x.life&&x.life.same).length,
-dueN=wait.filter(([x])=>pDue(x)),tray=seeds.map((x,k)=>[x,k]).filter(([x])=>!x.loc&&!x.life&&inGarden(x)).sort((a,b)=>(b[0].step?1:0)-(a[0].step?1:0)).slice(0,6),sun=pSun(),th=pTheta();
-h=`<div class="row" style="justify-content:space-between;align-items:center"><h2>Мой участок</h2><span class="note">🌱 ${wait.length} · 🌸 ${bloom}</span></div>
+dueN=wait.filter(([x])=>pDue(x)),tray=seeds.map((x,k)=>[x,k]).filter(([x])=>!x.loc&&!x.loff&&!x.life&&inGarden(x)).sort((a,b)=>(b[0].step?1:0)-(a[0].step?1:0)).slice(0,6),sun=pSun(),th=pTheta();
+h=`<div class="row" style="justify-content:space-between;align-items:center"><button class="n" id="ppick" style="padding-left:10px;padding-right:10px"><b style="font-weight:600">${esc(plot.pname||"Мой участок")}</b> ▾</button><span class="note">🌱 ${wait.length} · 🌸 ${bloom}</span></div>
 ${dueN.length?`<button class="n" id="pdue" style="text-align:left">💧 Пора: <b style="font-weight:500">${esc(dueN[0][0].r.slice(0,70))}</b>${dueN.length>1?` и ещё ${dueN.length-1}`:""}</button>`:""}
 ${real?"":plot.sides||pN()!==4?`<button class="n" id="psides" style="text-align:left">📐 ${esc(pShapeTxt())} Стороны и диагонали — в анкете.</button>`:`<div class="pgrid"><p class="note pf w" style="margin:0">Впиши стороны участка — карта станет в настоящем масштабе. Не прямоугольник — 📋 анкета, там любое число углов.</p><div class="pf"><label class="zone" for="sa">Сторона 1, м</label><input id="sa" inputmode="decimal" maxlength="7" placeholder="30"></div><div class="pf"><label class="zone" for="sb">Сторона 2, м</label><input id="sb" inputmode="decimal" maxlength="7" placeholder="20"></div></div>`}
 ${real&&(pDim().err||pDim().guess&&pN()>3)?`<button class="n" id="psides" style="text-align:left">📐 ${esc(pShapeTxt())}</button>`:""}
@@ -2020,7 +2039,7 @@ ${(()=>{const j=Object.entries(plot.meas||{}).sort((a,b)=>String(b[1].t).localeC
 <button class="n" id="pq" style="align-self:flex-start">📋 Анкета участка</button>`:""}`;
 pn.innerHTML=h;
 $("psd").onclick=()=>pMode("plant");$("pad").onclick=()=>pMode("add");$("pmo").onclick=()=>{PS.more=!PS.more;pPanel()};
-if($("pdue"))$("pdue").onclick=()=>{PS.seed=dueN[0][1];pDraw();pPanel()};
+if($("ppick"))$("ppick").onclick=plotPick;if($("pdue"))$("pdue").onclick=()=>{PS.seed=dueN[0][1];pDraw();pPanel()};
 pn.querySelectorAll("[data-tr]").forEach(b=>b.onclick=()=>{PS.place=+b.dataset.tr;$("sh").classList.add("min");pPanel()});
 if($("sa")){const sv=()=>{const a=pnum($("sa").value),b=pnum($("sb").value);if(a>0&&b>0&&a<2000&&b<2000){plot.site=plot.site||{};plot.site.n="4";plot.sides={1:{l:pm1(a)},2:{l:pm1(b)}};pSave();plotMap()}};$("sa").onchange=sv;$("sb").onchange=sv}
 if($("psides"))$("psides").onclick=()=>plotSec(0);
@@ -2161,7 +2180,7 @@ if(!f){pn.innerHTML=`<h2>Твой остров</h2>${moodRow()}
 <p class="note" style="margin:0">Море — общее и нейтральное. Цветы растут, когда идёшь к людям, деревья — когда берёшь паузу, камни — когда стоишь на своём.</p>
 <div class="row">${btn("iv","Позвать друга",1)}${btn("ih","Компания: угадайте меня")}${btn("os","Только своя ситуация")}${btn("so","Играть одному")}${btn("pl","🏡 Мой участок")}</div>`;
 $("mopen").onclick=moodScreen;
-$("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();$("so").onclick=()=>fresh("solo");$("pl").onclick=()=>{guestExit();plotMap()};return}  /* участок — с карточки своего острова, не из меню (22.11) */
+$("iv").onclick=invite;$("ih").onclick=()=>fresh("hero");$("os").onclick=()=>onlyStory();$("so").onclick=()=>fresh("solo");$("pl").onclick=()=>{guestExit();plotPick()};return}  /* участок — с карточки своего острова, не из меню (22.11) */
 const fn=esc(f.name),turn=f.turn==="me"?`<p style="margin:0"><b style="font-weight:500">Ход за тобой:</b> ${fn} ${gF(f.gn,"прислал","прислала","присылает")} партию.</p>`:f.turn==="them"?`<p style="margin:0">Ждём ответа: ${fn} получил твою партию.</p>`:"";
 const fresh0=!f.last&&!f.turn?`<p style="margin:0">${fn} на твоей карте. Вы ещё не играли — начни первую партию: ответишь о себе и о том, как ответит ${fn}.</p>`:"";
 const mk=f.mark?`<p style="margin:0">${fn} ${gF(f.gn,"угадывал","угадывала","угадывает")} твою ситуацию — отметь, ${gF(f.gn,"угадал ли","угадала ли","угадано ли")}.</p>`:"";
@@ -2276,7 +2295,7 @@ takeInbox(r.inbox);if(dirty)flush();
 if(!rulesOk())await new Promise(res=>rulesGate(res));
 const sp=TG?(TG.initDataUnsafe||{}).start_param:new URLSearchParams(location.search).get("startapp");
 if(sp==="obmen"){location.href="/obmen";return}
-if(sp==="garden")return garden();if(sp==="plot")return plotMap();  /* ссылки бота: напоминания — в сад, гости и общее дело на участке — на участок */
+if(sp==="garden")return garden();if(sp==="plot")return plotPick();  /* ссылки бота: напоминания — в сад, гости и общее дело на участке — на участок */
 const meetGo=async id=>{const r=await API("/meet/"+id+"/accept","POST");if(r.bridge){focus=r.friend.id;return world()}
 card(`<h2>Приглашение принято</h2><p style="margin:0">Мост появится, когда ${esc(r.friend.name)} тоже откроет приглашение. Бот напишет тебе.</p><button class="main-btn" id="mp">На карту</button>`);$("mp").onclick=world};
 if(sp&&sp[0]==="m")return meetGo(sp);
