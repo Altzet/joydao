@@ -67,3 +67,7 @@ def test_site_login(tmp_path, monkeypatch):
     assert c.get("/obmen/api/list", headers=login(7, "М", ago=31 * 86400)).status_code == 401
     assert c.get("/obmen/api/list").status_code == 401
     assert "{{BOT}}" not in c.get("/obmen").text
+    # тот же вход открывает и игру на сайте: nunu.html шлёт его в X-Init-Data с меткой «tglogin:»
+    game = {"X-Init-Data": nunu.SITE + login(7, "Мирослава")["X-Tg-Login"]}
+    assert c.get("/nunu/api/state", headers=game).status_code == 200
+    assert c.get("/nunu/api/state", headers={"X-Init-Data": nunu.SITE + bad["X-Tg-Login"]}).status_code == 401

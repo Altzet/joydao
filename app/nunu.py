@@ -9,18 +9,21 @@ from __future__ import annotations
 import asyncio
 import base64
 import hashlib
+import hmac
 import json
 import logging
 import math
 import os
 import re
 import secrets
+import time
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from types import SimpleNamespace
 
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
@@ -96,15 +99,35 @@ def _seen(c: sqlite3.Connection, u) -> None:
         c.execute("INSERT OR REPLACE INTO users(tg_id, name) VALUES(?, ?)", (u.id, u.first_name[:30]))
 
 
-def _user(init_data: str | None):
-    """Кто играет: проверка подписи Telegram initData. Без неё — 401."""
-    from aiogram.utils.web_app import safe_parse_webapp_init_data
+LOGIN_DAYS = 30  # ponytail: вход на сайте через Telegram живёт месяц, потом нажать «Войти» ещё раз
+SITE = "tglogin:"  # так игра на сайте помечает данные виджета в том же заголовке X-Init-Data
+
+
+def _site_login(tg_login: str):
+    """Сайт: данные виджета «Войти через Telegram»
+    (подпись: HMAC-SHA256 ключом sha256(токена бота), core.telegram.org/widgets/login). Не сошлось — None."""
     try:
-        u = safe_parse_webapp_init_data(config.BOT_TOKEN, init_data or "").user
+        d = {k: str(v) for k, v in json.loads(urllib.parse.unquote(tg_login)).items()}
+        h = d.pop("hash")
+        check = "\n".join(f"{k}={d[k]}" for k in sorted(d))
+        good = hmac.new(hashlib.sha256(config.BOT_TOKEN.encode()).digest(), check.encode(), hashlib.sha256).hexdigest()
+        if hmac.compare_digest(h, good) and time.time() - int(d["auth_date"]) < LOGIN_DAYS * 86400:
+            return SimpleNamespace(id=int(d["id"]), first_name=d.get("first_name", "")[:30] or "Участник", username=d.get("username"))
+    except Exception:
+        pass
+    return None
+
+
+def _user(init_data: str | None):
+    """Кто играет: в Telegram — подпись initData, на сайте — подпись виджета входа. Без них — 401."""
+    from aiogram.utils.web_app import safe_parse_webapp_init_data
+    site = (init_data or "").startswith(SITE)
+    try:
+        u = _site_login(init_data[len(SITE):]) if site else safe_parse_webapp_init_data(config.BOT_TOKEN, init_data or "").user
     except Exception:
         u = None
     if not u:
-        raise HTTPException(401, "Откройте игру в Telegram")
+        raise HTTPException(401, "Войди через Telegram ещё раз" if site else "Откройте игру в Telegram")
     with closing(_db()) as c:
         if _level(c, u.id) >= 3:
             raise HTTPException(403, "Доступ к «Ну-ну» закрыт по жалобам участников. Если это ошибка — напиши автору игры.")

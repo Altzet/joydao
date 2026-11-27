@@ -257,7 +257,12 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const ls={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}push()}};
 /* этап 2: в Telegram игрок узнаётся сам (initData), игра идёт по одной ссылке, сад и мосты живут на сервере.
 Каждый лишний шаг отсекает часть людей (Fogg, B=MAP), поэтому никаких кодов. Вне Telegram — страница «Открыть в Telegram» */
-const API=TG?(p,m="GET",d)=>fetch("/nunu/api"+p,{method:m,headers:{"X-Init-Data":TG.initData,"Content-Type":"application/json"},body:d&&JSON.stringify(d)}).then(r=>r.ok?r.json():Promise.reject(r.status)):null;
+/* сайт (27.11): вне Telegram та же игра, вход — виджет «Войти через Telegram», общий с /obmen (localStorage "obmen-login");
+   сервер узнаёт его по метке «tglogin:» в том же заголовке (app/nunu.py _user) */
+const SITE=TG?"":(()=>{try{return localStorage.getItem("obmen-login")||""}catch(e){return""}})();
+const AUTH=TG?TG.initData:SITE&&"tglogin:"+SITE;
+function siteOut(){try{localStorage.removeItem("obmen-login")}catch(e){}location.reload()}
+const API=AUTH?(p,m="GET",d)=>fetch("/nunu/api"+p,{method:m,headers:{"X-Init-Data":AUTH,"Content-Type":"application/json"},body:d&&JSON.stringify(d)}).then(r=>r.ok?r.json():Promise.reject(r.status)):null;
 let pushT,tgName="";
 /* настройки: тема, цвет акцента, размер текста; живут в аккаунте вместе с садом */
 const ACC={teal:["Бирюза","#1D7A5C","#fff","#5DCAA5","#04342C"],coral:["Коралл","#B5482A","#fff","#F0997B","#4A1B0C"],blue:["Синий","#1F6FB8","#fff","#85B7EB","#042C53"],
@@ -294,8 +299,8 @@ app.innerHTML=`<h1>Настройки</h1>
 <div class="zone">Пускать друзей в гости</div><div class="row">${b("go-on","Да",!prefs.visitClosed)}${b("go-off","Нет, участок закрыт",!!prefs.visitClosed)}</div>
 ${prefs.visitClosed?`<p class="note" style="margin:0">Участок закрыт: друзья увидят, что ты пока не пускаешь гостей.</p>`:`<div class="zone">Сообщать, когда друг зашёл</div><div class="row">${b("gv-on","Да",!prefs.visitOff)}${b("gv-off","Не надо",!!prefs.visitOff)}</div>
 <div class="zone">Сообщать о комментариях</div><div class="row">${b("gc-on","Да",!prefs.commOff)}${b("gc-off","Не надо",!!prefs.commOff)}</div>`}</div>
-${HS.ok()?`<div class="card"><h2>Ярлык на рабочем столе</h2><p style="margin:0" id="hsst">«Ну-ну» открывается в один тап, как обычное приложение.</p><button class="n" id="hsset" style="align-self:flex-start">📌 Добавить ярлык</button></div>`:""}${API?`<div class="card"><h2>Свои ситуации</h2><p style="margin:0">Пройдено ситуаций: ${scenePool().filter(k=>seen.includes(k)).length} из ${scenePool().length}. Когда пройдёшь все, сможешь предложить свою — её опубликуют в канале на голосование.</p><button class="n" id="sbm" style="align-self:flex-start">Мои ситуации</button></div>`:""}`;
-if($("sbm"))$("sbm").onclick=()=>subForm(settings);$("rlset").onclick=openRules;if($("hsset")){$("hsset").onclick=HS.add;HS.st(st=>{if(st==="added"&&$("hsset")){$("hsset").remove();$("hsst").textContent="Ярлык уже на рабочем столе ✓"}})}
+${HS.ok()?`<div class="card"><h2>Ярлык на рабочем столе</h2><p style="margin:0" id="hsst">«Ну-ну» открывается в один тап, как обычное приложение.</p><button class="n" id="hsset" style="align-self:flex-start">📌 Добавить ярлык</button></div>`:""}${API?`<div class="card"><h2>Свои ситуации</h2><p style="margin:0">Пройдено ситуаций: ${scenePool().filter(k=>seen.includes(k)).length} из ${scenePool().length}. Когда пройдёшь все, сможешь предложить свою — её опубликуют в канале на голосование.</p><button class="n" id="sbm" style="align-self:flex-start">Мои ситуации</button></div>`:""}${SITE?`<div class="card"><h2>Вход на сайте</h2><p style="margin:0">Вход через Telegram сохранён на этом устройстве. На чужом компьютере лучше выйти.</p><button class="n" id="sout" style="align-self:flex-start">Выйти</button></div>`:""}`;
+if($("sout"))$("sout").onclick=siteOut;if($("sbm"))$("sbm").onclick=()=>subForm(settings);$("rlset").onclick=openRules;if($("hsset")){$("hsset").onclick=HS.add;HS.st(st=>{if(st==="added"&&$("hsset")){$("hsset").remove();$("hsst").textContent="Ярлык уже на рабочем столе ✓"}})}
 const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
 ["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});GNK.forEach(([k])=>$("gn-"+k).onclick=()=>{prefs.gn=k;save2()});
 [["go","visitClosed"],["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{if(!$(id+"-on"))return;$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
@@ -333,7 +338,7 @@ else if(nav.cur==="garden")garden()}
 function takeInbox(inbox){if(!inbox||!inbox.length)return false;let n=0;inbox.forEach(x=>{if(!seeds.some(y=>y.pid&&y.pid===x.pid)){seeds.push(x);n++}});if(n){raw("nunu-seeds",seeds);setDirty(true)}return n>0}
 function push(){if(!API)return;setDirty(true);clearTimeout(pushT);pushT=setTimeout(flush,600)}
 function flush(leaving){if(!API||sync.rev==null)return;if(pushing){again=true;return}clearTimeout(pushT);pushing=true;const data=JSON.parse(J(mine())),body=J({data,base:sync.rev});
-fetch("/nunu/api/state",{method:"PUT",headers:{"X-Init-Data":TG.initData,"Content-Type":"application/json"},body,keepalive:!!leaving&&body.length<60000})
+fetch("/nunu/api/state",{method:"PUT",headers:{"X-Init-Data":AUTH,"Content-Type":"application/json"},body,keepalive:!!leaving&&body.length<60000})
 .then(async r=>{const j=await r.json().catch(()=>({}));pushing=false;
 if(r.ok){setSync(j.rev,data);if(J(mine())===J(data))setDirty(false)}
 else if(r.status===409&&j.detail){const s=j.detail.data;adopt(mergeAll(sync.base,mine(),s));setSync(j.detail.rev,s);rerender();again=true}
@@ -685,9 +690,12 @@ const gd=guestDeed&&guestDeed.fid===fid?guestDeed.o:null;guestDeed=null;if(fid&&
 /* вне Telegram: игра живёт в Telegram — там аккаунт, карта, друзья и сад на любом устройстве */
 function home(){if(API)return world();
 app.innerHTML=`<h1>Ну-ну</h1><div class="card"><p style="margin:0">Игра о том, знаешь ли ты друга. И знает ли он тебя.</p>
-<p style="margin:0">Она живёт в Telegram: там твой остров, мосты к друзьям и сад. Работает на телефоне и на компьютере.</p>
-<a class="main-btn" style="text-decoration:none" href="https://t.me/JOYDAO_bot/nunu">Открыть в Telegram</a></div>
-<p class="note">Компас, а не рентген: игра показывает, как ты видишь себя и как тебя видят другие. В основе — окно Джохари (Лафт и Ингэм, 1955).</p>`}
+<p style="margin:0">Войди через Telegram — и здесь будут твой остров, мосты к друзьям и сад, те же, что в приложении.</p>
+<div id="tgw"></div><p class="note" style="margin:0">Или <a href="https://t.me/JOYDAO_bot/nunu">открой «Ну-ну» в Telegram</a>.</p></div>
+<p class="note">Компас, а не рентген: игра показывает, как ты видишь себя и как тебя видят другие. В основе — окно Джохари (Лафт и Ингэм, 1955).</p>`;
+const sc=document.createElement("script");sc.async=true;sc.src="https://telegram.org/js/telegram-widget.js?22";
+[["data-telegram-login","JOYDAO_bot"],["data-size","large"],["data-radius","12"],["data-request-access","write"],["data-onauth","onTgAuth(user)"]].forEach(([k,v])=>sc.setAttribute(k,v));$("tgw").appendChild(sc)}
+window.onTgAuth=u=>{try{localStorage.setItem("obmen-login",encodeURIComponent(JSON.stringify(u)))}catch(e){}location.reload()};
 /* кто сейчас отвечает: я — тёплый песок, друг — бирюза; разные цвет, буква и слова, чтобы не перепутать шаги */
 const ask=(me,name,warm,gn)=>me?`<div class="ask me"><span class="av">Я</span><div><b>Отвечаю за себя</b><small>${warm?"Мой выбор на данный момент":gMe("Как поступлю я сам на данный момент?","Как поступлю я сама на данный момент?","Как поступлю я на данный момент?")}</small></div></div>`
 :`<div class="ask fr"><span class="av">${name?esc(name[0].toUpperCase()):"?"}</span><div><b>${name?"Теперь за друга: "+esc(name):"Теперь за друга"}</b><small>${gF(gn,"Как ответил бы","Как ответила бы","Как ответит")} ${name?esc(name):"твой друг"}? В вопросе «я» и «ты» — это ${name?esc(name):gF(gn,"он","она","друг")}.</small></div></div>`;
@@ -933,7 +941,10 @@ ${k==="map"?`<button class="n" data-gps="${id}" style="align-self:flex-start">Я
 function compass(cb){const D=TG&&TG.DeviceOrientation;if(!D||!TG.isVersionAtLeast("8.0"))return cb(null,"Компас работает в Telegram 8.0 и новее. Выбери сторону вручную.");
 D.start({refresh_rate:100,need_absolute:true},ok=>{if(!ok)return cb(null,"Телефон не дал компас. Выбери сторону вручную.");
 setTimeout(()=>{const a=D.alpha,abs=D.absolute;D.stop();if(a==null||!abs)return cb(null,"Компас не нашёл север. Выбери сторону вручную.");cb((360-a*180/Math.PI+360)%360)},1200)})}
-function gps(cb){const L=TG&&TG.LocationManager;if(!L||!TG.isVersionAtLeast("8.0"))return cb(null,"Геопозиция работает в Telegram 8.0 и новее. Вставь ссылку из Google Карт.");
+function gps(cb){const L=TG&&TG.LocationManager;
+/* на сайте — геопозиция браузера (те же поля latitude/longitude) */
+if(!TG&&navigator.geolocation)return navigator.geolocation.getCurrentPosition(p=>cb({latitude:p.coords.latitude,longitude:p.coords.longitude}),()=>cb(null,"Браузер не дал геопозицию. Разреши её для сайта или вставь ссылку из Google Карт."),{enableHighAccuracy:true,timeout:15000});
+if(!L||!TG.isVersionAtLeast("8.0"))return cb(null,"Геопозиция работает в Telegram 8.0 и новее. Вставь ссылку из Google Карт.");
 const get=()=>L.getLocation(d=>d?cb(d):cb(null,L.isAccessRequested&&!L.isAccessGranted?"Нет доступа к геопозиции: разреши его в настройках бота.":"Не получилось определить место."));
 L.isInited?get():L.init(get)}
 /* уклон по открытым данным рельефа (сервер спрашивает Open Topo Data: EU-DEM 25 м или SRTM 30 м) */
@@ -1264,7 +1275,7 @@ box.innerHTML=`<span class="note">Отправляю…</span>`;API("/report","P
 box.innerHTML=`<span class="note">Спасибо, жалоба принята.${kind==="comment"?" Комментарий убран.":""}</span>`;
 if(kind==="comment"){myComm=(myComm||[]).filter(c=>String(c.id)!==ref);setTimeout(()=>{pDraw();pPanel()},1500)}},
 er=>{box.innerHTML=`<span class="note">${er===404?"Это уже убрано или жалоба тут не принимается.":"Не получилось отправить — попробуй позже."}</span>`})}},true);
-const myId=()=>{try{return TG.initDataUnsafe.user.id||0}catch(e){return 0}};let myComm=null;const commFor=id=>((PS.guest?PS.guest.comm:myComm)||[]).filter(c=>c.obj===id);
+const myId=()=>{try{return(TG?TG.initDataUnsafe.user:JSON.parse(decodeURIComponent(SITE))).id||0}catch(e){return 0}};let myComm=null;const commFor=id=>((PS.guest?PS.guest.comm:myComm)||[]).filter(c=>c.obj===id);
 function plotMap(opt){opt=opt||{};setNav("plot");document.body.classList.add("on-map");document.body.classList.toggle("guest",!!PS.guest);if(!PS.guest){pSync();if(API&&!opt.noComm)API("/plot/comments").then(c=>{myComm=c;if($("pm")&&!PS.guest){pDraw();pPanel()}},()=>{})}if(opt.fresh!=null){PS.fresh=opt.fresh;PS.seed=opt.fresh;PS.sel=null}
 app.innerHTML=`<div id="mapw" class="pw" style="background:#D3DEC6">${pArt()}<div class="mctl"><button id="zi" aria-label="Приблизить">+</button><button id="zo" aria-label="Отдалить">−</button><button id="zm" aria-label="Весь участок">◎</button><button id="p3b" aria-label="Пройтись в 3D" style="font-size:14px;font-weight:600">3D</button><button id="pu" aria-label="Отменить">↶</button>${fsBtn()}</div>
 <div class="pcomp" aria-hidden="true">${pComp()}</div><button id="pvw" aria-label="Вид карты: спутник или схема" style="position:absolute;right:62px;top:10px;font-size:12px;color:#3B2F1A;background:rgba(255,248,231,.88);border:0;border-radius:10px;padding:6px 9px;line-height:1.1;text-align:right">${pVwTxt()}</button><div class="pslope" id="pslope">${pSlopeChip()}</div><div class="pscale" id="pscale"></div><div class="pmode" id="pmode" role="toolbar" aria-label="Режимы карты"></div>
@@ -2203,7 +2214,7 @@ if(window.qrcode)return draw();box.innerHTML=`<p class="note" style="margin:0">�
 const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";s.onload=()=>{box.innerHTML="";draw()};s.onerror=()=>box.innerHTML=`<p class="err" style="margin:0">QR-код не загрузился. Проверь интернет.</p>`;document.head.appendChild(s)}
 /* «Отправить в Telegram» (25.11): сначала shareMessage (Bot API 8.0 — окно выбора чата везде, и на компьютере),
    не вышло — старый t.me/share; совсем никак — подсказка скопировать ссылку */
-function sendTG(msg,l){const old=()=>{try{TG.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(l)+"&text="+encodeURIComponent(msg))}catch(e){}
+function sendTG(msg,l){const old=()=>{const u="https://t.me/share/url?url="+encodeURIComponent(l)+"&text="+encodeURIComponent(msg);try{TG?TG.openTelegramLink(u):open(u,"_blank")}catch(e){}
 if($("cpn"))$("cpn").textContent="Если окно выбора чата не открылось — нажми «Скопировать» и вставь ссылку другу."};
 if(!(API&&TG&&TG.shareMessage&&TG.isVersionAtLeast&&TG.isVersionAtLeast("8.0")))return old();
 API("/share","POST",{text:msg,url:l}).then(r=>{try{TG.shareMessage(r.id)}catch(e){old()}},old)}
@@ -2255,7 +2266,7 @@ if(d){adopt(dirty&&sync.base?mergeAll(sync.base,mine(),d):dirty?mergeAll({},mine
 /* общие дела от друзей: ложатся в сад, если такого ещё нет */
 takeInbox(r.inbox);if(dirty)flush();
 if(!rulesOk())await new Promise(res=>rulesGate(res));
-const sp=(TG.initDataUnsafe||{}).start_param;
+const sp=TG?(TG.initDataUnsafe||{}).start_param:new URLSearchParams(location.search).get("startapp");
 if(sp==="obmen"){location.href="/obmen";return}
 if(sp==="garden")return garden();if(sp==="plot")return plotMap();  /* ссылки бота: напоминания — в сад, гости и общее дело на участке — на участок */
 if(sp&&sp[0]==="m"){const r=await API("/meet/"+sp+"/accept","POST");if(r.bridge){focus=r.friend.id;return world()}
@@ -2265,7 +2276,7 @@ if(sp&&sp[0]==="i"){const r=await API("/invite/"+sp+"/accept","POST");if(r.frien
 а недоигранная партия продолжается с того же места */
 /* 26.11: бот пишет хозяину ссылку «партия_игрок» — сразу открываем мост с тем, кто ответил (старые ссылки — с последним ответившим) */
 if(sp){const[g,f]=sp.split("_");if(f||g===st.gid||g!==st.join)await join(g,+f||0)}
-else if(!(st.started&&st.g&&st.g.length>0&&st.g.length<GN()))return world()}catch(e){}
+else if(!(st.started&&st.g&&st.g.length>0&&st.g.length<GN()))return world()}catch(e){if(e===401&&SITE)return siteOut()}  /* вход на сайте протух — войти заново */
 go()}
 boot();
 </script>
