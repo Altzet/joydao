@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS deeds (a INTEGER NOT NULL, b INTEGER NOT NULL, n INTE
     PRIMARY KEY (a, b));
 CREATE TABLE IF NOT EXISTS deed_ids (pid TEXT PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS deed_calls (pid TEXT NOT NULL, by INTEGER NOT NULL, to_id INTEGER NOT NULL, text TEXT NOT NULL,
-    ans TEXT, PRIMARY KEY (pid, to_id));
+    ans TEXT, seed TEXT, PRIMARY KEY (pid, to_id));
 CREATE TABLE IF NOT EXISTS plot_comments (id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER NOT NULL, author INTEGER NOT NULL,
     obj TEXT NOT NULL, text TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')));
 CREATE TABLE IF NOT EXISTS plot_visits (owner INTEGER NOT NULL, guest INTEGER NOT NULL, at TEXT NOT NULL, PRIMARY KEY (owner, guest));
@@ -463,9 +463,8 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
             raise HTTPException(404, "Друг не найден")
         _muted(c, u.id)
         here = _plot_obj(c, fid, body.obj) if body.obj and not (_owner_state(c, fid).get("nunu-prefs") or {}).get("visitClosed") else None
-        seed = {"c": "Удиви себя", "q": f"Общее дело · вдвоём: я и {u.first_name[:30]}", "r": text, "z": -1,
-                "d": date.today().isoformat(), "due": due, "at": (body.at or "")[:5] or None, "tz": body.tz, "life": None, "mine": False, "step": 1,
-                "with": u.first_name[:30], "fid": u.id, "by": u.id, "pid": body.pid.strip()[:16]}
+        seed = deed_seed(text, body.pid.strip()[:16], u.id, u.id, u.first_name) | {
+            "due": due, "at": (body.at or "")[:5] or None, "tz": body.tz}
         if here and "x" in here:  # семя встанет у этого объекта на участке друга
             seed["loc"] = {"x": here["x"] + (here.get("w") or 0) / 2, "y": here["y"] + (here.get("h") or 0) / 2,
                            "o": here["id"], "dx": 0, "dy": 0}
@@ -481,6 +480,13 @@ async def plan_deed(fid: int, body: PlanIn, x_init_data: str | None = Header(def
     return {"ok": True}
 
 
+def deed_seed(text: str, pid: str, by: int, fid: int, fname: str) -> dict:
+    """Семя общего дела для сада: с кем (fid, fname) и кто позвал (by). Один pid у обоих — доски засчитаются один раз."""
+    return {"c": "Удиви себя", "q": f"Общее дело · вдвоём: я и {fname[:30]}", "r": text, "z": -1,
+            "d": date.today().isoformat(), "due": None, "at": None, "tz": None, "life": None, "mine": False, "step": 1,
+            "with": fname[:30], "fid": fid, "by": by, "pid": pid}
+
+
 def deed_answer(data: str, uid: int) -> tuple[str, tuple[int, str] | None]:
     """Кнопка под приглашением на общее дело: «Принимаю» / «Не сейчас».
     Ответ — строчка тому, кто нажал, и сообщение автору дела (один раз: повторное нажатие автору не пишет)."""
@@ -491,6 +497,8 @@ def deed_answer(data: str, uid: int) -> tuple[str, tuple[int, str] | None]:
             return "Это дело уже не найти — загляни в сад 🌱", None
         first = c.execute("UPDATE deed_calls SET ans=? WHERE pid=? AND to_id=? AND ans IS NULL",
                           ("y" if yes else "n", pid, uid)).rowcount
+        if first and yes and r["seed"]:  # обмен: в сад принявшего дело попадает только сейчас
+            c.execute("INSERT INTO inbox(tg_id, seed) VALUES(?, ?)", (uid, r["seed"]))
         nm = lambda x: (c.execute("SELECT name FROM users WHERE tg_id=?", (x,)).fetchone() or {"name": "Друг"})["name"]  # noqa: E731
         by_name, me = nm(r["by"]), nm(uid)
         g = _gn(c, uid)
@@ -499,7 +507,7 @@ def deed_answer(data: str, uid: int) -> tuple[str, tuple[int, str] | None]:
         note = (f"{me} {gw(g, 'принял', 'приняла', 'принимает')} общее дело 🤝\n\n«{r['text']}»\n\n"
                 "Когда сделаете, отметьте в саду — ваш мост получит +3 доски.")
     else:
-        reply = f"Хорошо, {by_name} узнает, что пока не выходит. Дело останется в саду — вдруг получится."
+        reply = f"Хорошо, {by_name} узнает, что пока не выходит." + ("" if r["seed"] else " Дело останется в саду — вдруг получится.")
         note = f"{me}: пока не выходит 🙏\n\n«{r['text']}»\n\nМожно предложить другой день."
     return reply, (r["by"], note) if first else None
 

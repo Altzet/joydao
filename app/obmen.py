@@ -7,7 +7,9 @@
 """
 from __future__ import annotations
 
+import asyncio
 import html
+import secrets
 import json
 from datetime import date
 from contextlib import closing
@@ -137,9 +139,16 @@ async def create(body: OfferIn, x_init_data: str | None = Header(default=None),
                              body.how, body.how_note.strip() if body.how != "gift" else "", body.circle,
                              u.username or ""))
         to = _tell_bridges(c, u, body.kind, body.title.strip())
-    for uid, text in to:
-        nunu._bg(nunu._notify(uid, text, nunu.link("obmen"), pic="exchange"))
+    if to:
+        nunu._bg(_send_all(to))
     return {"id": cur.lastrowid}
+
+
+async def _send_all(to: list[tuple[int, str]]) -> None:
+    """По одному, с паузой: лимит Telegram ~30 сообщений/с (как анонс в pause.py)."""
+    for uid, text in to:
+        await nunu._notify(uid, text, nunu.link("obmen"), pic="exchange")
+        await asyncio.sleep(0.05)
 
 
 VERB = {"give": "отдаёт", "seek": "ищет", "skill": "предлагает помочь:"}
@@ -190,7 +199,8 @@ class ReplyIn(BaseModel):
 @router.post("/obmen/api/offer/{oid}/reply")
 async def reply(oid: int, body: ReplyIn, x_init_data: str | None = Header(default=None),
            x_tg_login: str | None = Header(default=None)):
-    """Отклик: один на человека и предложение. Автору пишет бот, с упоминанием — ответить можно в один тап."""
+    """Отклик: один на человека и предложение. Обмен — это общее дело: у откликнувшегося оно сразу в саду,
+    автору приходит приглашение с «Принимаю / Не сейчас» (как в nunu.plan_deed); приняли и отметили — мост +3 доски."""
     u = _who(x_init_data, x_tg_login)
     with closing(_db()) as c:
         nunu._muted(c, u.id)
@@ -202,8 +212,18 @@ async def reply(oid: int, body: ReplyIn, x_init_data: str | None = Header(defaul
             if not c.execute("INSERT OR IGNORE INTO offer_replies(offer, by, text) VALUES(?,?,?)",
                              (oid, u.id, body.text.strip())).rowcount:
                 return {"ok": True, "again": True}
+            owner = (c.execute("SELECT name FROM users WHERE tg_id=?", (o["owner"],)).fetchone() or {"name": "Участник"})["name"]
+            pid, deed = "o" + secrets.token_hex(5), f"Обмен: «{o['title']}»"
+            c.execute("INSERT INTO inbox(tg_id, seed) VALUES(?, ?)",
+                      (u.id, json.dumps(nunu.deed_seed(deed, pid, u.id, o["owner"], owner), ensure_ascii=False)))
+            c.execute("INSERT INTO deed_calls(pid, by, to_id, text, seed) VALUES(?,?,?,?,?)",
+                      (pid, u.id, o["owner"], deed,
+                       json.dumps(nunu.deed_seed(deed, pid, u.id, u.id, u.first_name), ensure_ascii=False)))
     who = f'<a href="tg://user?id={u.id}">{html.escape(u.first_name)}</a>' + (f" (@{u.username})" if u.username else "")
     note = f"\n«{html.escape(body.text.strip())}»" if body.text.strip() else ""
     nunu._bg(nunu._notify(o["owner"], f"🌱 {who} откликается на твоё «{html.escape(o['title'])}»{note}\n\n"
-                                      "Напиши в ответ — договоритесь напрямую.", nunu.link("obmen"), html=True, pic="exchange"))
+                                      "Это общее дело 🤝 Примешь — оно появится в саду, когда сделаете, отметьте — "
+                                      "ваш мост получит +3 доски. Договоритесь напрямую: напиши в ответ.",
+                          nunu.link("obmen"), html=True, pic="exchange",
+                          btns=[("🤝 Принимаю", f"jd:y:{pid}"), ("Не сейчас", f"jd:n:{pid}")]))
     return {"ok": True}

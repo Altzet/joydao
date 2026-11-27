@@ -39,6 +39,13 @@ def test_obmen(tmp_path, monkeypatch):
     assert c.post(f"/obmen/api/offer/{ids['fof']}/reply", json={"text": "заберу"}, headers=olia).json() == {"ok": True}
     assert c.post(f"/obmen/api/offer/{ids['fof']}/reply", json={}, headers=olia).json()["again"]  # второй раз — без письма
     assert sent == ["bg"]
+    # обмен — общее дело: у Оли оно уже в саду, Антону — приглашение с кнопками; принял — и у него в саду
+    seed = c.get("/nunu/api/state", headers=olia).json()["inbox"][0]
+    assert seed["fid"] == 1 and seed["by"] == 3 and "Кабачки" in seed["r"]
+    reply, note = nunu.deed_answer("jd:y:" + seed["pid"], 1)
+    assert note[0] == 3 and "Антон принял общее дело" in note[1]
+    mine_seed = c.get("/nunu/api/state", headers=anton).json()["inbox"][0]
+    assert mine_seed["pid"] == seed["pid"] and mine_seed["fid"] == 3
     mine = {o["id"]: o for o in c.get("/obmen/api/list", headers=anton).json()["offers"]}
     assert mine[ids["fof"]]["replies"] == 1 and mine[ids["fof"]]["rel"] == "me"
 
