@@ -205,6 +205,10 @@ def test_joint_deed(tmp_path, monkeypatch):
     inbox = c.get("/nunu/api/state", headers=evgen).json()["inbox"]
     assert inbox[0]["pid"] == "abc12345" and inbox[0]["fid"] == 1 and inbox[0]["due"] == "2026-11-20"
     assert c.get("/nunu/api/state", headers=evgen).json()["inbox"] == []  # отдаётся один раз
+    assert nunu.deed_answer("jd:y:abc12345", 3)[1] is None  # Боря не звали
+    reply, note = nunu.deed_answer("jd:y:abc12345", 2)  # Евген нажал «Принимаю» — Антону весть
+    assert "Антон узнает" in reply and note[0] == 1 and "Евген принял общее дело" in note[1] and "Сходим в баню" in note[1]
+    assert nunu.deed_answer("jd:n:abc12345", 2)[1] is None  # передумал — Антону второй раз не пишем
     c.post("/nunu/api/friend/2/deed", json={"pid": "abc12345"}, headers=anton)
     c.post("/nunu/api/friend/1/deed", json={"pid": "abc12345"}, headers=evgen)
     assert c.get("/nunu/api/world", headers=anton).json()["friends"][0]["boards"] == 3.0

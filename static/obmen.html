@@ -181,7 +181,7 @@ ${mine?`<div><span>Видят</span><span>${CIRC[o.circle]}</span></div><div><sp
 ${mine?`<button class="btn o" id="cl">Закрыть предложение</button>`
 :`<div class="person"><span class="av" style="width:40px;height:40px">${esc(o.name[0])}</span>
 <span><b>${esc(o.name)}</b><span class="sub">${esc(relText(o))}${o.username?" · @"+esc(o.username):""}</span></span></div>
-${o.replied?`<div class="ok">Ты уже откликнулся — ${esc(o.name)} получил сообщение от бота.</div>`
+${o.replied?`<div class="ok">Ты уже откликнулся — ${esc(o.name)} получил сообщение от бота. Это ваше общее дело: оно в твоём саду, сделаете — отметьте, мост +3 доски.</div>`
 :`<label class="f">Пара слов (можно пусто)<textarea id="rt" rows="2" maxlength="300" placeholder="Например: заберу в субботу, взамен — банка мёда"></textarea></label>
 <button class="btn" id="rp">Откликнуться</button><p class="err" id="er"></p>`}<div id="rep"><button class="lnk" id="rpb">⚑ Пожаловаться</button></div>`}`);
 if(!mine)$("rpb").onclick=()=>{$("rep").innerHTML=`<p class="sub" style="margin:0 0 6px">Что не так?</p><div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${REPW.map(w=>`<button class="chip" data-w="${w}">${w}</button>`).join("")}</div>`;

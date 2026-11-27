@@ -98,6 +98,23 @@ async def mood_button(cb: CallbackQuery):
         await cb.message.answer(text)
 
 
+@router.callback_query(F.data.startswith("jd:"))
+async def deed_button(cb: CallbackQuery):
+    """Приглашение на общее дело: «Принимаю» / «Не сейчас». Кнопки ответа убираем, «Открыть» оставляем, автору — весть."""
+    from . import nunu as game  # имя nunu в этом файле занято маршрутом /nunu
+    await cb.answer()
+    text, note = await asyncio.to_thread(game.deed_answer, cb.data, cb.from_user.id)
+    if cb.message:
+        try:
+            rows = cb.message.reply_markup.inline_keyboard if cb.message.reply_markup else []
+            await cb.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=rows[-1:]) if rows else None)
+        except Exception:
+            pass
+        await cb.message.answer(text)
+    if note:
+        await game._notify(note[0], note[1], game.link("garden"), pic="joint")
+
+
 @router.callback_query()
 async def any_callback(cb: CallbackQuery):
     await cb.answer()

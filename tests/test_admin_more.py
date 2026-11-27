@@ -26,6 +26,8 @@ def test_admin_more(tmp_path, monkeypatch):
         db.execute("INSERT INTO friends(a, b) VALUES(1, 2)")
     offer = {"kind": "give", "type": "thing", "title": "Кабачки", "how": "hours", "circle": "all"}
     assert c.post("/obmen/api/offer", json=offer, headers=a).status_code == 200
+    assert sent == [2]  # Боря на мосту — узнал о предложении
+    sent.clear()
 
     assert c.get("/nunu/admin/api/x/funnel").status_code == 401
     f = c.get("/nunu/admin/api/x/funnel", headers=K).json()
