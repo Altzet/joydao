@@ -105,7 +105,7 @@ def page() -> HTMLResponse:
     main = "".join(f"<li><b>{E(t)}.</b> {E(x)}</li>" for t, x in MAIN)
     body = "".join(f'<h2 id="r{i}">{E(t)}</h2>{h}' for i, (t, h) in enumerate(SECTIONS))
     play = "/nunu"
-    return HTMLResponse(f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    return HTMLResponse(f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">{landing.I18N}<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Правила «Ну-ну»</title><meta name="description" content="Свод правил игры «Ну-ну»: как устроена игра, общение, обмен излишками, гости на участке, приватность, жалобы.">
 <link rel="canonical" href="{landing.SITE}/rules"><meta property="og:title" content="Свод правил «Ну-ну»"><meta property="og:url" content="{landing.SITE}/rules">
 <meta property="og:description" content="Как мы общаемся, как меняемся излишками, что видят друзья, как работают жалобы."><meta property="og:type" content="article"><meta property="og:image" content="{landing.SITE}/og.png"><meta name="twitter:card" content="summary_large_image"><meta property="og:locale" content="ru_RU">
