@@ -1,5 +1,5 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script><script src="/i18n.js"></script>
 <title>Ну-ну</title><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%228%20-1%2048%2059%22%3E%3Cpath%20d%3D%22M32%2058V30M32%2044c-5-2-9-6-11-11M32%2038c5-2%208-6%2010-11%22%20stroke%3D%22%23A0703C%22%20stroke-width%3D%225%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2220%22%20r%3D%2214%22%20fill%3D%22%231D7A5C%22/%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2230%22%20r%3D%229%22%20fill%3D%22%232E8F6E%22/%3E%3Ccircle%20cx%3D%2246%22%20cy%3D%2224%22%20r%3D%2210%22%20fill%3D%22%232E8F6E%22/%3E%3Ccircle%20cx%3D%2225%22%20cy%3D%2214%22%20r%3D%228%22%20fill%3D%22%233FA07E%22/%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2212%22%20r%3D%227%22%20fill%3D%22%233FA07E%22/%3E%3Ccircle%20cx%3D%2227%22%20cy%3D%2222%22%20r%3D%223.2%22%20fill%3D%22%23E2533F%22/%3E%3Ccircle%20cx%3D%2241%22%20cy%3D%2221%22%20r%3D%223.2%22%20fill%3D%22%23E2533F%22/%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2231%22%20r%3D%223%22%20fill%3D%22%23E2533F%22/%3E%3C/svg%3E">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500&family=Golos+Text:wght@400;500&display=swap">
@@ -281,6 +281,7 @@ try{TG&&TG.setHeaderColor&&TG.setHeaderColor(getComputedStyle(r).getPropertyValu
 applyPrefs();try{TG&&TG.onEvent("themeChanged",applyPrefs)}catch(e){}
 function settings(){setNav("settings");const b=(id,txt,on)=>`<button class="${on?"t":"n"}" id="${id}" aria-pressed="${on}">${txt}</button>`,i=FS.indexOf(prefs.fs);
 app.innerHTML=`<h1>Настройки</h1>
+${window.I18N?`<div class="card"><h2>Язык</h2><div class="row" translate="no">${["ru","uk","en"].map(l=>b("lg-"+l,I18N.names[l],I18N.lang===l)).join("")}</div></div>`:""}
 <div class="card"><h2>Как к тебе обращаться?</h2><div class="row">${GNK.map(([k,l])=>b("gn-"+k,l,prefs.gn===k)).join("")}</div><p class="note" style="margin:0">Так это звучит: «${gMe("Ты принял правила","Ты приняла правила","Правила приняты")}», «${SAME()}». Друзья видят фразы о тебе так же.</p></div>
 <div class="card"><h2>Правила</h2><p style="margin:0">${prefs.rules?gMe("Ты принял правила ","Ты приняла правила ","Правила приняты ")+esc(fmtD(prefs.rules.at))+".":"Как мы общаемся, что видят друзья, как работают жалобы."}</p><button class="n" id="rlset" style="align-self:flex-start">📜 Свод правил</button></div>
 <div class="card"><h2>Тема</h2><div class="row">${b("th-auto","Как в Telegram",prefs.theme==="auto")}${b("th-light","Светлая",prefs.theme==="light")}${b("th-dark","Тёмная",prefs.theme==="dark")}</div></div>
@@ -302,6 +303,7 @@ ${prefs.visitClosed?`<p class="note" style="margin:0">Участок закры�
 ${HS.ok()?`<div class="card"><h2>Ярлык на рабочем столе</h2><p style="margin:0" id="hsst">«Ну-ну» открывается в один тап, как обычное приложение.</p><button class="n" id="hsset" style="align-self:flex-start">📌 Добавить ярлык</button></div>`:""}${API?`<div class="card"><h2>Свои ситуации</h2><p style="margin:0">Пройдено ситуаций: ${scenePool().filter(k=>seen.includes(k)).length} из ${scenePool().length}. Когда пройдёшь все, сможешь предложить свою — её опубликуют в канале на голосование.</p><button class="n" id="sbm" style="align-self:flex-start">Мои ситуации</button></div>`:""}${SITE?`<div class="card"><h2>Вход на сайте</h2><p style="margin:0">Вход через Telegram сохранён на этом устройстве. На чужом компьютере лучше выйти.</p><button class="n" id="sout" style="align-self:flex-start">Выйти</button></div>`:""}`;
 if($("sout"))$("sout").onclick=siteOut;if($("sbm"))$("sbm").onclick=()=>subForm(settings);$("rlset").onclick=openRules;if($("hsset")){$("hsset").onclick=HS.add;HS.st(st=>{if(st==="added"&&$("hsset")){$("hsset").remove();$("hsst").textContent="Ярлык уже на рабочем столе ✓"}})}
 const save2=()=>{ls.set("nunu-prefs",prefs);applyPrefs();settings()};
+["ru","uk","en"].forEach(l=>{if($("lg-"+l))$("lg-"+l).onclick=()=>{if(I18N.lang!==l)I18N.set(l)}});
 ["auto","light","dark"].forEach(k=>$("th-"+k).onclick=()=>{prefs.theme=k;save2()});GNK.forEach(([k])=>$("gn-"+k).onclick=()=>{prefs.gn=k;save2()});
 [["go","visitClosed"],["gv","visitOff"],["gc","commOff"]].forEach(([id,k])=>{if(!$(id+"-on"))return;$(id+"-on").onclick=()=>{delete prefs[k];save2()};$(id+"-off").onclick=()=>{prefs[k]=1;save2()}});
 app.querySelectorAll("[data-a]").forEach(x=>x.onclick=()=>{prefs.acc=x.dataset.a;save2()});
@@ -558,7 +560,7 @@ const P=["цветов","деревьев","скал"],M=["ты чаще идё�
 return`На твоём острове больше всего ${top.map(k=>P[k]).join(" и ")}: ${top.map(k=>M[k]).join(", и ")}. Цветы ${c[0]} · деревья ${c[1]} · скалы ${c[2]}.`}
 /* «Удиви себя»: своё дело первым — свои цели выполняются охотнее навязанных (Sheldon & Elliot 1999).
 План по Голльвитцеру: что, когда (дата из календаря), где, и «если помеха — то действие». Дело с другом — друг узнаёт сразу */
-const sd=d=>d&&d.length>=10?d.slice(8,10)+"."+d.slice(5,7):d||"",fmtD=d=>{try{return new Date(d+"T12:00").toLocaleDateString("ru-RU",{weekday:"short",day:"numeric",month:"long"})}catch(e){return d}},today=()=>new Date().toISOString().slice(0,10);
+const sd=d=>d&&d.length>=10?d.slice(8,10)+"."+d.slice(5,7):d||"",fmtD=d=>{try{return new Date(d+"T12:00").toLocaleDateString((window.I18N&&I18N.loc)||"ru-RU",{weekday:"short",day:"numeric",month:"long"})}catch(e){return d}},today=()=>new Date().toISOString().slice(0,10);
 function subForm(back){busy("Загружаю…");API("/subs/me").then(me=>{const cats=[...new Set(S.map(x=>x[0]))],sc=subForm.d||(subForm.d=["","",["",""],["",""],["",""]]);let anon=!!subForm.anon;
 const ST={check:"проверяется",wait:"ждёт модератора",voting:"голосование",accepted:"принята 🎉",declined:"не прошла",rejected:"не прошла проверку",removed:"снята"};
 const mine=me.mine.length?`<div class="card"><h2>Мои ситуации</h2>${me.mine.map(m=>`<div><b>${esc(m.scene[0])}</b> · ${ST[m.status]||m.status}${m.status==="voting"||m.status==="accepted"||m.status==="declined"?` · за ${m.yes} из ${m.yes+m.no}`:""}

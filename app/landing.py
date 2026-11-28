@@ -16,6 +16,10 @@ SITE = re.sub(r"/nunu/?$", "", (config.WEBAPP_URL or "https://joydao.org").rstri
 # Сайт и игра — одно целое: что можно сделать на сайте (обмен, правила, статьи), делается на сайте;
 # игра тоже: кнопка «Играть» ведёт на /nunu (вход через Telegram). Открыли страницу внутри «Ну-ну» (Mini App) —
 # кнопка становится «← В игру», ссылки t.me открывает Telegram, чужие сайты — браузер.
+# Языки: русский — исходный; украинский и английский переводит static/i18n.js прямо в браузере.
+I18N = '<script src="/i18n.js"></script>'
+LANGS = '<span class="langs" translate="no">' + " · ".join(
+    f'<a href="?lang={l}" data-lang="{l}">{l.upper()}</a>' for l in ("ru", "uk", "en")) + "</span>"
 MENU = (("/", "Главная"), ("/obmen", "Обмен"), ("/uchastok", "Участок"), ("/esli-to", "Если — то"), ("/rules", "Правила"))
 HEADER_CSS = """.site{position:sticky;top:0;z-index:9;background:var(--card,#FFFDF8);border-bottom:1px solid var(--line,#E8DEC8);font-family:inherit}
 .site .sw{max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
@@ -25,6 +29,8 @@ header.site nav{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-
 .site nav a:hover{color:var(--ink,#1F2A24)}.site nav a[aria-current=page]{color:var(--acc,#1D7A5C);background:var(--acc-soft,#E3F1EA);font-weight:600}
 .site .play{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:12px;background:var(--acc,#1D7A5C);color:var(--acc-fg,#fff);
 text-decoration:none;font-weight:600;font-size:15px;white-space:nowrap}
+.site .langs{font-size:13px;color:var(--muted,#5E655C);white-space:nowrap}.site .langs a{color:inherit;text-decoration:none;padding:4px 2px}
+.site .langs a:hover,.site .langs a[aria-current]{color:var(--ink,#1F2A24)}.site .langs a[aria-current]{font-weight:600}
 @media(max-width:860px){header.site nav{order:3;width:calc(100% + 16px);margin:0 -8px}.site .play{margin-left:auto}}"""
 LOGO = ('<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#86C3D4"/>'
         '<ellipse cx="12" cy="20" rx="8" ry="4" fill="#F3E8CF"/><ellipse cx="12" cy="18.5" rx="6" ry="2.8" fill="#A9D872"/>'
@@ -49,7 +55,7 @@ def header(cur: str, brand: str = "JoyDAO · Ну-ну") -> str:
     """Шапка с меню: одна на весь сайт, текущая страница отмечена."""
     nav = "".join(f'<a href="{u}"{" aria-current=page" if u == cur else ""}>{t}</a>' for u, t in MENU)
     return (f'<header class="site"><div class="sw"><a class="logo" href="/">{LOGO}{_brand(brand)}</a>'
-            f'<nav aria-label="Разделы сайта">{nav}</nav><a class="play" href="/nunu">Играть</a></div></header>')
+            f'<nav aria-label="Разделы сайта">{nav}</nav>{LANGS}<a class="play" href="/nunu">Играть</a></div></header>')
 
 
 def tg_js() -> str:
@@ -300,7 +306,7 @@ def render(lp: dict) -> str:
             + (f'<meta property="og:image" content="{E(img)}">' if img else "")
             + (f'<meta name="google-site-verification" content="{E(seo["gsc"])}">' if seo.get("gsc") else "")
             + '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False).replace("</", "<\\/") + "</script>")
-    return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">{I18N}<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{E(title)}</title><meta name="description" content="{E(desc)}">
 <meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(desc)}">{head}<meta property="og:type" content="website">
 <meta name="theme-color" content="#FBF7EE">{ICON}<script>document.documentElement.className="js"</script><style>{CSS}{HEADER_CSS}</style></head><body>
