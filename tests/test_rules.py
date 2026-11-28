@@ -65,7 +65,8 @@ def test_seo_pages(tmp_path, monkeypatch):
         assert r.status_code == 200 and word in r.text and f'/{slug}"' in r.text and '"FAQPage"' in r.text
         assert f"/{slug}</loc>" in c.get("/sitemap.xml").text
     assert c.get("/img/uchastok-3d.webp").status_code == 200 and c.get("/img/../app/config.py").status_code == 404
-    assert 'href="/uchastok"' in c.get("/").text
+    assert 'href="/uchastok"' in c.get("/").text and 'href="/manifest"' in c.get("/").text
+    assert "Мы не против денег" in c.get("/manifest").text
 
 
 def test_head():

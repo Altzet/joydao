@@ -16,7 +16,7 @@ SITE = re.sub(r"/nunu/?$", "", (config.WEBAPP_URL or "https://joydao.org").rstri
 # Сайт и игра — одно целое: что можно сделать на сайте (обмен, правила, статьи), делается на сайте;
 # игра тоже: кнопка «Играть» ведёт на /nunu (вход через Telegram). Открыли страницу внутри «Ну-ну» (Mini App) —
 # кнопка становится «← В игру», ссылки t.me открывает Telegram, чужие сайты — браузер.
-MENU = (("/", "Главная"), ("/obmen", "Обмен"), ("/uchastok", "Участок"), ("/esli-to", "Если — то"), ("/rules", "Правила"))
+MENU = (("/", "Главная"), ("/obmen", "Обмен"), ("/uchastok", "Участок"), ("/esli-to", "Если — то"), ("/manifest", "Манифест"), ("/rules", "Правила"))
 HEADER_CSS = """.site{position:sticky;top:0;z-index:9;background:var(--card,#FFFDF8);border-bottom:1px solid var(--line,#E8DEC8);font-family:inherit}
 .site .sw{max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
 .site .logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink,#1F2A24);font:500 16px Unbounded,"Golos Text",sans-serif;white-space:nowrap}.site .logo span{color:var(--acc,#1D7A5C)}
