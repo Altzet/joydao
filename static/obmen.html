@@ -6,6 +6,7 @@
 <title>Обмен излишками · Ну-ну</title>
 <meta name="description" content="Обмен излишками между друзьями: отдам, ищу, умею. Продукты, вещи и услуги без денег.">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/i18n.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -18,7 +19,7 @@
 body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:1rem/1.5 "Golos Text",system-ui,sans-serif}
 button,input,textarea{font:inherit;color:inherit}
 a{color:var(--acc)}
-.w{max-width:1200px;margin:0 auto;padding:0 16px}
+.w{margin:0 auto;padding:0 clamp(16px,3vw,48px)}
 h1{font:500 clamp(26px,4vw,38px)/1.2 Unbounded,sans-serif;margin:0}
 .hero{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;padding:28px 0 20px}
 .hero p{margin:10px 0 0;max-width:620px;color:var(--muted);font-size:1.0625rem}

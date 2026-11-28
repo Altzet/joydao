@@ -237,9 +237,11 @@ def due(today: date, get=forecast) -> list[tuple[int, str, str]]:
 
 async def send(bot, uid: int, text: str, pid: str, pic="sun") -> None:
     from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
+    t_ = nunu.user_tr(uid)
+    text = t_(text)
     kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="Сделаю", callback_data=f"wx:y:{pid}"),
-        InlineKeyboardButton(text="Не сейчас", callback_data=f"wx:n:{pid}")]])
+        InlineKeyboardButton(text=t_("Сделаю"), callback_data=f"wx:y:{pid}"),
+        InlineKeyboardButton(text=t_("Не сейчас"), callback_data=f"wx:n:{pid}")]])
     f = pic if isinstance(pic, nunu.Path) else nunu.PICS / f"{pic}.png"
     try:
         if f.exists() and len(text) <= 1024:
