@@ -104,7 +104,7 @@ def render(slug: str) -> HTMLResponse:
               {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in p["faq"]]}]
     ldj = json.dumps(ld, ensure_ascii=False).replace("</", "<\\/")
     other = "".join(f'<a href="/{k}">{E(v["h1"])}</a><br>' for k, v in PAGES.items() if k != slug)
-    return HTMLResponse(f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    return HTMLResponse(f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">{landing.I18N}<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{E(p["title"])}</title><meta name="description" content="{E(p["desc"])}"><link rel="canonical" href="{url}">
 <meta property="og:type" content="article"><meta property="og:title" content="{E(p["h1"])}"><meta property="og:description" content="{E(p["desc"])}">
 <meta property="og:url" content="{url}"><meta property="og:image" content="{landing.absu(p["img"])}"><meta property="og:locale" content="ru_RU"><meta name="twitter:card" content="summary_large_image">
