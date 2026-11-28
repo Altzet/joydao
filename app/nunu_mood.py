@@ -116,10 +116,11 @@ def answer(data: str, uid: int) -> str:
 
 async def send(bot, uid: int) -> None:
     from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
-    b = lambda t, d: InlineKeyboardButton(text=t, callback_data=d)  # noqa: E731
+    t_ = nunu.user_tr(uid)
+    b = lambda t, d: InlineKeyboardButton(text=t_(t), callback_data=d)  # noqa: E731
     pic = nunu.PICS / "mood.png"  # картинка «Как ты сейчас?» (холст «Картинки бота»)
     try:
-        await bot.send_photo(uid, FSInputFile(pic), caption="🌊 Как ты себя чувствуешь?\nОдно касание — и вода вокруг твоего острова станет цвета твоего состояния.",
+        await bot.send_photo(uid, FSInputFile(pic), caption=t_("🌊 Как ты себя чувствуешь?\nОдно касание — и вода вокруг твоего острова станет цвета твоего состояния."),
                                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                                    [b("🟡 Бодро и светло", "mood:0"), b("🟢 Спокойно", "mood:1")],
                                    [b("🟠 Напряжённо", "mood:2"), b("🟣 Грустно, без сил", "mood:3")],

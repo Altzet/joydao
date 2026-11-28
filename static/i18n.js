@@ -18,7 +18,8 @@ function pick(){
 }
 var lang=pick(),D={},P=[],CYR=/[А-Яа-яЁё]/,done=new WeakMap();
 var I=window.I18N={lang:lang,names:NM,loc:{ru:"ru-RU",uk:"uk-UA",en:"en-GB"}[lang],
-  set:function(l){try{localStorage.setItem("lang",l)}catch(e){}var u=location.href.replace(/([?&])lang=\w+&?/,"$1").replace(/[?&]$/,"");location.href=u},
+  set:function(l){var ok=true;try{localStorage.setItem("lang",l)}catch(e){ok=false}var u=location.href.replace(/([?&])lang=\w+&?/,"$1").replace(/[?&]$/,"");
+    if(!ok)u+=(u.indexOf("?")<0?"?":"&")+"lang="+l;location.href=u},  /* хранилище закрыто — язык едет в адресе */
   t:function(s){var r=tr(String(s));return r==null?s:r},
   /* кнопки выбора языка: <span>RU · UK · EN</span>, нажатие — set() */
   menu:function(cls){return '<span class="'+(cls||"langs")+'" translate="no">'+L.map(function(l){return '<a href="?lang='+l+'" data-lang="'+l+'"'+(l===lang?' aria-current="true"':'')+' title="'+NM[l]+'">'+l.toUpperCase()+'</a>'}).join(" · ")+'</span>'}};
@@ -28,6 +29,11 @@ document.addEventListener("click",function(e){var a=e.target.closest&&e.target.c
 if(lang==="ru")return;
 
 var norm=function(s){return s.replace(/\s+/g," ").trim()};
+var WR=["пн","вт","ср","чт","пт","сб","вс"],MR=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"],
+  WD={en:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],uk:["пн","вт","ср","чт","пт","сб","нд"]},
+  MO={en:["January","February","March","April","May","June","July","August","September","October","November","December"],
+      uk:["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"]},
+  DT=new RegExp("(?:("+WR.join("|")+"), )?(\\d{1,2}) ("+MR.join("|")+")","g");
 /* Порядок: фраза целиком → со строчной буквы (код пишет lc(…)) → шаблон с {} →
    составная («Все: 3», «Сад · лес», несколько предложений подряд) — только если известны все части. */
 function tr(s){var k=norm(s);return k&&CYR.test(k)?one(k):null}
@@ -36,7 +42,15 @@ function one(k){
   var u=k.charAt(0).toUpperCase()+k.slice(1);if(u!==k&&(v=D[u])!=null)return v.charAt(0).toLowerCase()+v.slice(1);
   for(var i=0;i<P.length;i++){var p=P[i];if(k.indexOf(p.lit)<0)continue;var m=p.re.exec(k);
     if(m){var j=1;return p.to.replace(/\{\}/g,function(){var g=norm(m[j++]||""),t=CYR.test(g)&&g.length<k.length?one(g):null;return t!=null?t:g})}}
-  var b=k.split(/(: | · | — |(?<=[.!?…]) )/);if(b.length<3)return null;
+  /* края без букв: «📍 Гараж», «18 ч назад», «так и сделал 84%», «План:» */
+  var n=/^([^\p{L}«"]+)(\p{L}.*)$/u.exec(k),t;if(n&&(t=one(norm(n[2])))!=null)return n[1]+t;
+  if((n=/^(.*?[\p{L}»"])([^\p{L}»"]+)$/u.exec(k))&&(t=one(norm(n[1])))!=null)return t+n[2];
+  /* дата, записанная по-русски в данных игрока: «вт, 24 ноября» */
+  var ds=[],r=k.replace(DT,function(_,w,d,m){ds.push((WD[lang][WR.indexOf(w)]?WD[lang][WR.indexOf(w)]+", ":"")+d+" "+MO[lang][MR.indexOf(m)]);return "\u0001"+(ds.length-1)+"\u0001"});
+  if(ds.length){t=CYR.test(r)?one(r):r;return t==null?null:t.replace(/\u0001(\d+)\u0001/g,function(_,i){return ds[i]})}
+  /* обрезанная «…» фраза: ищем целую и режем перевод до той же длины */
+  if(/…$/.test(k)&&k.length>12){var h=k.slice(0,-1).toLowerCase();for(var key in D)if(key.toLowerCase().indexOf(h)===0){t=D[key];return t.slice(0,Math.max(h.length,8)).replace(/\s+\S*$/,"")+"…"}}
+  var b=k.split(/((?<=[.!?…]) )/);if(b.length<3)b=k.split(/(: | · | — |, )/);if(b.length<3)return null;  /* сначала предложения, потом части */
   for(i=0;i<b.length;i+=2)if(b[i]&&CYR.test(b[i])){if((v=one(b[i]))==null)return null;b[i]=v}
   return b.join("")}
 function text(n){var v=n.data;if(done.get(n)===v)return;var t=tr(v);
@@ -65,7 +79,9 @@ function run(){
     var sp=W.showPopup;if(sp)W.showPopup=function(p,cb){p=Object.assign({},p);if(p.title)p.title=I.t(p.title);if(p.message)p.message=I.t(p.message);
       if(p.buttons)p.buttons=p.buttons.map(function(b){return b.text?Object.assign({},b,{text:I.t(b.text)}):b});return sp.call(W,p,cb)}}
 }
-window.I18N_SET=function(d){D=d;for(var k in d)if(k.indexOf("{}")>=0){var parts=k.split("{}"),lit=parts.reduce(function(a,b){return b.length>a.length?b:a},"");
+window.I18N_SET=function(d){D=d;
+  /* «· нажми, чтобы изменить» в коде клеится к значению: та же фраза без краевых « · », «: », «(» */
+  for(var a in d){var c=a.replace(/^(\d+\. )?[\s·:,—(]*|[\s·:,—(«]+$/g,"");if(c!==a&&c.indexOf("{}")<0&&CYR.test(c)&&!(c in d))d[c]=d[a].replace(/^(\d+\. )?[\s·:,—(]*|[\s·:,—(«]+$/g,"")}for(var k in d)if(k.indexOf("{}")>=0){var parts=k.split("{}"),lit=parts.reduce(function(a,b){return b.length>a.length?b:a},"");
     /* {} не режет слово: «{} м» не поймает «в море» */
     var re=parts.map(function(x,i){var e=x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
       return (i&&/^\p{L}/u.test(x)?"(?<!\\p{L})":"")+e+(i<parts.length-1&&/\p{L}$/u.test(x)?"(?!\\p{L})":"")}).join("(.*?)");

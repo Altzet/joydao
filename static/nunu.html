@@ -2293,7 +2293,10 @@ try{const r=await API("/state"),d=r.data;tgName=r.name||"";
 /* на этом устройстве остались несохранённые действия — сливаем их с сервером, иначе берём серверное */
 if(d){adopt(dirty&&sync.base?mergeAll(sync.base,mine(),d):dirty?mergeAll({},mine(),d):d);setSync(r.rev,d)}else{setSync(r.rev||0,null);setDirty(true)}
 /* общие дела от друзей: ложатся в сад, если такого ещё нет */
-takeInbox(r.inbox);if(dirty)flush();
+takeInbox(r.inbox);
+/* язык игрока — на сервер, чтобы бот писал уведомления на нём же */
+if(window.I18N&&prefs.lang!==I18N.lang){prefs.lang=I18N.lang;ls.set("nunu-prefs",prefs);setDirty(true)}
+if(dirty)flush();
 if(!rulesOk())await new Promise(res=>rulesGate(res));
 const sp=TG?(TG.initDataUnsafe||{}).start_param:new URLSearchParams(location.search).get("startapp");
 if(sp==="obmen"){location.href="/obmen";return}

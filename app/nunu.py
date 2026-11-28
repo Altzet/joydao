@@ -1037,6 +1037,17 @@ class Rem(tuple):
         return t
 
 
+def user_tr(uid: int):
+    """Переводчик на язык игрока (его выбор в игре — nunu-prefs.lang), для сообщений бота."""
+    from . import i18n_web as i18n
+    try:
+        with closing(_db()) as c:
+            lang = i18n.lang_of(_owner_state(c, uid))
+    except Exception:
+        lang = "ru"
+    return lambda s: i18n.tr(s, lang)
+
+
 async def _notify(tg_id: int, text: str, url: str, html: bool = False, pic: "str | Path | None" = "note",
                   btns: list[tuple[str, str]] | None = None) -> None:
     """Сообщение игроку от бота, с картинкой: pic — вид (имя файла в static/img/bot), путь к фото игрока или None.
@@ -1044,9 +1055,10 @@ async def _notify(tg_id: int, text: str, url: str, html: bool = False, pic: "str
     Не написал боту /start — Telegram не пустит, это не ошибка игры."""
     from aiogram import Bot
     from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
-    bot = Bot(token=config.BOT_TOKEN)
-    kb = InlineKeyboardMarkup(inline_keyboard=([[InlineKeyboardButton(text=t, callback_data=d) for t, d in btns]] if btns else [])
-                              + [[InlineKeyboardButton(text="Открыть «Ну-ну»", url=url)]])
+    bot, t_ = Bot(token=config.BOT_TOKEN), user_tr(tg_id)
+    text = t_(text)
+    kb = InlineKeyboardMarkup(inline_keyboard=([[InlineKeyboardButton(text=t_(t), callback_data=d) for t, d in btns]] if btns else [])
+                              + [[InlineKeyboardButton(text=t_("Открыть «Ну-ну»"), url=url)]])
     f = pic if isinstance(pic, Path) else PICS / f"{pic}.png" if pic else None
     try:
         if f and f.exists() and len(text) <= 1024:  # подпись к фото — до 1024 знаков

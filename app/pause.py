@@ -114,6 +114,12 @@ async def any_message(msg: Message):
     await hello(msg)
 
 
+def _ut(cb):
+    """Ответ на кнопку — на языке игрока из игры."""
+    from . import nunu as game
+    return game.user_tr(cb.from_user.id)
+
+
 @router.callback_query(F.data.startswith("wx:"))
 async def wx_button(cb: CallbackQuery):
     """Погодное семя: «Сделаю» / «Не сейчас». Кнопки убираем, отвечаем строчкой без вины."""
@@ -123,7 +129,7 @@ async def wx_button(cb: CallbackQuery):
             await cb.message.edit_reply_markup(reply_markup=None)
         except Exception:
             pass
-        await cb.message.answer(nunu_wx.answer(cb.data))
+        await cb.message.answer(_ut(cb)(nunu_wx.answer(cb.data)))
 
 
 @router.callback_query(F.data.startswith("mood:"))
@@ -136,7 +142,7 @@ async def mood_button(cb: CallbackQuery):
             await cb.message.edit_reply_markup(reply_markup=None)
         except Exception:
             pass
-        await cb.message.answer(text)
+        await cb.message.answer(_ut(cb)(text))
 
 
 @router.callback_query(F.data.startswith("jd:"))
@@ -151,7 +157,7 @@ async def deed_button(cb: CallbackQuery):
             await cb.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=rows[-1:]) if rows else None)
         except Exception:
             pass
-        await cb.message.answer(text)
+        await cb.message.answer(_ut(cb)(text))
     if note:
         await game._notify(note[0], note[1], game.link("garden"), pic="joint")
 
