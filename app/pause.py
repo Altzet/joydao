@@ -30,11 +30,52 @@ TEXT = (
 GAME_URL = f"https://t.me/{config.BOT_USERNAME}/{config.NUNU_APP}"  # Direct Link: игра откроется с аккаунтом
 CHANNEL_URL = f"https://t.me/{config.CHANNEL_ID.lstrip('@')}" if config.CHANNEL_ID.startswith("@") else "https://t.me/joydao"
 
-KB = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="🌱 Открыть «Ну-ну»", url=GAME_URL)],
-    [InlineKeyboardButton(text="📢 Канал", url=CHANNEL_URL)],
-    [InlineKeyboardButton(text="💬 Общий чат", url=config.COMMUNITY_CHAT_URL)],
-])
+# Украинский и английский — по языку Telegram человека; русский по умолчанию (как на сайте, static/i18n.js).
+TEXTS = {
+    "ru": TEXT,
+    "uk": ("🌱 <b>Ну-ну</b> — застосунок, де кожен намір виростає.\n\n"
+           "Запиши велику мету, вибери справу на тиждень і виріши заздалегідь, що зробиш, якщо завадить. "
+           "Зробив — познач: у твоєму саду росте дерево мети. Можна удвох із другом — і міст між вами міцнішає.\n\n"
+           "Тисни «Відкрити» 👇"),
+    "en": ("🌱 <b>Nu-nu</b> is an app where every intention grows.\n\n"
+           "Write down a big goal, pick a deed for the week and decide in advance what you'll do if something gets in the way. "
+           "Done it — mark it: the tree of your goal grows in your garden. You can do it together with a friend — and the bridge between you gets stronger.\n\n"
+           "Tap “Open” 👇"),
+}
+BTN = {"ru": ("🌱 Открыть «Ну-ну»", "📢 Канал", "💬 Общий чат", "Открыть"),
+       "uk": ("🌱 Відкрити «Ну-ну»", "📢 Канал", "💬 Спільний чат", "Відкрити"),
+       "en": ("🌱 Open Nu-nu", "📢 Channel", "💬 Group chat", "Open")}
+
+
+def lang_of(code: str | None) -> str:
+    """Язык Telegram → ru/uk/en. Пусто и языки соседей — русский, прочие — английский."""
+    c = (code or "ru").lower()
+    return "uk" if c.startswith("uk") else "ru" if c[:2] in ("ru", "be", "kk", "ky", "uz", "tg", "hy", "az", "ka", "tt", "ba") else "en"
+
+
+def kb(lang: str = "ru") -> InlineKeyboardMarkup:
+    b = BTN[lang]
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=b[0], url=GAME_URL)],
+        [InlineKeyboardButton(text=b[1], url=CHANNEL_URL)],
+        [InlineKeyboardButton(text=b[2], url=config.COMMUNITY_CHAT_URL)],
+    ])
+
+
+KB = kb()
+
+
+async def hello(msg: Message) -> None:
+    """Приветствие в личке на языке человека."""
+    lang = lang_of(msg.from_user.language_code if msg.from_user else None)
+    await msg.answer(TEXTS[lang], parse_mode="HTML", reply_markup=kb(lang))
+    if lang != "ru" and config.WEBAPP_URL:  # кнопка меню общая на всех; на своём языке — для этого чата
+        try:
+            u = urlsplit(config.WEBAPP_URL)
+            await msg.bot.set_chat_menu_button(chat_id=msg.chat.id, menu_button=MenuButtonWebApp(
+                text=BTN[lang][3], web_app=WebAppInfo(url=f"{u.scheme}://{u.netloc}/nunu")))
+        except Exception:
+            pass
 
 router = Router()
 
@@ -46,7 +87,7 @@ async def announce(msg: Message):
     admin = str(config.ADMIN_CHAT_ID)
     if not admin or admin not in (str(msg.chat.id), str(msg.from_user.id)):
         if msg.chat.type == "private":
-            await msg.answer(TEXT, parse_mode="HTML", reply_markup=KB)
+            await hello(msg)
         return  # в группах молчим
     with db.connect() as c:
         ids = [r["tg_id"] for r in c.execute("SELECT tg_id FROM users").fetchall()]
@@ -70,7 +111,13 @@ async def poll_update(poll):
 # Только личка: бот — админ в общем чате и канале, там отвечать нельзя.
 @router.message(F.chat.type == "private")
 async def any_message(msg: Message):
-    await msg.answer(TEXT, parse_mode="HTML", reply_markup=KB)
+    await hello(msg)
+
+
+def _ut(cb):
+    """Ответ на кнопку — на языке игрока из игры."""
+    from . import nunu as game
+    return game.user_tr(cb.from_user.id)
 
 
 @router.callback_query(F.data.startswith("wx:"))
@@ -82,7 +129,7 @@ async def wx_button(cb: CallbackQuery):
             await cb.message.edit_reply_markup(reply_markup=None)
         except Exception:
             pass
-        await cb.message.answer(nunu_wx.answer(cb.data))
+        await cb.message.answer(_ut(cb)(nunu_wx.answer(cb.data)))
 
 
 @router.callback_query(F.data.startswith("mood:"))
@@ -95,7 +142,7 @@ async def mood_button(cb: CallbackQuery):
             await cb.message.edit_reply_markup(reply_markup=None)
         except Exception:
             pass
-        await cb.message.answer(text)
+        await cb.message.answer(_ut(cb)(text))
 
 
 @router.callback_query(F.data.startswith("jd:"))
@@ -110,7 +157,7 @@ async def deed_button(cb: CallbackQuery):
             await cb.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=rows[-1:]) if rows else None)
         except Exception:
             pass
-        await cb.message.answer(text)
+        await cb.message.answer(_ut(cb)(text))
     if note:
         await game._notify(note[0], note[1], game.link("garden"), pic="joint")
 
@@ -119,7 +166,8 @@ async def deed_button(cb: CallbackQuery):
 async def any_callback(cb: CallbackQuery):
     await cb.answer()
     if cb.message and cb.message.chat.type == "private":  # старые кнопки из лички
-        await cb.message.answer(TEXT, parse_mode="HTML", reply_markup=KB)
+        lang = lang_of(cb.from_user.language_code)
+        await cb.message.answer(TEXTS[lang], parse_mode="HTML", reply_markup=kb(lang))
 
 
 app = FastAPI()
@@ -198,6 +246,29 @@ async def rules_page():
     return rules.page()
 
 
+STATIC = Path(__file__).resolve().parent.parent / "static"
+
+
+def _i18n_v() -> str:
+    return str(int(max((STATIC / "i18n" / f"{l}.json").stat().st_mtime for l in ("en", "uk"))))
+
+
+@app.get("/i18n.js")
+async def i18n_js():
+    """Переводчик страниц (русский → украинский, английский). Словарь подключается с версией: обновился — браузер возьмёт новый."""
+    js = (STATIC / "i18n.js").read_text(encoding="utf-8").replace('window.I18N_V||""', f'"{_i18n_v()}"', 1)
+    return Response(js, media_type="application/javascript", headers={"Cache-Control": "public, max-age=300"})
+
+
+@app.get("/i18n/{lang}.js")
+async def i18n_dict(lang: str):
+    if lang not in ("en", "uk"):
+        return Response("I18N_SET({})", media_type="application/javascript")
+    d = (STATIC / "i18n" / f"{lang}.json").read_text(encoding="utf-8")
+    return Response(f"I18N_SET({d})", media_type="application/javascript",
+                    headers={"Cache-Control": "public, max-age=604800"})  # адрес меняется с версией словаря
+
+
 @app.get("/robots.txt")
 async def robots():
     """SEO: в поиск — лендинг и правила; игра, админка и API — нет."""
@@ -236,9 +307,14 @@ async def page_esli_to():
     return pages.render("esli-to")
 
 
+@app.get("/manifest")
+async def page_manifest():
+    return pages.render("manifest")
+
+
 @app.get("/sitemap.xml")
 async def sitemap():
-    u = "".join(f"<url><loc>{landing.SITE}{p}</loc><priority>{w}</priority></url>" for p, w in (("/", "1.0"), ("/obmen", "0.8"), ("/uchastok", "0.8"), ("/esli-to", "0.8"), ("/rules", "0.4")))
+    u = "".join(f"<url><loc>{landing.SITE}{p}</loc><priority>{w}</priority></url>" for p, w in (("/", "1.0"), ("/obmen", "0.8"), ("/uchastok", "0.8"), ("/esli-to", "0.8"), ("/manifest", "0.6"), ("/rules", "0.4")))
     return Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
                     + u + "</urlset>", media_type="application/xml")
 
@@ -248,7 +324,7 @@ async def page(path: str = ""):
     """Сайт: лендинг из админки (раздел «Лендинг»). Остальные адреса — честная 404, а не копия главной (дубли вредят поиску)."""
     if path.strip("/") in ("", "index.html"):
         return nunu_admin.landing_page()
-    return HTMLResponse(f'<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    return HTMLResponse(f'<!doctype html><html lang="ru"><head><meta charset="utf-8">{landing.I18N}<meta name="viewport" content="width=device-width,initial-scale=1">'
                         f'<meta name="robots" content="noindex"><title>Страница не найдена · Ну-ну</title>{landing.ICON}<style>{landing.CSS}</style></head>'
                         f'<body><main class="w" style="padding:80px 20px"><h1>Такой страницы нет</h1><p><a href="/">На главную →</a></p></main></body></html>', 404)
 
@@ -266,6 +342,25 @@ DESCRIPTION = (
     "• Мой участок: нарисуй его и пройдись в 3D\n\n"
     "Сделано автором для себя — теперь и для тебя. Жми «Открыть» 👇"
 )
+# Профиль на других языках: Telegram показывает его людям с этим языком приложения.
+PROFILE = {
+    "uk": ("Ну-ну · JoyDao", "Обмін надлишками без грошей і гра для друзів 🌱 Нехай ваш сад квітне.",
+           "🌱 JoyDAO · Ну-ну — нехай ваш сад квітне.\n\n"
+           "• Обмін надлишками без грошей: урожай, речі, вміння — дарую, міняю або годинами\n"
+           "• Мости: відповідайте на питання одне одного — що краще розумієте, то міцніший міст\n"
+           "• Сад добрих справ: справа з планом «якщо завадить — то зроблю», бот нагадає\n"
+           "• Велика мета: маленькі кроки ростять її дерево\n"
+           "• Моя ділянка: намалюй її і пройдися в 3D\n\n"
+           "Зроблено автором для себе — тепер і для тебе. Тисни «Відкрити» 👇"),
+    "en": ("Nu-nu · JoyDao", "Exchange your surplus without money, and a game for friends 🌱 Let your garden bloom.",
+           "🌱 JoyDAO · Nu-nu — let your garden bloom.\n\n"
+           "• Surplus exchange without money: harvest, things, skills — give, swap or trade in hours\n"
+           "• Bridges: answer each other's questions — the better you understand each other, the stronger the bridge\n"
+           "• Garden of good deeds: a deed with an “if something gets in the way — then I'll do this” plan, the bot will remind you\n"
+           "• Big goal: small steps grow its tree\n"
+           "• My plot: draw it and walk around it in 3D\n\n"
+           "Made by the author for personal use — now for you too. Tap “Open” 👇"),
+}
 
 
 async def setup_profile(bot: Bot) -> None:
@@ -289,10 +384,20 @@ async def setup_profile(bot: Bot) -> None:
 
 
 async def clear_old_descriptions(bot: Bot) -> None:
-    """Старые описания знакомств на uk/en/… перекрывали бы новое из @BotFather у людей с этими языками.
-    Пустая строка снимает языковое описание — все видят то, что задано в @BotFather."""
-    from .i18n import REMOVED, SUPPORTED
-    for lang in (*SUPPORTED, *REMOVED):
+    """Профиль на украинском и английском — из PROFILE; старые описания знакомств на прочих языках снимаем
+    (пустая строка — человек видит русский профиль)."""
+    from .i18n import REMOVED
+    for lang, (name, about, desc) in PROFILE.items():
+        try:
+            if (await bot.get_my_name(language_code=lang)).name != name:
+                await bot.set_my_name(name, language_code=lang)
+            if (await bot.get_my_short_description(language_code=lang)).short_description != about:
+                await bot.set_my_short_description(about, language_code=lang)
+            if (await bot.get_my_description(language_code=lang)).description != desc:
+                await bot.set_my_description(desc, language_code=lang)
+        except Exception:
+            log.exception("Не удалось обновить профиль бота (%s)", lang)
+    for lang in ("ru", *REMOVED):
         try:
             await bot.set_my_description("", language_code=lang)
             await bot.set_my_short_description("", language_code=lang)
