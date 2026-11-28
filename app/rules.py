@@ -92,7 +92,7 @@ SECTIONS = [
     ("Связь с автором", """<p>Пиши в клуб <a href="https://t.me/joydao_club">@joydao_club</a> — о нарушении, ошибке, удалении данных или с идеей. Правила могут меняться; о важных изменениях напишем в канале <a href="https://t.me/joydao">@joydao</a>, и игра попросит принять их заново.</p>"""),
 ]
 
-CSS = """main.r{max-width:760px;margin:0 auto;padding:40px 20px 80px}main.r h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .3em}
+CSS = """main.r{max-width:1200px;margin:0 auto;padding:40px clamp(20px,4vw,64px) 80px}main.r h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .3em}
 main.r h2{font-size:1.35rem;margin:2.2em 0 .6em}main.r table{border-collapse:collapse;width:100%;font-size:15px;margin:.6em 0}
 main.r td,main.r th{border-bottom:1px solid var(--line);padding:8px 10px 8px 0;text-align:left;vertical-align:top}main.r th{font-weight:600}
 main.r .note,main.r .upd{color:var(--muted);font-size:15px}main.r ol.main{padding-left:1.2em}main.r ol.main li{margin:.4em 0}
@@ -105,7 +105,7 @@ def page() -> HTMLResponse:
     main = "".join(f"<li><b>{E(t)}.</b> {E(x)}</li>" for t, x in MAIN)
     body = "".join(f'<h2 id="r{i}">{E(t)}</h2>{h}' for i, (t, h) in enumerate(SECTIONS))
     play = "/nunu"
-    return HTMLResponse(f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    return HTMLResponse(f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">{landing.I18N}<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Правила «Ну-ну»</title><meta name="description" content="Свод правил игры «Ну-ну»: как устроена игра, общение, обмен излишками, гости на участке, приватность, жалобы.">
 <link rel="canonical" href="{landing.SITE}/rules"><meta property="og:title" content="Свод правил «Ну-ну»"><meta property="og:url" content="{landing.SITE}/rules">
 <meta property="og:description" content="Как мы общаемся, как меняемся излишками, что видят друзья, как работают жалобы."><meta property="og:type" content="article"><meta property="og:image" content="{landing.SITE}/og.png"><meta name="twitter:card" content="summary_large_image"><meta property="og:locale" content="ru_RU">
