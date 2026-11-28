@@ -18,7 +18,7 @@ SITE = re.sub(r"/nunu/?$", "", (config.WEBAPP_URL or "https://joydao.org").rstri
 # кнопка становится «← В игру», ссылки t.me открывает Telegram, чужие сайты — браузер.
 MENU = (("/", "Главная"), ("/obmen", "Обмен"), ("/uchastok", "Участок"), ("/esli-to", "Если — то"), ("/rules", "Правила"))
 HEADER_CSS = """.site{position:sticky;top:0;z-index:9;background:var(--card,#FFFDF8);border-bottom:1px solid var(--line,#E8DEC8);font-family:inherit}
-.site .sw{max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
+.site .sw{margin:0 auto;padding:10px clamp(16px,3vw,48px);display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
 .site .logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink,#1F2A24);font:500 16px Unbounded,"Golos Text",sans-serif;white-space:nowrap}.site .logo span{color:var(--acc,#1D7A5C)}
 header.site nav{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
 .site nav a{padding:8px 11px;border-radius:10px;text-decoration:none;color:var(--muted,#5E655C);font-size:15px;white-space:nowrap}
@@ -199,7 +199,7 @@ PHONE = """<div class="phone" aria-hidden="true"><div class="scr"><div class="ph
 CSS = """*{box-sizing:border-box}html{scroll-behavior:smooth}
 :root{--bg:#FBF7EE;--card:#FFFDF8;--ink:#1F2A24;--muted:#5E655C;--line:#E8DEC8;--acc:#1D7A5C;--acc-h:#17654C;--acc-fg:#fff;--acc-soft:#E3F1EA}
 body{margin:0;font:17px/1.6 "Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
-a{color:inherit}.w{max-width:1120px;margin:0 auto;padding:0 24px}
+a{color:inherit}.w{margin:0 auto;padding:0 clamp(24px,4vw,64px)}
 h1,h2{font-family:Unbounded,"Golos Text",system-ui,sans-serif;font-weight:500}
 .btn{display:inline-flex;align-items:center;gap:8px;background:var(--acc);color:var(--acc-fg);text-decoration:none;font-weight:600;font-size:16px;padding:14px 22px;border-radius:12px;transition:transform .15s,background .15s}
 .btn:hover{background:var(--acc-h);transform:translateY(-1px)}.btn.sm{font-size:14px;padding:9px 16px;border-radius:10px}.btn.g{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}.btn.g:hover{background:var(--card)}

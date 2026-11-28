@@ -92,7 +92,7 @@ SECTIONS = [
     ("Связь с автором", """<p>Пиши в клуб <a href="https://t.me/joydao_club">@joydao_club</a> — о нарушении, ошибке, удалении данных или с идеей. Правила могут меняться; о важных изменениях напишем в канале <a href="https://t.me/joydao">@joydao</a>, и игра попросит принять их заново.</p>"""),
 ]
 
-CSS = """main.r{max-width:760px;margin:0 auto;padding:40px 20px 80px}main.r h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .3em}
+CSS = """main.r{max-width:1200px;margin:0 auto;padding:40px clamp(20px,4vw,64px) 80px}main.r h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .3em}
 main.r h2{font-size:1.35rem;margin:2.2em 0 .6em}main.r table{border-collapse:collapse;width:100%;font-size:15px;margin:.6em 0}
 main.r td,main.r th{border-bottom:1px solid var(--line);padding:8px 10px 8px 0;text-align:left;vertical-align:top}main.r th{font-weight:600}
 main.r .note,main.r .upd{color:var(--muted);font-size:15px}main.r ol.main{padding-left:1.2em}main.r ol.main li{margin:.4em 0}

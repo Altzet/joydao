@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from . import landing
 
 IMG = Path(__file__).resolve().parent.parent / "static" / "img"
-CSS = """main.r{max-width:760px;margin:0 auto;padding:40px 20px 80px}main.r h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .4em}
+CSS = """main.r{max-width:1200px;margin:0 auto;padding:40px clamp(20px,4vw,64px) 80px}main.r h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .4em}
 main.r h2{font-size:1.4rem;margin:2em 0 .6em}main.r p,main.r li{font-size:17px;line-height:1.6}main.r .lead{font-size:19px;color:var(--muted)}
 main.r figure{margin:1.6em 0}main.r figure img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line)}
 main.r figcaption{color:var(--muted);font-size:14px;margin-top:6px}main.r .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
